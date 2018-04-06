@@ -1,4 +1,4 @@
-# Blender-NLA-Midi-Copier
+# Blender NLA Midi Copier
 Blender add-on for syncing duplicated action strips in the NLA Editor to notes in a midi file
 
 This add-on adds a panel to the NLA Editor for duplicating action strips and syncing them up with notes in a midi file.
