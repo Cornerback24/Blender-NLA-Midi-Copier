@@ -19,7 +19,7 @@ class MidiFileSelector(bpy.types.Operator):
     bl_idname = "ops.midi_file_selector"
     bl_label = "Midi File Selector"
     # noinspection PyArgumentList
-    filepath = bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
         context.scene.midi_file = self.filepath
@@ -46,7 +46,7 @@ class MidiPanel(bpy.types.Panel):
 
     def draw(self, context):
         col = self.layout.column(align=True)
-        col.operator(MidiFileSelector.bl_idname, "Choose midi file", icon='FILESEL')
+        col.operator(MidiFileSelector.bl_idname, text="Choose midi file", icon='FILE_FOLDER')
 
         if context.scene.midi_file:
             try:

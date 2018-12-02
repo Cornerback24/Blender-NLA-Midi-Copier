@@ -1,5 +1,6 @@
 # Blender NLA Midi Copier
 Blender add-on for syncing duplicated action strips in the NLA Editor to notes in a midi file
+This add-on is being developed for Blender 2.80
 
 This add-on adds a panel to the NLA Editor for duplicating action strips and syncing them up with notes in a midi file.
 It allows for selecting a track in a midi file and a note from that track, and then duplicating all the selected action strips to sync up with all instances of the selected note.  For example, an action strip could be duplicated to line up with all of the C4 notes played by a piano.
@@ -31,5 +32,3 @@ It allows for selecting a track in a midi file and a note from that track, and t
 ### Other notes:
 * The duplicated strips will all be placed on the same NlaTrack if possible.  If there are overlaps, new tracks will be created containing the overlapping action strips.
 * If a text filter is enabled, it is possible that the duplicated action strips will be placed on new tracks that won't  be immediately visible due to being filtered by the text filter.
-
-Add-on written using Blender 2.79a.
