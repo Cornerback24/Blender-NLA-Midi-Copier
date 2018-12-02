@@ -32,7 +32,7 @@ class NLAMidiCopier(bpy.types.Operator):
         self.animation_data_list = None
 
         # these filters currently cause some issues, so for now abort action if they are active
-        if context.space_data.dopesheet.use_filter_text and context.space_data.dopesheet.use_multi_word_filter:
+        if context.space_data.dopesheet.filter_text != "" and context.space_data.dopesheet.use_multi_word_filter:
             self.report({"WARNING"}, "Multi-word filtering not supported")
             return
 
@@ -50,9 +50,9 @@ class NLAMidiCopier(bpy.types.Operator):
             return
 
         # select copied strips
-        bpy.ops.nla.select_all_toggle()
-        if context.scene.copy_to_new_track and context.scene.delete_source_action_strip:
-            bpy.ops.nla.select_all_toggle()
+        bpy.ops.nla.select_all(action="DESELECT")
+        # if context.scene.copy_to_new_track and context.scene.delete_source_action_strip:
+        # bpy.ops.nla.select_all_toggle()
         for nla_strip in self.copied_strips:
             nla_strip.select = True
 
@@ -68,9 +68,9 @@ class NLAMidiCopier(bpy.types.Operator):
             return  # notes_track will be None if nla_strip is filtered
         self.source_strips_copied += 1
 
-        text_filter_active = context.space_data.dopesheet.use_filter_text
+        filter_text = context.space_data.dopesheet.filter_text
         # disable text filter while copying to prevent issues with new tracks being filtered
-        context.space_data.dopesheet.use_filter_text = False
+        context.space_data.dopesheet.filter_text = ""
 
         self.select_single_track(notes_track)
         self.temp_track = self.add_track()
@@ -121,7 +121,7 @@ class NLAMidiCopier(bpy.types.Operator):
             extra_track_number += 1
 
         # re-enable text filter if it was active
-        context.space_data.dopesheet.use_filter_text = text_filter_active
+        context.space_data.dopesheet.filter_text = filter_text
 
     def copy_nla_strip_to_note(self, nla_strip, note, move_down, notes_track, context):
         NLAMidiCopier.select_single_strip(nla_strip)
@@ -140,9 +140,7 @@ class NLAMidiCopier(bpy.types.Operator):
     @staticmethod
     def select_single_strip(nla_strip):
         # deselect all
-        bpy.ops.nla.select_all_toggle()
-        if nla_strip.select:
-            bpy.ops.nla.select_all_toggle()
+        bpy.ops.nla.select_all(action="DESELECT")
         nla_strip.select = True
 
     def select_single_track(self, nla_track):
@@ -212,7 +210,7 @@ class NLAMidiCopier(bpy.types.Operator):
                 NLAMidiCopier.all_animation_data_from_collection(bpy.data.cameras) + \
                 NLAMidiCopier.all_animation_data_from_collection(bpy.data.curves) + \
                 NLAMidiCopier.all_animation_data_from_collection(bpy.data.grease_pencil) + \
-                NLAMidiCopier.all_animation_data_from_collection(bpy.data.lamps) + \
+                NLAMidiCopier.all_animation_data_from_collection(bpy.data.lights) + \
                 NLAMidiCopier.all_animation_data_from_collection(bpy.data.lattices) + \
                 NLAMidiCopier.all_animation_data_from_collection(bpy.data.linestyles) + \
                 NLAMidiCopier.all_animation_data_from_collection(bpy.data.masks) + \
