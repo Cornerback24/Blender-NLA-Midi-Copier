@@ -1,9 +1,6 @@
 # Blender NLA Midi Copier
-Blender add-on for syncing duplicated action strips in the NLA Editor to notes in a midi file
+Blender add-on for creating midi-driven animations from the Nonlinear Animation view.  Adds a panel to the Nonlinear Animation view that allows for copying an action to each instance of a note in a midi file. For example, actions strips for a selected action could be generated to line up with all of the C4 notes played by a piano. To access the panel, expand the right-side panel in the Nonlinear Action View and select the Midi tab.
 This add-on is being developed for Blender 2.80
-
-This add-on adds a panel to the NLA Editor for duplicating action strips and syncing them up with notes in a midi file.
-It allows for selecting a track in a midi file and a note from that track, and then duplicating all the selected action strips to sync up with all instances of the selected note.  For example, an action strip could be duplicated to line up with all of the C4 notes played by a piano.
 
 ### Panel controls:
 * Choose midi file:
@@ -11,24 +8,33 @@ It allows for selecting a track in a midi file and a note from that track, and t
 * Midi File:
   * Displays the selected midi file.
 * Track:
-  * Choose a track from the midi file.  (Tracks with no notes will not be shown.)
+  * Choose a track from the midi file. (Tracks with no notes will not be shown.)
 * Note:
-  * Choose a note from the selected track.  (Only notes contained by the selected track will be shown.)
-* Copy to Notes:
-  * Click this button to duplicate all of the selected action strips and line up the duplicates with all instances of the selected note.
+  * Choose a note from the selected track. (Only notes played in the selected track will be shown.)
+* Type:
+  * The type of object to animate. Select "Object" to animate objects in the scene. Change this value to animate something other than an object.  For example, select "Light" to animate the brightness of a light.
+* Object:
+  * The object to animate.  This field will change depending on the value of Type.  If Type is Object, this field will allow selecting an object, if Type is Light, this field will allow selecting a Light, ect.  
+* Action:
+  * The action to generate NLA Strips from. Only actions valid for the selected Type will be shown.
+* Copy Action to Selected Objects:
+  * If this option is selected, then the selected objects will be animated instead of the Object in the Object control. This option is only valid for Type Object. 
+* Duplicate Object on Overlap:
+  * If this option is selected, then overlapping action strips will be placed on new objects that are duplicates of the original object being animated.  If this option is not selected, then overlapping action strips will be omitted. This option is only valid for Type Object.
+* Nla Track:
+  * The name of the NLA track to place action strips on.  Action strips will be placed on a new track created with this name.  A name wil be automatically generated if this field is blank. 
 * First Frame:
   * The frame that the midi file starts on.
-* Frame offset:
-  * Offset in frames to use when copying the note (can be negative).  For example, if the frame offset is -5, then the duplicated action strips will be placed 5 frames before the instances of the selected note.
-* Copy to New Track
-  * Place duplicated actions on a new track.
-* Delete Source Action
-  * Delete the action strip that is being duplicated.
-* Delete Source Track
-  * Delete the NlaTrack containing the action strip that is being duplicated, only if it is empty.
-* Linked Duplicate
-  * Use linked duplicate when duplicating strips.
+* Frame Offset:
+  * Offset in frames to use when generating action strips (can be negative). For example, if the frame offset is -5, then the generated action strips will be placed starting 5 frames before the instances of the selected note.
+* Action Length (Frames):
+  * The length of the action. Used to determine if the action overlaps another generation action. Defaults to the true length of the action. As an example, if this is set to 50 frames, and two notes are only 30 frames apart, then the action for the second note will be considered to overlap the action for the first note.  The second note's action will either be omitted or copied to a duplicate object, depending on whether Duplicate Object on Overlap is selected. If this value is set to less than the true length of the action, it will be replaced by the true length of the action. This control is not available if no action is selected.
+* Copy Action to Notes:
+  * Click this button to generate action scripts from the selected action that line up with all instances of the selected note.
 
-### Other notes:
-* The duplicated strips will all be placed on the same NlaTrack if possible.  If there are overlaps, new tracks will be created containing the overlapping action strips.
-* If a text filter is enabled, it is possible that the duplicated action strips will be placed on new tracks that won't  be immediately visible due to being filtered by the text filter.
+
+### Installation:
+* Installation is the normal installation process for multi-file add-ons.
+  * Option 1: Download as a zip file. In Blender, go to Edit > Preferences > Add-ons, and click Install.  Select the zip file and click Install Add-on from File.
+  * Option 2: Clone into the 2.80/scripts/addons directory in the Blender installation.
+* To enable the add-on, in Blender, go to Edit > Preferences > Add-ons, and select Animation in the drop-down. Check the box next to the add-on to enable it.
