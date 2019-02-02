@@ -75,7 +75,7 @@ def get_notes_list(self, context):
     """
     global midi_data
     global notes_list
-    track_id = context.scene.track_list
+    track_id = context.scene.midi_data_property.track_list
     notes_list = notes_list_dict.get(track_id, [])
     return notes_list
 
@@ -85,8 +85,8 @@ def get_selected_notes(context):
     :return: list of all of the notes from the current midi file matching the currently selected track and note,
     sorted by time
     """
-    track_id = context.scene.track_list
-    note_id = context.scene.notes_list
+    track_id = context.scene.midi_data_property.track_list
+    note_id = context.scene.midi_data_property.notes_list
 
     track = None
     for x in midi_data.tracks:
@@ -104,8 +104,31 @@ def get_selected_notes(context):
 
 
 def get_track_id(context):
-    return context.scene.track_list
+    return context.scene.midi_data_property.track_list
 
 
 def get_note_id(context):
-    return context.scene.notes_list
+    return context.scene.midi_data_property.notes_list
+
+
+# key is display name, value is (NoteActionProperty field name, Action id_root)
+ID_PROPERTIES_DICTIONARY = {"Armature": ("armature", "ARMATURE"),
+                            "Camera": ("camera", "CAMERA"),
+                            "Cache File": ("cachefile", "CACHEFILE"),
+                            "Curve": ("curve", "CURVE"),
+                            "Grease Pencil": ("greasepencil", "GREASEPENCIL"),
+                            "Key": ("key", "KEY"),
+                            "Lattice": ("lattice", "LATTICE"),
+                            "Light": ("light", "LIGHT"),
+                            "Mask": ("mask", "MASK"),
+                            "Material": ("material", "MATERIAL"),
+                            "MetaBall": ("meta", "META"),
+                            "Mesh": ("mesh", "MESH"),
+                            "Movie Clip": ("movieclip", "MOVIECLIP"),
+                            "Node Tree": ("nodetree", "NODETREE"),
+                            "Object": ("object", "OBJECT"),
+                            "Light Probe": ("light_probe", "LIGHT_PROBE"),
+                            "Scene": ("scene", "SCENE"),
+                            "Speaker": ("speaker", "SPEAKER"),
+                            "Texture": ("texture", "TEXTURE"),
+                            "World": ("world", "WORLD")}
