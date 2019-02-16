@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 2, 0),
+        "version": (0, 3, 0),
         "blender": (2, 80, 0),
         "location": "View NLA Editor > Tool Shelf",
         "description": "Copy actions to action strips based on midi file input",
@@ -16,10 +16,12 @@ if "bpy" in locals():
 
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(NLAMidiCopierModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVar iable
     importlib.reload(MidiPanelModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(MidiPropertiesModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(MidiInstrumentModule)
 else:
     # noinspection PyUnresolvedReferences
     from . import NLAMidiCopierModule
@@ -27,16 +29,23 @@ else:
     from . import MidiPanelModule
     # noinspection PyUnresolvedReferences
     from . import MidiPropertiesModule
+    # noinspection PyUnresolvedReferences
+    from . import MidiInstrumentModule
 
 import bpy
 from bpy.props import PointerProperty
 from bpy.types import NlaStrip
-from .NLAMidiCopierModule import NLAMidiCopier
-from .MidiPanelModule import MidiPanel, OneClickMidiPanel
-from .MidiPropertiesModule import MidiPropertyGroup, NoteActionProperty
+from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier
+from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToInstrument, RemoveActionFromInstrument, \
+    TransposeInstrument
+from .MidiPanelModule import MidiPanel, MidiInstrumentPanel
+from .MidiPropertiesModule import MidiPropertyGroup, NoteActionProperty, InstrumentNoteProperty, InstrumentProperty
 from .MidiPanelModule import MidiFileSelector
 
-classes = [NoteActionProperty, MidiPropertyGroup, MidiPanel, MidiFileSelector, NLAMidiCopier]
+classes = [NoteActionProperty, InstrumentNoteProperty, InstrumentProperty,
+           AddInstrument, DeleteInstrument, NLAMidiCopier, NLAMidiInstrumentCopier, AddActionToInstrument,
+           RemoveActionFromInstrument, TransposeInstrument,
+           MidiPropertyGroup, MidiPanel, MidiFileSelector, MidiInstrumentPanel]
 
 
 # noinspection PyArgumentList

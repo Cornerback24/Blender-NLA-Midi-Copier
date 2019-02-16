@@ -1,8 +1,18 @@
 # Blender NLA Midi Copier
 Blender add-on for creating midi-driven animations from the Nonlinear Animation view.  Adds a panel to the Nonlinear Animation view that allows for copying an action to each instance of a note in a midi file. For example, actions strips for a selected action could be generated to line up with all of the C4 notes played by a piano. To access the panel, expand the right-side panel in the Nonlinear Action View and select the Midi tab.
-This add-on is being developed for Blender 2.80
 
-### Panel controls:
+An instrument can be defined as a collection of notes and actions.  The instrument is independent of any specific midi file, allowing for defining a set of actions for each note and later syncing them up to a midi file.  To define an instrument, expand the right-side panel in the Nonlinear Action View and select the Midi Instruments tab.
+
+This add-on is being developed for Blender 2.80.
+
+<detalis>
+<summary>
+
+### Midi Panel controls:
+<summary/>
+
+![Midi Panel](images/MidiPanelExample.PNG)
+
 * Choose midi file:
   * Select a midi file.
 * Midi File:
@@ -31,6 +41,70 @@ This add-on is being developed for Blender 2.80
   * The length of the action. Used to determine if the action overlaps another generation action. Defaults to the true length of the action. As an example, if this is set to 50 frames, and two notes are only 30 frames apart, then the action for the second note will be considered to overlap the action for the first note.  The second note's action will either be omitted or copied to a duplicate object, depending on whether Duplicate Object on Overlap is selected. If this value is set to less than the true length of the action, it will be replaced by the true length of the action. This control is not available if no action is selected.
 * Copy Action to Notes:
   * Click this button to generate action scripts from the selected action that line up with all instances of the selected note.
+</detalis>
+
+<details>
+<summary>
+
+### Midi Instrument Panel Controls
+</summary>
+
+![Midi Instrument Panel](images/MidiInstruentPanelExample.PNG)
+
+* Instrument
+  * The selected instrument.  
+
+<details>
+<summary>
+
+#### Properties Box
+</summary>
+
+* Name
+  * The name of the instrument.
+* Default Frame Offset:
+  * The default frame offset used when creating a new action for the instrument.
+* Transpose
+  * \- octave: shift all actions down an octave
+  * \- step: shift all actions down a step
+  * \+ step: shift all actions up a step
+  * \+ octave: shift all actions up an octave
+* Delete \<instrument name\>  
+  * Delete the instrument
+      
+</details>
+
+<details>
+<summary>
+
+#### Notes Box
+</summary>
+
+* Note:
+  * The selected note.  If there are actions associated to the note, the number of actions will be displayed in parentheses. For example, C5 (2) indicates that there are two actions associated to the note C5.
+* Add Action
+  * Adds an action for the selected note.  
+* Action Boxes
+  * Each action for the selected note is displayed in its own box. See the "Midi Panel Controls" section above for explanations of the controls in the action boxes.   
+</details>
+
+<details>
+<summary>
+
+#### Animate Box
+</summary>
+The animate instrument box is not avalable if there is no selected midi file.  Select a midi file in the Midi Panel.
+
+* Track
+  * The track from the midi file to use when animating the instrument.
+* Animate \<instrument name\>
+  * Animate the instrument.  The instrument's actions will be copied to notes from the selected track from the selected midi file.  The midi file is selected in the Midi Panel, and the selected track is selected in the Track field directly above this button.  The First Frame field in the Midi Panel will be used as the frame the midi file starts on.
+</details>
+
+* Create New Instrument
+  * Creates a new instrument.
+
+</details>
 
 
 ### Installation:
