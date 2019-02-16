@@ -7,7 +7,7 @@ else:
     from . import midi_data
 
 import bpy
-from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty
+from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty
 from bpy.types import PropertyGroup
 
 
@@ -50,7 +50,7 @@ def on_copy_to_selected_objects_updated(note_action_property, context):
 
 class NoteActionProperty(PropertyGroup):
     id_type: EnumProperty(
-        items=sorted([(x, x, x) for x in midi_data.ID_PROPERTIES_DICTIONARY.keys()], key=lambda x: x[0], reverse=True),
+        items=sorted([(x, x, x) for x in midi_data.ID_PROPERTIES_DICTIONARY.keys()], key=lambda x: x[0]),
         name="Type", description="Type of object to apply the action to", default="Object", update=on_id_type_updated)
 
     action: PointerProperty(type=bpy.types.Action, name="Action", description="The action to create action strips from",
@@ -60,10 +60,6 @@ class NoteActionProperty(PropertyGroup):
         IntProperty(name="Frame Offset",
                     description="Frame offset when copying strips")
 
-    copy_to_new_track: \
-        BoolProperty(name="Copy to New Track",
-                     description="Place copied actions onto new tracks",
-                     default=True)
     delete_source_action_strip: \
         BoolProperty(name="Delete Source Action",
                      description="Delete the source action after copying",
@@ -93,6 +89,9 @@ class NoteActionProperty(PropertyGroup):
                     description="Length of the action, used to determine if the next action overlaps.\n" +
                                 "This will be ignored if it is shorter than the actual length of the action.")
 
+    # used for display in the instruments panel
+    expanded: BoolProperty(name="Expanded", default=True)
+
     armature: PointerProperty(type=bpy.types.Armature, name="Armature", description="The armature to animate")
     camera: PointerProperty(type=bpy.types.Camera, name="Camera", description="The camera to animate")
     cachefile: PointerProperty(type=bpy.types.CacheFile, name="Cache File", description="The cache file to animate")
@@ -118,8 +117,35 @@ class NoteActionProperty(PropertyGroup):
     world: PointerProperty(type=bpy.types.World, name="World", description="The world to animate")
 
 
+class InstrumentNoteProperty(PropertyGroup):
+    name: StringProperty(name="Name")
+    note_id: IntProperty(name="Note")
+    actions: CollectionProperty(type=NoteActionProperty, name="Actions")
+
+
+class InstrumentProperty(PropertyGroup):
+    name: StringProperty(name="Name")
+    default_midi_frame_offset: IntProperty(name="Default Frame Offset",
+                                           description="Frame offset when copying strips")
+    notes: CollectionProperty(type=InstrumentNoteProperty, name="Notes")
+    selected_note_id: EnumProperty(items=midi_data.get_instrument_notes,
+                                   name="Note", description="Note")
+
+    selected_midi_track: EnumProperty(items=get_tracks_list,
+                                      name="Track",
+                                      description="Selected Midi Track")
+    # properties for drawing the panel
+    properties_expanded: BoolProperty(name="Expanded", default=True)
+    notes_expanded: BoolProperty(name="Expanded", default=True)
+    animate_expanded: BoolProperty(name="Expanded", default=True)
+
+
+def get_midi_file_name(self):
+    return self["midi_file"]
+
+
 class MidiPropertyGroup(PropertyGroup):
-    midi_file: StringProperty(name="Midi File", description="Select Midi File")
+    midi_file: StringProperty(name="Midi File", description="Select Midi File", get=get_midi_file_name)
     notes_list: EnumProperty(items=get_notes_list,
                              name="Note",
                              description="Note")
@@ -131,3 +157,7 @@ class MidiPropertyGroup(PropertyGroup):
         IntProperty(name="First Frame",
                     description="The frame corresponding to the beginning of the midi file",
                     default=1)
+
+    instruments: CollectionProperty(type=InstrumentProperty, name="Instruments")
+    selected_instrument_id: EnumProperty(items=midi_data.get_instruments, name="Instrument",
+                                         description="Select an instrument")
