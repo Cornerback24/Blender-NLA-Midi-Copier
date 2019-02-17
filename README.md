@@ -5,11 +5,13 @@ An instrument can be defined as a collection of notes and actions.  The instrume
 
 This add-on is being developed for Blender 2.80.
 
-<detalis>
-<summary>
 
+<details>
+<summary>
+Midi Panel 
+</summary>
+ 
 ### Midi Panel controls:
-<summary/>
 
 ![Midi Panel](images/MidiPanelExample.PNG)
 
@@ -41,24 +43,24 @@ This add-on is being developed for Blender 2.80.
   * The length of the action. Used to determine if the action overlaps another generation action. Defaults to the true length of the action. As an example, if this is set to 50 frames, and two notes are only 30 frames apart, then the action for the second note will be considered to overlap the action for the first note.  The second note's action will either be omitted or copied to a duplicate object, depending on whether Duplicate Object on Overlap is selected. If this value is set to less than the true length of the action, it will be replaced by the true length of the action. This control is not available if no action is selected.
 * Copy Action to Notes:
   * Click this button to generate action scripts from the selected action that line up with all instances of the selected note.
-</detalis>
+
+</details>  
 
 <details>
 <summary>
-
-### Midi Instrument Panel Controls
+Midi Instrument Panel 
 </summary>
+ 
+### Midi Instrument Panel Controls
 
 ![Midi Instrument Panel](images/MidiInstruentPanelExample.PNG)
 
 * Instrument
   * The selected instrument.  
 
-<details>
-<summary>
 
 #### Properties Box
-</summary>
+
 
 * Name
   * The name of the instrument.
@@ -72,13 +74,10 @@ This add-on is being developed for Blender 2.80.
 * Delete \<instrument name\>  
   * Delete the instrument
       
-</details>
 
-<details>
-<summary>
 
 #### Notes Box
-</summary>
+
 
 * Note:
   * The selected note.  If there are actions associated to the note, the number of actions will be displayed in parentheses. For example, C5 (2) indicates that there are two actions associated to the note C5.
@@ -86,26 +85,22 @@ This add-on is being developed for Blender 2.80.
   * Adds an action for the selected note.  
 * Action Boxes
   * Each action for the selected note is displayed in its own box. See the "Midi Panel Controls" section above for explanations of the controls in the action boxes.   
-</details>
 
-<details>
-<summary>
 
 #### Animate Box
-</summary>
+
 The animate instrument box is not avalable if there is no selected midi file.  Select a midi file in the Midi Panel.
 
 * Track
   * The track from the midi file to use when animating the instrument.
 * Animate \<instrument name\>
   * Animate the instrument.  The instrument's actions will be copied to notes from the selected track from the selected midi file.  The midi file is selected in the Midi Panel, and the selected track is selected in the Track field directly above this button.  The First Frame field in the Midi Panel will be used as the frame the midi file starts on.
-</details>
+
 
 * Create New Instrument
   * Creates a new instrument.
-
-</details>
-
+  
+</details>  
 
 ### Installation:
 * Installation is the normal installation process for multi-file add-ons.
