@@ -24,7 +24,6 @@ def update_midi_file(midi_filename, force_update):
     global notes_list_dict
     global track_list
     global current_midi_filename
-    print("updating {0} {1}".format(current_midi_filename, midi_filename))
     if midi_filename is None:
         midi_data = None
         return
