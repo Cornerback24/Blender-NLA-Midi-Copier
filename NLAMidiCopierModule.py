@@ -25,8 +25,8 @@ class NoteActionCopier:
             max(self.action.frame_range[1] - self.action.frame_range[0], note_action_property.action_length)
         self.note_action_track_name = note_action_property.nla_track_name
 
-        id_type = note_action_property.id_type
-        animated_object_property = midi_data.ID_PROPERTIES_DICTIONARY[id_type][0]
+        self.id_type = note_action_property.id_type
+        animated_object_property = midi_data.ID_PROPERTIES_DICTIONARY[self.id_type][0]
         self.animated_object = getattr(note_action_property, animated_object_property)
 
     @staticmethod
@@ -43,7 +43,7 @@ class NoteActionCopier:
         return notes
 
     def copy_notes_to_object_with_duplication(self, track_name, notes):
-        nla_track = NoteActionCopier.create_nla_track(self.animated_object, track_name)
+        nla_track = self.create_nla_track(track_name)
         # list of [nla_track, [frames], last_frame]
         actions_to_copy = []
 
@@ -69,7 +69,7 @@ class NoteActionCopier:
                                                  x.name == track_name and len(x.strips) == 0), None)
                 # create a new track if the duplicated track wasn't found
                 if duplicated_nla_track is None:
-                    duplicated_nla_track = NoteActionCopier.create_nla_track(duplicated_object, track_name)
+                    duplicated_nla_track = self.create_nla_track(duplicated_object)
 
                 actions_to_copy.append([duplicated_nla_track, [first_frame], last_frame])
             else:
@@ -82,7 +82,7 @@ class NoteActionCopier:
                 NoteActionCopier.copy_action(frame, self.action, nla_track)
 
     def copy_notes_to_object_no_duplication(self, track_name, notes):
-        nla_track = NoteActionCopier.create_nla_track(self.animated_object, track_name)
+        nla_track = self.create_nla_track(track_name)
         last_frame = -1 - self.action_length  # initialize to frame before any actions will be copied to
 
         for note in notes:
@@ -124,9 +124,11 @@ class NoteActionCopier:
         original_object.select_set(False)
         return duplicated_object
 
-    @staticmethod
-    def create_nla_track(animated_object, track_name):
-        animation_data = NoteActionCopier.get_animation_data(animated_object)
+    def create_nla_track(self, track_name):
+        if self.action.id_root == "NODETREE":
+            animation_data = NoteActionCopier.get_animation_data(self.animated_object.node_tree)
+        else:
+            animation_data = NoteActionCopier.get_animation_data(self.animated_object)
         nla_track = animation_data.nla_tracks.new()
         nla_track.name = track_name
         return nla_track

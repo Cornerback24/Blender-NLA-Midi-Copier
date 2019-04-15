@@ -21,7 +21,7 @@ def get_notes_list(self, context):
 
 def action_poll(note_action_property, action):
     id_root = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][1]
-    return action.id_root == id_root
+    return action.id_root == id_root or (action.id_root == "NODETREE" and id_root in midi_data.note_tree_types)
 
 
 def on_id_type_updated(note_action_property, context):
