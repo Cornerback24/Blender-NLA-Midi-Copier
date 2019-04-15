@@ -134,21 +134,25 @@ def selected_instrument(context):
 # key is display name, value is (NoteActionProperty field name, Action id_root)
 ID_PROPERTIES_DICTIONARY = {"Armature": ("armature", "ARMATURE"),
                             "Camera": ("camera", "CAMERA"),
-                            "Cache File": ("cachefile", "CACHEFILE"),
+                            # "Cache File": ("cachefile", "CACHEFILE"),
                             "Curve": ("curve", "CURVE"),
-                            "Grease Pencil": ("greasepencil", "GREASEPENCIL"),
+                            # "Grease Pencil": ("greasepencil", "GREASEPENCIL"),
                             "Key": ("key", "KEY"),
                             "Lattice": ("lattice", "LATTICE"),
                             "Light": ("light", "LIGHT"),
+                            "Light Probe": ("light_probe", "LIGHT_PROBE"),
                             "Mask": ("mask", "MASK"),
                             "Material": ("material", "MATERIAL"),
                             "MetaBall": ("meta", "META"),
                             "Mesh": ("mesh", "MESH"),
                             "Movie Clip": ("movieclip", "MOVIECLIP"),
-                            "Node Tree": ("nodetree", "NODETREE"),
+                            # "Node Tree": ("nodetree", "NODETREE"),
                             "Object": ("object", "OBJECT"),
-                            "Light Probe": ("light_probe", "LIGHT_PROBE"),
                             "Scene": ("scene", "SCENE"),
                             "Speaker": ("speaker", "SPEAKER"),
                             "Texture": ("texture", "TEXTURE"),
                             "World": ("world", "WORLD")}
+
+# node trees don't show up in the selector,
+# so applying an action is done by selecting the object the node tree belongs to
+note_tree_types = "MATERIAL, TEXTURE, WORLD, SCENE, LIGHT"
