@@ -50,6 +50,7 @@ class MidiPanel(bpy.types.Panel):
     bl_region_type = "UI"
     bl_category = "Midi"
     bl_label = "NLA Midi"
+    bl_idname = "ANIMATION_PT_midi_panel"
 
     def draw(self, context):
         col = self.layout.column(align=True)
@@ -109,6 +110,7 @@ class MidiInstrumentPanel(bpy.types.Panel):
     bl_region_type = "UI"
     bl_category = "Midi Instruments"
     bl_label = "NLA Midi Instruments"
+    bl_idname = "ANIMATION_PT_midi_instrument_panel"
 
     def draw(self, context):
         col = self.layout.column(align=True)
