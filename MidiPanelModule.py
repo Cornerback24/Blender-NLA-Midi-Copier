@@ -25,7 +25,7 @@ from bpy.props import EnumProperty
 class MidiFileSelector(bpy.types.Operator):
     bl_idname = "ops.midi_file_selector"
     bl_label = "Midi File Selector"
-    # noinspection PyArgumentList
+    # noinspection PyArgumentList,PyUnresolvedReferences
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
@@ -82,7 +82,7 @@ class MidiPanel(bpy.types.Panel):
 
     @staticmethod
     def draw_note_action_common(parent_layout, col, note_action_property, midi_data_property=None):
-        is_main_property = midi_data_property is not None
+        is_main_property = midi_data_property is not None  # false if this is part of a instrument
         col.prop(note_action_property, "id_type")
         if note_action_property.id_type is not None:
             col.prop(note_action_property, midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][0])

@@ -21,7 +21,8 @@ def get_notes_list(self, context):
 
 def action_poll(note_action_property, action):
     id_root = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][1]
-    return action.id_root == id_root or (action.id_root == "NODETREE" and id_root in midi_data.note_tree_types)
+    return action.id_root == id_root or (
+                action.id_root == "NODETREE" and id_root in midi_data.midi_data.note_tree_types)
 
 
 def on_id_type_updated(note_action_property, context):
@@ -141,10 +142,13 @@ class InstrumentProperty(PropertyGroup):
 
 
 def get_midi_file_name(self):
-    return self["midi_file"]
+    if "midi_file" in self:
+        return self["midi_file"]
+    return ""
 
 
 class MidiPropertyGroup(PropertyGroup):
+    # defining get= (and not set=) disables editing in the UI
     midi_file: StringProperty(name="Midi File", description="Select Midi File", get=get_midi_file_name)
     notes_list: EnumProperty(items=get_notes_list,
                              name="Note",
