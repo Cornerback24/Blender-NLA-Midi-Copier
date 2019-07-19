@@ -29,19 +29,6 @@ class NoteActionCopier:
         animated_object_property = midi_data.ID_PROPERTIES_DICTIONARY[self.id_type][0]
         self.animated_object = getattr(note_action_property, animated_object_property)
 
-    @staticmethod
-    def get_notes(track_id, note_id):
-        """
-        :return: list of all of the notes from the current midi file matching the track and note, sorted by time
-        """
-
-        track = next((x for x in midi_data.midi_data.tracks if x.name == track_id), None)
-
-        notes = [x for x in track.notes if Note.PITCH_DICTIONARY[x.pitch] == note_id]
-
-        notes.sort()
-        return notes
-
     def copy_notes_to_object_with_duplication(self, track_name, notes):
         nla_track = self.create_nla_track(track_name)
         # list of [nla_track, [frames], last_frame]
@@ -98,7 +85,7 @@ class NoteActionCopier:
         track_name = self.note_action_track_name
         if track_name is None or len(track_name) == 0:
             track_name = note_id + " - " + track_id
-        notes = NoteActionCopier.get_notes(track_id, note_id)
+        notes = midi_data.MidiDataUtil.get_notes(track_id,   note_id, midi_data.midi_data)
 
         if self.duplicate_on_overlap:
             self.copy_notes_to_object_with_duplication(track_name, notes)
@@ -111,6 +98,10 @@ class NoteActionCopier:
             self.copy_notes_to_object(track_id, note_id)
 
     def first_frame(self, note):
+        """
+        :param note: Note object
+        :return: the first frame for an action syncing up to this note
+        """
         return (note.startTime / 1000) * self.frames_per_second + self.frame_offset
 
     @staticmethod
