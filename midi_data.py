@@ -1,5 +1,6 @@
 from .midi_analysis.Note import Note
 from .midi_analysis.MidiData import MidiData
+import math
 
 
 def update_midi_file(midi_filename, force_update):
@@ -109,6 +110,16 @@ class MidiDataUtil:
 
         notes.sort()
         return notes
+
+    @staticmethod
+    def note_length_frames(note, frames_per_second):
+        """
+        :param note: the Note to get the length of
+        :param frames_per_second: project's frames per second
+        :return: the length of the note in frames rounded to the nearest frame
+        """
+        # note.length() is in ms
+        return math.floor((note.length() / 1000) * frames_per_second)
 
 
 class LoadedMidiData:

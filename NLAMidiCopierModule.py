@@ -15,14 +15,19 @@ class NoteActionCopier:
     def __init__(self, note_action_property, context):
         midi_data_property = context.scene.midi_data_property
         self.context = context
-        self.frame_offset = (midi_data_property.midi_frame_start - 1) + note_action_property.midi_frame_offset
+        self.frame_offset = midi_data_property.midi_frame_start + note_action_property.midi_frame_offset
         self.frames_per_second = context.scene.render.fps
         self.context = context
         self.duplicate_on_overlap = note_action_property.id_type == "Object" and \
                                     note_action_property.duplicate_object_on_overlap
+        self.scale_to_note_length = note_action_property.sync_length_with_notes
+        self.scale_factor = note_action_property.scale_factor
         self.action = note_action_property.action
+        # actual length of the action
+        self.true_action_length = self.action.frame_range[1] - self.action.frame_range[0]
+        # action length as set by the note action property
         self.action_length = None if self.action is None else \
-            max(self.action.frame_range[1] - self.action.frame_range[0], note_action_property.action_length)
+            max(self.true_action_length, note_action_property.action_length)
         self.note_action_track_name = note_action_property.nla_track_name
 
         self.id_type = note_action_property.id_type
@@ -30,19 +35,22 @@ class NoteActionCopier:
         self.animated_object = getattr(note_action_property, animated_object_property)
 
     def copy_notes_to_object_with_duplication(self, track_name, notes):
+        if not notes:
+            return  # no notes to copy, do nothing
         nla_track = self.create_nla_track(track_name)
-        # list of [nla_track, [frames], last_frame]
+        # list of [nla_track, [(frame, scale_factor)], last_frame]
         actions_to_copy = []
 
-        first_note = next(iter(notes), None)
-        if first_note is not None:
-            first_frame = self.first_frame(first_note)
-            last_frame = first_frame + self.action_length
-            actions_to_copy.append([nla_track, [first_frame], last_frame])
+        first_note = notes[0]
+        first_frame = self.first_frame(first_note)
+        copied_action_length = self.note_action_length(first_note)
+        last_frame = first_frame + copied_action_length
+        actions_to_copy.append([nla_track, [(first_frame, self.note_scale_factor(copied_action_length))], last_frame])
 
         for note in notes[1:]:
             first_frame = self.first_frame(note)
-            last_frame = first_frame + self.action_length
+            copied_action_length = self.note_action_length(note)
+            last_frame = first_frame + copied_action_length
             # track_info is [nla_track, [frames], last_frame]
             track_info = next((x for x in actions_to_copy if first_frame > x[2]), None)
             if track_info is None:
@@ -58,26 +66,60 @@ class NoteActionCopier:
                 if duplicated_nla_track is None:
                     duplicated_nla_track = self.create_nla_track(duplicated_object)
 
-                actions_to_copy.append([duplicated_nla_track, [first_frame], last_frame])
+                actions_to_copy.append(
+                    [duplicated_nla_track, [(first_frame, self.note_scale_factor(copied_action_length))], last_frame])
             else:
-                track_info[1].append(first_frame),
+                track_info[1].append((first_frame, self.note_scale_factor(copied_action_length))),
                 track_info[2] = last_frame
 
         for x in actions_to_copy:
             nla_track = x[0]
-            for frame in x[1]:
-                NoteActionCopier.copy_action(frame, self.action, nla_track)
+            for frame_and_scale_factor in x[1]:
+                NoteActionCopier.copy_action(frame_and_scale_factor[0], self.action, nla_track,
+                                             frame_and_scale_factor[1])
 
     def copy_notes_to_object_no_duplication(self, track_name, notes):
+        if not notes:
+            return  # no notes to copy, do nothing
+
         nla_track = self.create_nla_track(track_name)
-        last_frame = -1 - self.action_length  # initialize to frame before any actions will be copied to
+        copied_action_length = self.note_action_length(notes[0])
+
+        last_frame = -1 - copied_action_length  # initialize to frame before any actions will be copied to
+        scale_factor = 1
 
         for note in notes:
             first_frame = self.first_frame(note)
             # check for action overlap
             if first_frame - last_frame > 0:
-                last_frame = first_frame + self.action_length
-                NoteActionCopier.copy_action(first_frame, self.action, nla_track)
+                if self.scale_to_note_length:
+                    copied_action_length = self.note_action_length(note)
+                    scale_factor = self.note_scale_factor(copied_action_length)
+                last_frame = first_frame + copied_action_length
+                NoteActionCopier.copy_action(first_frame, self.action, nla_track, scale_factor)
+
+    def note_action_length(self, note):
+        """
+        :param note: Note object
+        :return: length of the action to sync with the note, in frames
+        """
+        return self.note_length_frames(note) * self.scale_factor \
+            if self.scale_to_note_length else self.action_length
+
+    def note_scale_factor(self, copied_action_length):
+        """
+        :param copied_action_length: length of the action after being copied
+        :return: the scale factor to apply to the original action to set its length to copied_action_length
+        """
+        return copied_action_length / self.true_action_length
+
+    def note_length_frames(self, note):
+        """
+        :param note: Note object
+        :return: length of the Note in frames
+        """
+        return midi_data.MidiDataUtil.note_length_frames(note, self.frames_per_second) \
+            if self.scale_to_note_length else self.action_length
 
     def copy_notes_to_object(self, track_id, note_id):
         if self.action is None or self.animated_object is None:
@@ -85,7 +127,7 @@ class NoteActionCopier:
         track_name = self.note_action_track_name
         if track_name is None or len(track_name) == 0:
             track_name = note_id + " - " + track_id
-        notes = midi_data.MidiDataUtil.get_notes(track_id,   note_id, midi_data.midi_data)
+        notes = midi_data.MidiDataUtil.get_notes(track_id, note_id, midi_data.midi_data)
 
         if self.duplicate_on_overlap:
             self.copy_notes_to_object_with_duplication(track_name, notes)
@@ -133,9 +175,10 @@ class NoteActionCopier:
         return animation_data
 
     @staticmethod
-    def copy_action(frame, action, nla_track):
+    def copy_action(frame, action, nla_track, scale_factor):
         nla_strips = nla_track.strips
-        nla_strips.new(str(frame) + ' ' + action.name, frame, action)
+        copied_strip = nla_strips.new(str(frame) + ' ' + action.name, frame, action)
+        copied_strip.scale = scale_factor
 
 
 class NLAMidiCopier(bpy.types.Operator):

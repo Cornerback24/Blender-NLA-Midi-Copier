@@ -18,7 +18,7 @@ from bpy.props import EnumProperty
 
 class DopeSheetMidiFileSelector(bpy.types.Operator):
     bl_idname = "ops.dope_sheet_midi_file_selector"
-    bl_label = "Midi File Selector"
+    bl_label = "Select Midi File"
     # noinspection PyArgumentList,PyUnresolvedReferences
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 

@@ -7,7 +7,8 @@ else:
     from . import midi_data
 
 import bpy
-from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty
+from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
+    FloatProperty
 from bpy.types import PropertyGroup
 
 
@@ -22,7 +23,7 @@ def get_notes_list(self, context):
 def action_poll(note_action_property, action):
     id_root = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][1]
     return action.id_root == id_root or (
-                action.id_root == "NODETREE" and id_root in midi_data.midi_data.note_tree_types)
+            action.id_root == "NODETREE" and id_root in midi_data.midi_data.note_tree_types)
 
 
 def on_id_type_updated(note_action_property, context):
@@ -80,6 +81,12 @@ class NoteActionProperty(PropertyGroup):
                      description="Copy the action to a duplicated object if it overlaps another action",
                      default=False)
 
+    sync_length_with_notes: \
+        BoolProperty(name="Sync Length with Notes",
+                     description="Scale the copies NLA strips so that their lengths match the lengths of the notes "
+                                 "they are copied to",
+                     default=False)
+
     copy_to_selected_objects: \
         BoolProperty(name="Copy Action to Selected Objects",
                      description="Copy the action to all selected objects.",
@@ -88,7 +95,15 @@ class NoteActionProperty(PropertyGroup):
     action_length: \
         IntProperty(name="Action Length (Frames)",
                     description="Length of the action, used to determine if the next action overlaps.\n" +
-                                "This will be ignored if it is shorter than the actual length of the action.")
+                                "This will be ignored if it is shorter than the actual length of the action")
+
+    scale_factor: \
+        FloatProperty(name="Scale Factor",
+                      description="Scale factor for scaling to the note's length. "
+                                  "For example, a scale factor of 1 will scale to the note's length, "
+                                  "a scale factor of 2 will scale to twice the note's length, " +
+                                  "and a scale factor of 0.5 will scale to half the note's length",
+                      min=0.0000001, max=1000000, soft_min=0.0000001, soft_max=1000000, default=1)
 
     # used for display in the instruments panel
     expanded: BoolProperty(name="Expanded", default=True)
