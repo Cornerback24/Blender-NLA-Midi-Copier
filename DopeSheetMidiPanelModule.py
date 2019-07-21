@@ -77,8 +77,12 @@ class DopeSheetMidiPanel(bpy.types.Panel):
 
         col.prop(dope_sheet_note_action_property, "delete_source_keyframes")
         col.prop(dope_sheet_note_action_property, "skip_overlaps")
+        col.prop(dope_sheet_note_action_property, "sync_length_with_notes")
         col.prop(midi_data_property, "midi_frame_start")
         col.prop(dope_sheet_note_action_property, "midi_frame_offset")
+
+        if dope_sheet_note_action_property.sync_length_with_notes:
+            col.prop(dope_sheet_note_action_property, "scale_factor")
 
         self.layout.separator()
         col = self.layout.column(align=True)
