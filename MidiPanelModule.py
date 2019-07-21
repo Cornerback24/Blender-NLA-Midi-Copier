@@ -24,7 +24,7 @@ from bpy.props import EnumProperty
 
 class MidiFileSelector(bpy.types.Operator):
     bl_idname = "ops.midi_file_selector"
-    bl_label = "Midi File Selector"
+    bl_label = "Select Midi File"
     # noinspection PyArgumentList,PyUnresolvedReferences
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
@@ -95,14 +95,17 @@ class MidiPanel(bpy.types.Panel):
         if is_main_property:
             col.prop(note_action_property, "copy_to_selected_objects")
         col.prop(note_action_property, "duplicate_object_on_overlap")
+        col.prop(note_action_property, "sync_length_with_notes")
 
         col = parent_layout.column(align=True)
         col.prop(note_action_property, "nla_track_name")
         if is_main_property:
             col.prop(midi_data_property, "midi_frame_start")
         col.prop(note_action_property, "midi_frame_offset")
-        if note_action_property.action is not None:
+        if note_action_property.action is not None and not note_action_property.sync_length_with_notes:
             col.prop(note_action_property, "action_length")
+        if note_action_property.sync_length_with_notes:
+            col.prop(note_action_property, "scale_factor")
 
 
 class MidiInstrumentPanel(bpy.types.Panel):
