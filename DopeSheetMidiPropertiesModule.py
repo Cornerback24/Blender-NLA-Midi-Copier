@@ -6,7 +6,8 @@ if "bpy" in locals():
 else:
     from . import midi_data
 
-    from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty
+    from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
+        FloatProperty
     from bpy.types import PropertyGroup
 
 
@@ -37,6 +38,20 @@ class DopeSheetNoteActionProperty(PropertyGroup):
                      description="Skip notes if the first frame would be at or "
                                  "before the last frame of the previous note",
                      default=False)
+
+    sync_length_with_notes: \
+        BoolProperty(name="Sync Length with Notes",
+                     description="Scale the copied keyframes' spacing so that the length matches the "
+                                 "lengths of the notes they are copied to",
+                     default=False)
+
+    scale_factor: \
+        FloatProperty(name="Scale Factor",
+                      description="Scale factor for scaling to the note's length. "
+                                  "For example, a scale factor of 1 will scale to the note's length, "
+                                  "a scale factor of 2 will scale to twice the note's length, " +
+                                  "and a scale factor of 0.5 will scale to half the note's length",
+                      min=0.0000001, max=1000000, soft_min=0.0000001, soft_max=1000000, default=1)
 
 
 class DopeSheetMidiPropertyGroup(PropertyGroup):

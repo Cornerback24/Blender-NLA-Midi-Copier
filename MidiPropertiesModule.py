@@ -83,7 +83,7 @@ class NoteActionProperty(PropertyGroup):
 
     sync_length_with_notes: \
         BoolProperty(name="Sync Length with Notes",
-                     description="Scale the copies NLA strips so that their lengths match the lengths of the notes "
+                     description="Scale the copied NLA strips so that their lengths match the lengths of the notes "
                                  "they are copied to",
                      default=False)
 
