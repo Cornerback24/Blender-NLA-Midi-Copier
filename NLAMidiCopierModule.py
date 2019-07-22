@@ -234,8 +234,31 @@ class NLAMidiInstrumentCopier(bpy.types.Operator):
 
     def action_common(self, context):
         instrument = midi_data.selected_instrument(context)
+        self.animate_instrument(context, instrument)
+
+    @staticmethod
+    def animate_instrument(context, instrument):
         track_id = instrument.selected_midi_track
         for instrument_note in instrument.notes:
             note_id = instrument_note.note_id
             for note_action in instrument_note.actions:
                 NoteActionCopier(note_action, context).copy_notes_to_object(track_id, Note.PITCH_DICTIONARY[note_id])
+
+
+class NLAMidiAllInstrumentCopier(bpy.types.Operator):
+    bl_idname = "ops.nla_midi_all_instrument_copier"
+    bl_label = "Animate All Instruments"
+    bl_description = "Animate All Instruments"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        self.action_common(context)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        self.action_common(context)
+        return {'FINISHED'}
+
+    def action_common(self, context):
+        for instrument in context.scene.midi_data_property.instruments:
+            NLAMidiInstrumentCopier.animate_instrument(context, instrument)

@@ -15,7 +15,7 @@ else:
     from . import MidiInstrumentModule
 
 import bpy
-from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier
+from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier
 from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToInstrument, RemoveActionFromInstrument, \
     TransposeInstrument
 from . import midi_data
@@ -130,6 +130,7 @@ class MidiInstrumentPanel(bpy.types.Panel):
         self.layout.separator()
         col = self.layout.column(align=True)
         col.operator(AddInstrument.bl_idname)
+        col.operator(NLAMidiAllInstrumentCopier.bl_idname)
 
     def draw_animate_instrument(self, context, instrument):
         if context.scene.midi_data_property.midi_file:
