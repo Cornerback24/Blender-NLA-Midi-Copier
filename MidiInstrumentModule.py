@@ -11,7 +11,7 @@ import bpy
 class AddInstrument(bpy.types.Operator):
     bl_idname = "ops.nla_midi_add_instrument"
     bl_label = "Create New Instrument"
-    bl_description = "Create a new instrument.  An instrument defines one or many actions for each note."
+    bl_description = "Create a new instrument.  An instrument defines one or many actions for each note"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):

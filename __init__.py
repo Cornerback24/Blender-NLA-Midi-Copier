@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 5, 0),
+        "version": (0, 5, 1),
         "blender": (2, 80, 0),
         "location": "View NLA Editor > Tool Shelf",
         "description": "Copy actions to action strips based on midi file input",
@@ -41,7 +41,7 @@ else:
 import bpy
 from bpy.props import PointerProperty
 from bpy.types import NlaStrip
-from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier
+from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier
 from .DopeSheetMidiCopierModule import DopeSheetMidiCopier
 from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToInstrument, RemoveActionFromInstrument, \
     TransposeInstrument
@@ -53,8 +53,8 @@ from .MidiPanelModule import MidiFileSelector
 from .DopeSheetMidiPanelModule import DopeSheetMidiFileSelector
 
 classes = [NoteActionProperty, InstrumentNoteProperty, InstrumentProperty,
-           AddInstrument, DeleteInstrument, NLAMidiCopier, NLAMidiInstrumentCopier, AddActionToInstrument,
-           RemoveActionFromInstrument, TransposeInstrument,
+           AddInstrument, DeleteInstrument, NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier,
+           AddActionToInstrument, RemoveActionFromInstrument, TransposeInstrument,
            MidiPropertyGroup, MidiPanel, MidiFileSelector, MidiInstrumentPanel,
            DopeSheetNoteActionProperty,
            DopeSheetMidiFileSelector, DopeSheetMidiCopier, DopeSheetMidiPropertyGroup, DopeSheetMidiPanel]
