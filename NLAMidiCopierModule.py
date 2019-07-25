@@ -37,7 +37,7 @@ class NoteActionCopier:
     def copy_notes_to_object_with_duplication(self, track_name, notes):
         if not notes:
             return  # no notes to copy, do nothing
-        nla_track = self.create_nla_track(track_name)
+        nla_track = self.create_nla_track(self.animated_object, track_name)
         # list of [nla_track, [(frame, scale_factor)], last_frame]
         actions_to_copy = []
 
@@ -64,7 +64,7 @@ class NoteActionCopier:
                                                  x.name == track_name and len(x.strips) == 0), None)
                 # create a new track if the duplicated track wasn't found
                 if duplicated_nla_track is None:
-                    duplicated_nla_track = self.create_nla_track(duplicated_object)
+                    duplicated_nla_track = self.create_nla_track(duplicated_object, track_name)
 
                 actions_to_copy.append(
                     [duplicated_nla_track, [(first_frame, self.note_scale_factor(copied_action_length))], last_frame])
@@ -82,7 +82,7 @@ class NoteActionCopier:
         if not notes:
             return  # no notes to copy, do nothing
 
-        nla_track = self.create_nla_track(track_name)
+        nla_track = self.create_nla_track(self.animated_object, track_name)
         copied_action_length = self.note_action_length(notes[0])
 
         last_frame = -1 - copied_action_length  # initialize to frame before any actions will be copied to
@@ -157,11 +157,11 @@ class NoteActionCopier:
         original_object.select_set(False)
         return duplicated_object
 
-    def create_nla_track(self, track_name):
+    def create_nla_track(self, animated_object, track_name):
         if self.action.id_root == "NODETREE":
-            animation_data = NoteActionCopier.get_animation_data(self.animated_object.node_tree)
+            animation_data = NoteActionCopier.get_animation_data(animated_object.node_tree)
         else:
-            animation_data = NoteActionCopier.get_animation_data(self.animated_object)
+            animation_data = NoteActionCopier.get_animation_data(animated_object)
         nla_track = animation_data.nla_tracks.new()
         nla_track.name = track_name
         return nla_track
