@@ -95,6 +95,7 @@ class MidiPanel(bpy.types.Panel):
         if is_main_property:
             col.prop(note_action_property, "copy_to_selected_objects")
         col.prop(note_action_property, "duplicate_object_on_overlap")
+        col = parent_layout.column(align=True)
         col.prop(note_action_property, "sync_length_with_notes")
 
         col = parent_layout.column(align=True)
