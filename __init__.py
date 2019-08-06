@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 5, 2),
+        "version": (0, 5, 3),
         "blender": (2, 80, 0),
         "location": "View NLA Editor > Tool Shelf",
         "description": "Copy actions to action strips based on midi file input",

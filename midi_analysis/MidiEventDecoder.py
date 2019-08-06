@@ -60,7 +60,7 @@ class MidiEventDecoder:
             return systemEvent
         # Channel Event
         if Util.msbIsOne(midiData):  # running status
-            self.lastChannelStatusByte = midiData[0]
+            self.lastChannelStatusByte = midiData[0:1]
         else:  # not running status
             midiData = self.lastChannelStatusByte + midiData
         channelEventIdentifier = midiData[0] & int('f0', 16)
