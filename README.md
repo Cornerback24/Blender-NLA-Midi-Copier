@@ -106,4 +106,4 @@ The animate instrument box is not avalable if there is no selected midi file.  S
 * Installation is the normal installation process for multi-file add-ons.
   * Option 1: Download as a zip file. In Blender, go to Edit > Preferences > Add-ons, and click Install.  Select the zip file and click Install Add-on from File.
   * Option 2: Clone into the 2.80/scripts/addons directory in the Blender installation.
-* To enable the add-on, in Blender, go to Edit > Preferences > Add-ons, and select Animation in the drop-down. Check the box next to the add-on to enable it.
+* To enable the add-on, in Blender, go to Edit > Preferences > Add-ons, and select Animation in the drop-down. Select Community at the top if it isn't already selected. Check the box next to the add-on to enable it.
