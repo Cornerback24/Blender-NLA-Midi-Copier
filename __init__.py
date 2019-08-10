@@ -6,9 +6,10 @@ bl_info = \
         "blender": (2, 80, 0),
         "location": "View NLA Editor > Tool Shelf",
         "description": "Copy actions to action strips based on midi file input",
-        "wiki_url": "",
-        "tracker_url": "",
-        "category": "Animation",
+        "wiki_url": "https://github.com/Cornerback24/Blender-NLA-Midi-Copier#blender-nla-midi-copier",
+        "tracker_url": "https://github.com/Cornerback24/Blender-NLA-Midi-Copier/issues",
+        "support": "COMMUNITY",
+        "category": "Animation"
     }
 
 if "bpy" in locals():
