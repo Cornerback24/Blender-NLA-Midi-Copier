@@ -3,8 +3,11 @@ if "bpy" in locals():
 
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(midi_data)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(NoteFilterImplementations)
 else:
     from . import midi_data
+    from . import NoteFilterImplementations
 
 import bpy
 from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
@@ -12,12 +15,16 @@ from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, P
 from bpy.types import PropertyGroup
 
 
+def get_all_notes(self, context):
+    return midi_data.midi_data.get_all_notes(context)
+
+
 def get_tracks_list(self, context):
     return midi_data.get_tracks_list(self, context)
 
 
 def get_notes_list(self, context):
-    return midi_data.get_notes_list(self, context)
+    return midi_data.midi_data.get_notes_list(self, context)
 
 
 def action_poll(note_action_property, action):
@@ -48,6 +55,34 @@ def on_copy_to_selected_objects_updated(note_action_property, context):
     if note_action_property.copy_to_selected_objects:
         # either copy to note_action_property.object or to selected objects, not both
         note_action_property.object = None
+
+
+COMPARISON_ENUM_PROPERTY_ITEMS = [("less_than", "<", "Less than"),
+                                  ("less_than_or_equal_to", "<=", "Less than or equal to"),
+                                  ("equal_to", "=", "Equal to"),
+                                  ("greater_than_or_equal_to", ">=", "Greater than or equal to"),
+                                  ("greater_than", ">", "Greater than")]
+
+TIME_UNITS = [("frames", "Frames", "Frames"),
+              ("seconds", "Seconds", "Seconds")]
+
+
+class NoteFilterProperty(PropertyGroup):
+    filter_type: EnumProperty(items=NoteFilterImplementations.FILTER_ENUM_PROPERTY_ITEMS, name="Filter Type",
+                              description="Filter Type")
+    comparison_operator: EnumProperty(items=COMPARISON_ENUM_PROPERTY_ITEMS, name="Comparison Operator",
+                                      description="Comparison Operator", default="equal_to")
+    note_pitch: EnumProperty(items=get_all_notes, name="Pitch", description="Pitch")
+    non_negative_int: IntProperty(name="Non Negative Int", description="Non-negative integer", min=0)
+    positive_int: IntProperty(name="Positive Int", description="Positive Integer", min=1, default=1)
+    positive_int_2: IntProperty(name="Positive Int", description="Positive Integer", min=1, default=1)
+    non_negative_number: FloatProperty(name="Non negative number", description="Non negative number", min=0.0)
+    time_unit: EnumProperty(items=TIME_UNITS, name="Time unit", description="Time unit", default="frames")
+
+
+class NoteFilterGroup(PropertyGroup):
+    note_filters: CollectionProperty(type=NoteFilterProperty, name="Note Filters")
+    expanded: BoolProperty(name="Expanded", default=True)
 
 
 class NoteActionProperty(PropertyGroup):
@@ -86,6 +121,15 @@ class NoteActionProperty(PropertyGroup):
                      description="Scale the copied NLA strips so that their lengths match the lengths of the notes "
                                  "they are copied to",
                      default=False)
+
+    add_filters: \
+        BoolProperty(name="Add filters",
+                     description="Add filters to exclude notes",
+                     default=False)
+
+    filters_expanded: BoolProperty(name="Expanded", default=True)
+
+    note_filter_groups: CollectionProperty(type=NoteFilterGroup, name="Note Filter Groups")
 
     copy_to_selected_objects: \
         BoolProperty(name="Copy Action to Selected Objects",
@@ -139,6 +183,18 @@ class InstrumentNoteProperty(PropertyGroup):
     actions: CollectionProperty(type=NoteActionProperty, name="Actions")
 
 
+TRANSPOSE_FILTER_ITEMS = \
+    [("no_transpose", "Do not transpose", "Do not transpose"),
+     ("transpose_if_possible_leave_all_inclusive", "Transpose if possible except all-inclusive",
+      "Transpose filters if possible. Does not transpose filters that can't be transposed due to range constraints. "
+      "Does not transpose filters than include every pitch"),
+     ("transpose_if_possible", "Transpose if possible",
+      "Transpose filters if possible. Does not transpose filters that can't be transposed due to range constraints"),
+     ("transpose_all_leave_all_inclusive", "Transpose all except all-inclusive",
+      "Transpose all filters except for filters than include every pitch"),
+     ("transpose_all", "Transpose all", "Transpose all filters")]
+
+
 class InstrumentProperty(PropertyGroup):
     name: StringProperty(name="Name")
     default_midi_frame_offset: IntProperty(name="Default Frame Offset",
@@ -154,12 +210,22 @@ class InstrumentProperty(PropertyGroup):
     properties_expanded: BoolProperty(name="Expanded", default=True)
     notes_expanded: BoolProperty(name="Expanded", default=True)
     animate_expanded: BoolProperty(name="Expanded", default=True)
+    transpose_filters: EnumProperty(items=TRANSPOSE_FILTER_ITEMS, name="Transpose Filters",
+                                    description="Set how pitch filters will be transposed",
+                                    default="transpose_all_leave_all_inclusive")
 
 
 def get_midi_file_name(self):
     if "midi_file" in self:
         return self["midi_file"]
     return ""
+
+
+middle_c_options = [("C3", "C3", "C3"), ("C4", "C4", "C4"), ("C5", "C5", "C5")]
+
+
+def update_middle_c(self, context):
+    midi_data.midi_data.middle_c_id = self.middle_c_note
 
 
 class MidiPropertyGroup(PropertyGroup):
@@ -180,3 +246,6 @@ class MidiPropertyGroup(PropertyGroup):
     instruments: CollectionProperty(type=InstrumentProperty, name="Instruments")
     selected_instrument_id: EnumProperty(items=midi_data.get_instruments, name="Instrument",
                                          description="Select an instrument")
+    middle_c_note: EnumProperty(items=middle_c_options,
+                                name="Middle C", description="The note corresponding to middle C (midi note 60)",
+                                default="C4", update=update_middle_c)

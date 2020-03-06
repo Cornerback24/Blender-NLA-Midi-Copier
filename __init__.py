@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 5, 4),
+        "version": (0, 6, 0),
         "blender": (2, 80, 0),
         "location": "View NLA Editor > Tool Shelf",
         "description": "Copy actions to action strips based on midi file input",
@@ -27,6 +27,8 @@ if "bpy" in locals():
     importlib.reload(DopeSheetMidiPropertiesModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(MidiInstrumentModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(NoteFilterModule)
 else:
     # noinspection PyUnresolvedReferences
     from . import NLAMidiCopierModule
@@ -38,6 +40,8 @@ else:
     from . import DopeSheetMidiPropertiesModule
     # noinspection PyUnresolvedReferences
     from . import MidiInstrumentModule
+    # noinspection PyUnresolvedReferences
+    from . import NoteFilterModule
 
 import bpy
 from bpy.props import PointerProperty
@@ -46,19 +50,27 @@ from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidi
 from .DopeSheetMidiCopierModule import DopeSheetMidiCopier
 from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToInstrument, RemoveActionFromInstrument, \
     TransposeInstrument
-from .MidiPanelModule import MidiPanel, MidiInstrumentPanel
-from .DopeSheetMidiPanelModule import DopeSheetMidiPanel
-from .MidiPropertiesModule import MidiPropertyGroup, NoteActionProperty, InstrumentNoteProperty, InstrumentProperty
-from .DopeSheetMidiPropertiesModule import DopeSheetMidiPropertyGroup, DopeSheetNoteActionProperty
+from .MidiPanelModule import MidiPanel, MidiInstrumentPanel, MidiSettingsPanel
+from .DopeSheetMidiPanelModule import DopeSheetMidiPanel, DopeSheetMidiSettingsPanel
+from .MidiPropertiesModule import MidiPropertyGroup, NoteActionProperty, InstrumentNoteProperty, InstrumentProperty, \
+    NoteFilterGroup, NoteFilterProperty
+from .DopeSheetMidiPropertiesModule import DopeSheetMidiPropertyGroup, DopeSheetNoteActionProperty, \
+    DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup
 from .MidiPanelModule import MidiFileSelector
 from .DopeSheetMidiPanelModule import DopeSheetMidiFileSelector
+from .NoteFilterModule import AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter
 
-classes = [NoteActionProperty, InstrumentNoteProperty, InstrumentProperty,
-           AddInstrument, DeleteInstrument, NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier,
-           AddActionToInstrument, RemoveActionFromInstrument, TransposeInstrument,
-           MidiPropertyGroup, MidiPanel, MidiFileSelector, MidiInstrumentPanel,
-           DopeSheetNoteActionProperty,
-           DopeSheetMidiFileSelector, DopeSheetMidiCopier, DopeSheetMidiPropertyGroup, DopeSheetMidiPanel]
+classes = [
+    NoteFilterProperty, NoteFilterGroup,
+    DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup,
+    NoteActionProperty, InstrumentNoteProperty, InstrumentProperty,
+    AddInstrument, DeleteInstrument, NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier,
+    AddActionToInstrument, RemoveActionFromInstrument, TransposeInstrument,
+    AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter,
+    MidiPropertyGroup, MidiPanel, MidiFileSelector, MidiInstrumentPanel, MidiSettingsPanel,
+    DopeSheetNoteActionProperty,
+    DopeSheetMidiFileSelector, DopeSheetMidiCopier, DopeSheetMidiPropertyGroup, DopeSheetMidiPanel,
+    DopeSheetMidiSettingsPanel]
 
 
 # noinspection PyArgumentList

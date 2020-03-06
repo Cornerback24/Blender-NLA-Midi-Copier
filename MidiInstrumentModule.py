@@ -3,8 +3,14 @@ if "bpy" in locals():
 
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(midi_data)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PropertyUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PitchUtils)
 else:
     from . import midi_data
+    from . import PropertyUtils
+    from . import PitchUtils
 import bpy
 
 
@@ -45,18 +51,13 @@ class DeleteInstrument(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        instrument_id = context.scene.midi_data_property.selected_instrument_id
-        return instrument_id is not None and \
-               len(instrument_id) > 0 and instrument_id != midi_data.NO_INSTRUMENT_SELECTED
+        return midi_data.midi_data.selected_instrument_id(context) is not None
 
     def action_common(self, context):
         instruments = context.scene.midi_data_property.instruments
-        selected_instrument_id = context.scene.midi_data_property.selected_instrument_id
-        instrument_index = None
-        if selected_instrument_id is not None and selected_instrument_id != midi_data.NO_INSTRUMENT_SELECTED:
+        selected_instrument_id = midi_data.midi_data.selected_instrument_id(context)
+        if selected_instrument_id is not None:
             instrument_index = int(selected_instrument_id)
-
-        if instrument_index is not None:
             context.scene.midi_data_property.selected_instrument_id = midi_data.NO_INSTRUMENT_SELECTED
             instruments.remove(instrument_index)
 
@@ -110,11 +111,10 @@ class RemoveActionFromInstrument(bpy.types.Operator):
         instrument = midi_data.selected_instrument(context)
         if instrument is not None:
 
-            note_id = int(instrument.selected_note_id)
-            instrument_note_property = next((x for x in instrument.notes if x.note_id == note_id), None)
+            instrument_note_property = PropertyUtils.instrument_selected_note_property(instrument)
             instrument_note_property.actions.remove(self.properties.action_index)
 
-            # don't store an emtpy lst of actions if there are no more actions for the note
+            # don't store an empty list of actions if there are no more actions for the note
             if len(instrument_note_property.actions) == 0:
                 index = None
                 for i in range(len(instrument.notes)):
@@ -144,3 +144,40 @@ class TransposeInstrument(bpy.types.Operator):
         instrument = midi_data.selected_instrument(context)
         for note in instrument.notes:
             note.note_id += self.properties.transpose_steps
+        if instrument.transpose_filters == "transpose_all":
+            self.transpose_filters(instrument, lambda pitch, comparison_operator: True)
+        elif instrument.transpose_filters == "transpose_all_leave_all_inclusive":
+            self.transpose_filters(
+                instrument,
+                lambda pitch, comparison_operator:
+                not PitchUtils.pitch_filter_is_all_inclusive(pitch, comparison_operator))
+        elif instrument.transpose_filters == "transpose_if_possible":
+            self.transpose_filters(
+                instrument,
+                lambda pitch, comparison_operator:
+                PitchUtils.can_be_transposed(pitch, self.properties.transpose_steps))
+        elif instrument.transpose_filters == "transpose_if_possible_leave_all_inclusive":
+            self.transpose_filters(
+                instrument,
+                lambda pitch, comparison_operator:
+                not (PitchUtils.pitch_filter_is_all_inclusive(pitch, comparison_operator)) and
+                PitchUtils.can_be_transposed(pitch, self.properties.transpose_steps))
+        # change the selected note to the pitch the previous selected note was transposed to
+        instrument.selected_note_id = str(int(instrument.selected_note_id) + self.properties.transpose_steps)
+
+    def transpose_filters(self, instrument, should_transpose):
+        """
+        :param instrument: the instrument
+        :param should_transpose: lambda that takes a pitch and comparison operator and returns a boolean
+        :return: true if the instrument's filters can be transposed
+        """
+        transpose_steps = self.properties.transpose_steps
+        for instrument_note in instrument.notes:
+            for note_action in instrument_note.actions:
+                if note_action.add_filters:
+                    for filter_group in note_action.note_filter_groups:
+                        for note_filter in filter_group.note_filters:
+                            if note_filter.filter_type == "note_pitch_filter":
+                                pitch = PitchUtils.note_pitch_from_id(note_filter.note_pitch)
+                                if should_transpose(pitch, note_filter.comparison_operator):
+                                    note_filter.note_pitch = PitchUtils.note_id_from_pitch(pitch + transpose_steps)

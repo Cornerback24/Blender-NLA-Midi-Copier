@@ -3,8 +3,14 @@ if "bpy" in locals():
 
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(midi_data)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(NoteFilterImplementations)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PitchUtils)
 else:
     from . import midi_data
+    from . import NoteFilterImplementations
+    from . import PitchUtils
 
 import bpy
 
@@ -35,7 +41,7 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         :param midi_data_property: DopeSheetMidiPropertyGroup
         :return:
         """
-        dope_sheet_note_action_property = midi_data_property.dope_sheet_note_action_property
+        dope_sheet_note_action_property = midi_data_property.note_action_property
         frame_offset = (midi_data_property.midi_frame_start - 1) + dope_sheet_note_action_property.midi_frame_offset
         frames_per_second = context.scene.render.fps
 
@@ -62,10 +68,13 @@ class DopeSheetMidiCopier(bpy.types.Operator):
 
         g_pencil_frames = g_pencil_layer.frames
 
+        dope_sheet_note_action_property = context.scene.dope_sheet_midi_data_property.note_action_property
         notes = midi_data.MidiDataUtil.get_notes(midi_data.dope_sheet_midi_data.get_track_id(context),
-                                                 midi_data.dope_sheet_midi_data.get_note_id(context),
                                                  midi_data.dope_sheet_midi_data)
-        dope_sheet_note_action_property = context.scene.dope_sheet_midi_data_property.dope_sheet_note_action_property
+        note_id = midi_data.dope_sheet_midi_data.get_note_id(context)
+        notes = NoteFilterImplementations.  filter_notes(notes, dope_sheet_note_action_property.note_filter_groups,
+                                                       PitchUtils.note_pitch_from_id(note_id),
+                                                       dope_sheet_note_action_property.add_filters, context)
 
         if dope_sheet_note_action_property.skip_overlaps:
             if dope_sheet_note_action_property.sync_length_with_notes:
@@ -84,7 +93,7 @@ class DopeSheetMidiCopier(bpy.types.Operator):
                 DopeSheetMidiCopier.copy_gpencil_frames_no_overlap_check(source_keyframes, g_pencil_frames, notes,
                                                                          frames_per_second, frame_offset, None)
 
-        if context.scene.dope_sheet_midi_data_property.dope_sheet_note_action_property.delete_source_keyframes:
+        if context.scene.dope_sheet_midi_data_property.note_action_property.delete_source_keyframes:
             for keyframe in source_keyframes:
                 g_pencil_frames.remove(keyframe)
 

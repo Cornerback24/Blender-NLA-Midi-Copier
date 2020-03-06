@@ -1,10 +1,7 @@
-from .midi_analysis.Note import Note
 from .midi_analysis.MidiData import MidiData
+from . import PitchUtils
+from . import PropertyUtils
 import math
-
-
-def update_midi_file(midi_filename, force_update):
-    return midi_data.update_midi_file(midi_filename, force_update)
 
 
 # noinspection PyUnusedLocal
@@ -12,16 +9,11 @@ def get_tracks_list(self, context):
     return midi_data.get_tracks_list(self, context)
 
 
-# noinspection PyUnusedLocal
-def get_notes_list(self, context):
-    return midi_data.get_notes_list(self, context)
-
-
 def get_track_id(context):
     return midi_data.get_track_id(context)
 
 
-def get_note_id(context):
+def get_note_id(context) -> str:
     return midi_data.get_note_id(context)
 
 
@@ -68,17 +60,6 @@ NO_INSTRUMENT_SELECTED = "[No Instrument Selected]"
 
 class MidiDataUtil:
     @staticmethod
-    def note_pitch_from_string(pitch_string):
-        """
-        :param pitch_string: string such as 'C4'
-        :return: the int corresponding to the note's pitch
-        """
-        for int_pitch, string in Note.PITCH_DICTIONARY.items():
-            if string == pitch_string:
-                return int_pitch
-        return 0
-
-    @staticmethod
     def get_unique_name(name, name_list):
         """
         :param name: name to make unique
@@ -96,17 +77,16 @@ class MidiDataUtil:
             return unique_name
 
     @staticmethod
-    def get_notes(track_id, note_id, loaded_midi_data):
+    def get_notes(track_id: str, loaded_midi_data):
         """
         :param track_id: name of the track to get the notes from
-        :param note_id: name of the note (such as 'C4')
         :param loaded_midi_data: LoadedMidiData instance
-        :return: list of all of the notes from the loaded midi file matching the track and note, sorted by time
+        :return: list of all of the notes from the loaded midi file matching the track, sorted by time
         """
 
         track = next((x for x in loaded_midi_data.midi_data.tracks if x.name == track_id), None)
 
-        notes = [x for x in track.notes if Note.PITCH_DICTIONARY[x.pitch] == note_id]
+        notes = [x for x in track.notes]
 
         notes.sort()
         return notes
@@ -131,14 +111,18 @@ class LoadedMidiData:
         # api documentation says that references to the values returned by callbacks need to be kept around to prevent issues
         self.track_list = []  # list of tracks in the midi file
         self.notes_list = []  # list of notes for the selected midi track
+        self.all_notes = []  # enum property list of all notes (0 to 127), enum key is note id
         self.instruments_list = []  # list of defined instruments
         self.instrument_notes_list = []  # list of notes for the selected instrument
         self.instrument_note_actions_list = []  # list of actions for the selected note of the selected instrument
-        self.notes_list_dict = {}  # key is track id String, value is list of note properties
+        self.notes_list_dict = {}  # key is track id String, value is list of note properties (where enum property id is note id)
         self.current_midi_filename = None  # name of the loaded midi file
+        self.middle_c_id = None  # note id being used for middle c
+        self.middle_c_on_last_tracks_update = None  # value of the middle_c_id property when the tracks were updated last
+        self.middle_c_on_last_all_notes_update = None  # v alue of the middle_c_id property when the list of all notes updated last
         self.get_midi_data_property = get_midi_data_property
 
-    def update_midi_file(self, midi_filename, force_update):
+    def update_midi_file(self, midi_filename: str, force_update: bool, context):
         """
         Updates the current midi file
         :param force_update: if true will reload the midi file even if it has the same name
@@ -151,16 +135,22 @@ class LoadedMidiData:
             return
         self.current_midi_filename = midi_filename
         self.midi_data = MidiData(midi_filename)
+        self.__create_track_list(context)
 
+    def __create_track_list(self, context):
         self.notes_list_dict = {}
         tracks = []
         self.track_list = []
+        self.middle_c_on_last_tracks_update = self.get_middle_c_id(context)
         for track in self.midi_data.tracks:
             if len(track.notes) > 0:
                 track_name = MidiDataUtil.get_unique_name(track.name, tracks)
-                notes_list_set = {Note.PITCH_DICTIONARY[x.pitch] for x in track.notes}
-                notes_list_set_sorted = sorted(notes_list_set, key=lambda x: MidiDataUtil.note_pitch_from_string(x))
-                self.notes_list_dict[track_name] = [(x, x, x) for x in notes_list_set_sorted]
+                notes_pitches_set = {note.pitch for note in track.notes}
+                note_pitches_ordered = sorted(notes_pitches_set)
+                self.notes_list_dict[track_name] = [(PitchUtils.note_id_from_pitch(pitch),
+                                                     PitchUtils.note_display_from_pitch(pitch, self.middle_c_id),
+                                                     PitchUtils.note_description_from_pitch(pitch, self.middle_c_id))
+                                                    for pitch in note_pitches_ordered]
                 tracks.append(track_name)
         tracks.sort()
         self.track_list = [(x, x, x) for x in tracks]
@@ -170,6 +160,9 @@ class LoadedMidiData:
         """
         :return: list of tracks in the current midi file
         """
+        if self.middle_c_on_last_tracks_update != self.get_middle_c_id(context):
+            # middle c changed, update display
+            self.__create_track_list(context)
         return self.track_list
 
     # noinspection PyUnusedLocal
@@ -187,11 +180,14 @@ class LoadedMidiData:
         """
         return self.get_midi_data_property(context).track_list
 
-    def get_note_id(self, context):
+    def get_note_id(self, context) -> str:
         """
         :return: the name of the selected note (such as "C4")
         """
         return self.get_midi_data_property(context).notes_list
+
+    def selected_note_action_property(self, context):
+        return self.get_midi_data_property(context).note_action_property
 
     def get_instruments(self, midi_data_property, context):
         """
@@ -213,25 +209,96 @@ class LoadedMidiData:
 
     def get_instrument_notes(self, instrument_property, context):
         """
-        :return: list of notes for the instrument's selected_note_id EnumProperty
+        :return: list of notes for the instrument's selected_note_id EnumProperty (where enum property id is note pitch)
         """
-        instrument_notes_dictionary = {}
+        instrument_notes_action_dictionary = {}
         for x in instrument_property.notes:
-            instrument_notes_dictionary[x.note_id] = len(x.actions)
+            instrument_notes_action_dictionary[x.note_id] = x.actions
         self.instrument_notes_list.clear()
-        for key, value in Note.PITCH_DICTIONARY.items():
-            note_display = value
-            if key in instrument_notes_dictionary:
-                action_count_for_note = instrument_notes_dictionary.get(key)
+        for pitch in range(128):
+            note_display = PitchUtils.note_display_from_pitch(pitch, self.middle_c_id)
+            append_to_note = ""
+            append_to_description = ""
+            if pitch in instrument_notes_action_dictionary:
+                actions_for_note = instrument_notes_action_dictionary.get(pitch)
+                action_count_for_note = len(actions_for_note)
                 note_display += " (" + str(action_count_for_note) + ")"
-            self.instrument_notes_list.append((str(key), note_display, note_display))
+                if LoadedMidiData.__instrument_filters_may_not_match_pitch(actions_for_note, pitch):
+                    append_to_note = " *"
+                    append_to_description = "\n* Some actions have filters that may pitch different pitches"
+            note_description = PitchUtils.note_description_from_pitch(pitch, self.middle_c_id)
+            self.instrument_notes_list.append((str(pitch), note_display + append_to_note,
+                                               note_description + append_to_description))
+
         return self.instrument_notes_list
 
+    @staticmethod
+    def __instrument_filters_may_not_match_pitch(actions, pitch: int) -> bool:
+        for action in actions:
+            if action.add_filters:
+                if LoadedMidiData.__filters_may_not_match_pitch(action, pitch):
+                    return True
+        return False
+
+    @staticmethod
+    def __filters_may_not_match_pitch(action, pitch: int) -> bool:
+        for filter_group in action.note_filter_groups:
+            pitch_filters = [note_filter for note_filter in filter_group.note_filters if
+                             note_filter.filter_type == "note_pitch_filter"]
+            if len(pitch_filters) > 0:
+                final_filter = pitch_filters[-1]
+                filter_pitch = PitchUtils.note_pitch_from_id(final_filter.note_pitch)
+                if not (final_filter.comparison_operator == "equal_to" and filter_pitch == pitch):
+                    return True
+                for pitch_filter in pitch_filters:
+                    filter_pitch = PitchUtils.note_pitch_from_id(pitch_filter.note_pitch)
+                    if not PropertyUtils.compare(pitch_filter.comparison_operator, pitch, filter_pitch):
+                        return True
+        return False
+
+    @staticmethod
+    def __contains_incomplete_action(actions):
+        for action in actions:
+            if action.action is None:
+                return True
+
+    def get_all_notes(self, context):
+        """
+        :return: list of all notes (pitches 0 - 127) as enum properties (where enum property id is note id)
+        """
+        if self.get_middle_c_id(context) != self.middle_c_on_last_all_notes_update:
+            self.all_notes = []
+            self.middle_c_on_last_all_notes_update = self.get_middle_c_id(context)
+            for pitch in range(128):
+                note_display = PitchUtils.note_display_from_pitch(pitch, self.middle_c_id)
+                note_description = PitchUtils.note_description_from_pitch(pitch, self.middle_c_id)
+                self.all_notes.append((PitchUtils.note_id_from_pitch(pitch), note_display, note_description))
+        return self.all_notes
+
+    def get_middle_c_id(self, context):
+        if self.middle_c_id is None:
+            self.middle_c_id = self.get_midi_data_property(context).middle_c_note
+        return self.middle_c_id
+
     def selected_instrument(self, context):
+        """
+        :param context: the context
+        :return: the selected instrument (None if no instrument is selected)
+        """
+        instrument_id = self.selected_instrument_id(context)
+        if instrument_id is not None:
+            return self.get_midi_data_property(context).instruments[int(instrument_id)]
+        return None
+
+    def selected_instrument_id(self, context):
+        """
+        :param context: the context
+        :return: the id of the selected instrument (None if no instrument selected)
+        """
         instrument_id = self.get_midi_data_property(context).selected_instrument_id
         if instrument_id is not None and len(instrument_id) > 0 \
                 and instrument_id != NO_INSTRUMENT_SELECTED:
-            return self.get_midi_data_property(context).instruments[int(instrument_id)]
+            return instrument_id
         return None
 
 

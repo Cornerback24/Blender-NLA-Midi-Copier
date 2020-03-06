@@ -5,10 +5,14 @@ if "bpy" in locals():
     importlib.reload(midi_data)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(DopeSheetMidiCopierModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PanelUtils)
 else:
     from . import midi_data
     # noinspection PyUnresolvedReferences
     from . import DopeSheetMidiCopierModule
+    # noinspection PyUnresolvedReferences
+    from . import PanelUtils
 
 import bpy
 from .DopeSheetMidiCopierModule import DopeSheetMidiCopier
@@ -25,11 +29,11 @@ class DopeSheetMidiFileSelector(bpy.types.Operator):
     def execute(self, context):
         context.scene.dope_sheet_midi_data_property["midi_file"] = self.filepath
         try:
-            midi_data.dope_sheet_midi_data.update_midi_file(self.filepath, True)
+            midi_data.dope_sheet_midi_data.update_midi_file(self.filepath, True, context)
         except Exception as e:
             self.report({"WARNING"}, "Could not load midi file: " + str(e))
             context.scene.dope_sheet_midi_data_property["midi_file"] = ""
-            midi_data.dope_sheet_midi_data.update_midi_file(None, False)
+            midi_data.dope_sheet_midi_data.update_midi_file(None, False, context)
 
         return {'FINISHED'}
 
@@ -61,16 +65,16 @@ class DopeSheetMidiPanel(bpy.types.Panel):
 
         if midi_data_property.midi_file:
             try:
-                midi_data.dope_sheet_midi_data.update_midi_file(midi_data_property.midi_file, False)
+                midi_data.dope_sheet_midi_data.update_midi_file(midi_data_property.midi_file, False, context)
                 col.prop(midi_data_property, "midi_file")
 
                 col.prop(midi_data_property, "track_list")
                 col.prop(midi_data_property, "notes_list")
             except Exception as e:
                 print("Could not load midi file: " + str(e))
-                midi_data.dope_sheet_midi_data.update_midi_file(None, False)
+                midi_data.dope_sheet_midi_data.update_midi_file(None, False, context)
 
-        dope_sheet_note_action_property = midi_data_property.dope_sheet_note_action_property
+        dope_sheet_note_action_property = midi_data_property.note_action_property
 
         self.layout.separator()
         col = self.layout.column(align=True)
@@ -78,6 +82,11 @@ class DopeSheetMidiPanel(bpy.types.Panel):
         col.prop(dope_sheet_note_action_property, "delete_source_keyframes")
         col.prop(dope_sheet_note_action_property, "skip_overlaps")
         col.prop(dope_sheet_note_action_property, "sync_length_with_notes")
+        col.prop(dope_sheet_note_action_property, "add_filters")
+
+        if dope_sheet_note_action_property.add_filters:
+            PanelUtils.draw_filter_box(col, dope_sheet_note_action_property, False, None, "dope_sheet_midi_data")
+
         col.prop(midi_data_property, "midi_frame_start")
         col.prop(dope_sheet_note_action_property, "midi_frame_offset")
 
@@ -88,3 +97,26 @@ class DopeSheetMidiPanel(bpy.types.Panel):
         col = self.layout.column(align=True)
 
         col.operator(DopeSheetMidiCopier.bl_idname)
+
+
+class DopeSheetMidiSettingsPanel(bpy.types.Panel):
+    bl_space_type = "DOPESHEET_EDITOR"
+    bl_region_type = "UI"
+    bl_category = "Midi"
+    bl_label = "Midi Settings"
+    bl_idname = "ANIMATION_PT_dope_sheet_midi_settings_panel"
+
+    @classmethod
+    def poll(cls, context):
+        return context.area.type == "DOPESHEET_EDITOR" and context.area.spaces[0].mode == "GPENCIL"
+
+    def draw(self, context):
+        col = self.layout.column(align=True)
+        col.prop(context.scene.dope_sheet_midi_data_property, "middle_c_note")
+
+        dopesheet = context.area.spaces[0].dopesheet
+        if not (dopesheet.show_gpencil_3d_only and dopesheet.show_only_selected):
+            col.separator()
+            col.label(text="Select \"Active Only\" and \"Only Selected\"")
+            col.label(text="in the Dope Sheet bar to show")
+            col.label(text="the grease pencil midi panel.")

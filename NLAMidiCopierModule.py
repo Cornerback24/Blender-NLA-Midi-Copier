@@ -3,8 +3,14 @@ if "bpy" in locals():
 
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(midi_data)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PitchUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(NoteFilterImplementations)
 else:
     from . import midi_data
+    from . import PitchUtils
+    from . import NoteFilterImplementations
 
 import bpy
 from .midi_analysis.Note import Note
@@ -23,8 +29,11 @@ class NoteActionCopier:
         self.scale_to_note_length = note_action_property.sync_length_with_notes
         self.scale_factor = note_action_property.scale_factor
         self.action = note_action_property.action
+        self.filter_groups_property = note_action_property.note_filter_groups
+        self.add_filters = note_action_property.add_filters
         # actual length of the action
-        self.true_action_length = self.action.frame_range[1] - self.action.frame_range[0]
+        self.true_action_length = None if self.action is None else \
+            self.action.frame_range[1] - self.action.frame_range[0]
         # action length as set by the note action property
         self.action_length = None if self.action is None else \
             max(self.true_action_length, note_action_property.action_length)
@@ -37,19 +46,22 @@ class NoteActionCopier:
     def copy_notes_to_object_with_duplication(self, track_name, notes):
         if not notes:
             return  # no notes to copy, do nothing
+
         nla_track = self.create_nla_track(self.animated_object, track_name)
         # list of [nla_track, [(frame, scale_factor)], last_frame]
         actions_to_copy = []
 
         first_note = notes[0]
         first_frame = self.first_frame(first_note)
-        copied_action_length = self.note_action_length(first_note)
+        non_scaled_length = self.note_action_length(notes[0])
+
+        copied_action_length, scale_factor = self.copied_action_length_and_scale_factor(notes[0], non_scaled_length)
         last_frame = first_frame + copied_action_length
-        actions_to_copy.append([nla_track, [(first_frame, self.note_scale_factor(copied_action_length))], last_frame])
+        actions_to_copy.append([nla_track, [(first_frame, scale_factor)], last_frame])
 
         for note in notes[1:]:
             first_frame = self.first_frame(note)
-            copied_action_length = self.note_action_length(note)
+            copied_action_length, scale_factor = self.copied_action_length_and_scale_factor(notes[0], non_scaled_length)
             last_frame = first_frame + copied_action_length
             # track_info is [nla_track, [frames], last_frame]
             track_info = next((x for x in actions_to_copy if first_frame > x[2]), None)
@@ -67,9 +79,9 @@ class NoteActionCopier:
                     duplicated_nla_track = self.create_nla_track(duplicated_object, track_name)
 
                 actions_to_copy.append(
-                    [duplicated_nla_track, [(first_frame, self.note_scale_factor(copied_action_length))], last_frame])
+                    [duplicated_nla_track, [(first_frame, scale_factor)], last_frame])
             else:
-                track_info[1].append((first_frame, self.note_scale_factor(copied_action_length))),
+                track_info[1].append((first_frame, scale_factor)),
                 track_info[2] = last_frame
 
         for x in actions_to_copy:
@@ -83,20 +95,25 @@ class NoteActionCopier:
             return  # no notes to copy, do nothing
 
         nla_track = self.create_nla_track(self.animated_object, track_name)
-        copied_action_length = self.note_action_length(notes[0])
+        non_scaled_length = self.note_action_length(notes[0])
 
-        last_frame = -1 - copied_action_length  # initialize to frame before any actions will be copied to
-        scale_factor = 1
+        # initialize to frame before any actions will be copied to
+        last_frame = -1 - self.copied_action_length_and_scale_factor(notes[0], non_scaled_length)[0]
 
         for note in notes:
             first_frame = self.first_frame(note)
             # check for action overlap
             if first_frame - last_frame > 0:
-                if self.scale_to_note_length:
-                    copied_action_length = self.note_action_length(note)
-                    scale_factor = self.note_scale_factor(copied_action_length)
+                copied_action_length, scale_factor = self.copied_action_length_and_scale_factor(note, non_scaled_length)
                 last_frame = first_frame + copied_action_length
                 NoteActionCopier.copy_action(first_frame, self.action, nla_track, scale_factor)
+
+    def copied_action_length_and_scale_factor(self, note, non_scaled_length):
+        if self.scale_to_note_length:
+            copied_action_length = self.note_action_length(note)
+            return copied_action_length, self.note_scale_factor(copied_action_length)
+        else:
+            return non_scaled_length, 1
 
     def note_action_length(self, note):
         """
@@ -121,20 +138,23 @@ class NoteActionCopier:
         return midi_data.MidiDataUtil.note_length_frames(note, self.frames_per_second) \
             if self.scale_to_note_length else self.action_length
 
-    def copy_notes_to_object(self, track_id, note_id):
+    def copy_notes_to_object(self, track_id, note_id: str):
         if self.action is None or self.animated_object is None:
             return
         track_name = self.note_action_track_name
         if track_name is None or len(track_name) == 0:
             track_name = note_id + " - " + track_id
-        notes = midi_data.MidiDataUtil.get_notes(track_id, note_id, midi_data.midi_data)
+        notes = midi_data.MidiDataUtil.get_notes(track_id, midi_data.midi_data)
+        notes = NoteFilterImplementations.filter_notes(notes, self.filter_groups_property,
+                                                       PitchUtils.note_pitch_from_id(note_id),
+                                                       self.add_filters, self.context)
 
         if self.duplicate_on_overlap:
             self.copy_notes_to_object_with_duplication(track_name, notes)
         else:
             self.copy_notes_to_object_no_duplication(track_name, notes)
 
-    def copy_notes_to_objects(self, track_id, note_id, objects):
+    def copy_notes_to_objects(self, track_id: str, note_id: str, objects):
         for x in objects:
             self.animated_object = x
             self.copy_notes_to_object(track_id, note_id)
@@ -196,7 +216,7 @@ class NLAMidiCopier(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        note_action_property = context.scene.midi_data_property.note_action_property
+        note_action_property = midi_data.midi_data.selected_note_action_property(context)
 
         id_type = note_action_property.id_type
 
@@ -240,9 +260,10 @@ class NLAMidiInstrumentCopier(bpy.types.Operator):
     def animate_instrument(context, instrument):
         track_id = instrument.selected_midi_track
         for instrument_note in instrument.notes:
-            note_id = instrument_note.note_id
+            pitch = instrument_note.note_id
             for note_action in instrument_note.actions:
-                NoteActionCopier(note_action, context).copy_notes_to_object(track_id, Note.PITCH_DICTIONARY[note_id])
+                NoteActionCopier(note_action, context).copy_notes_to_object(track_id,
+                                                                            PitchUtils.note_id_from_pitch(pitch))
 
 
 class NLAMidiAllInstrumentCopier(bpy.types.Operator):
