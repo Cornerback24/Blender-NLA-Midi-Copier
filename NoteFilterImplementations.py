@@ -115,6 +115,39 @@ class StartTime(NoteFilterBase):
                                              "non_negative_number", "time_unit")
 
 
+class NoteLength(NoteFilterBase):
+    ID = "note_length_filter"
+    NAME = "Note Length"
+    DESCRIPTION = "Filter notes by length"
+
+    def filtered_notes(self, notes: List[Tuple[int, Note]], context):
+        note_length_frames = PropertyUtils.time_in_frames(
+            getattr(self.note_filter, NoteFilterBase.time_value_property(
+                self.note_filter.time_unit, "non_negative_int", "non_negative_number")),
+            self.note_filter.time_unit, context)
+        return self.filter_by_callable(notes, lambda note: self.compare_values(
+            PropertyUtils.ms_to_frames(note.length(), context), note_length_frames))
+
+    @staticmethod
+    def draw_ui(parent_layout, note_filter_property):
+        NoteFilterBase.draw_time_comparision(parent_layout, note_filter_property, "non_negative_int",
+                                             "non_negative_number", "time_unit")
+
+
+class NoteVelocity(NoteFilterBase):
+    ID = "note_velocity_filter"
+    NAME = "Velocity"
+    DESCRIPTION = "Filter notes by velocity"
+
+    def filtered_notes(self, notes: List[Tuple[int, Note]], context):
+        return self.filter_by_callable(notes,
+                                       lambda note: self.compare_values(note.velocity, self.note_filter.int_0_to_127))
+
+    @staticmethod
+    def draw_ui(parent_layout, note_filter_property):
+        NoteFilterBase.draw_comparison_and_value(parent_layout, note_filter_property, "int_0_to_127")
+
+
 class AlternationFilter(NoteFilterBase):
     ID = "note_alternation_filter"
     NAME = "Every"
@@ -140,7 +173,7 @@ class AlternationFilter(NoteFilterBase):
         row2_2.prop(note_filter_property, "positive_int_2", text='')
 
 
-FILTER_REGISTRY = [PitchFilter, StartTime, AlternationFilter]
+FILTER_REGISTRY = [AlternationFilter, NoteLength, PitchFilter, StartTime, NoteVelocity]
 # map id to filter class
 ID_TO_FILTER = {note_filter.ID: note_filter for note_filter in FILTER_REGISTRY}
 # notes filters for enum property

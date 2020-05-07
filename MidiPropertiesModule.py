@@ -69,13 +69,14 @@ TIME_UNITS = [("frames", "Frames", "Frames"),
 
 class NoteFilterProperty(PropertyGroup):
     filter_type: EnumProperty(items=NoteFilterImplementations.FILTER_ENUM_PROPERTY_ITEMS, name="Filter Type",
-                              description="Filter Type")
+                              description="Filter Type", default="note_pitch_filter")
     comparison_operator: EnumProperty(items=COMPARISON_ENUM_PROPERTY_ITEMS, name="Comparison Operator",
                                       description="Comparison Operator", default="equal_to")
     note_pitch: EnumProperty(items=get_all_notes, name="Pitch", description="Pitch")
     non_negative_int: IntProperty(name="Non Negative Int", description="Non-negative integer", min=0)
     positive_int: IntProperty(name="Positive Int", description="Positive Integer", min=1, default=1)
     positive_int_2: IntProperty(name="Positive Int", description="Positive Integer", min=1, default=1)
+    int_0_to_127: IntProperty(name="Integer", description="Integer between 0 and 127, inclusive", min=0, max=127)
     non_negative_number: FloatProperty(name="Non negative number", description="Non negative number", min=0.0)
     time_unit: EnumProperty(items=TIME_UNITS, name="Time unit", description="Time unit", default="frames")
 

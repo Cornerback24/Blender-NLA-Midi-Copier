@@ -98,7 +98,8 @@ class DopeSheetMidiCopier(bpy.types.Operator):
                 g_pencil_frames.remove(keyframe)
 
             # update the active_frame since the previous active_frame has been deleted
-            g_pencil_layer.active_frame = g_pencil_layer.frames[0]
+            if len(g_pencil_frames) > 0:
+                g_pencil_layer.active_frame = g_pencil_layer.frames[0]
 
     @staticmethod
     def copy_gpencil_frames_no_overlap_check(source_keyframes, g_pencil_frames, notes, frames_per_second, frame_offset,
