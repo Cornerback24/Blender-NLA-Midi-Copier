@@ -3,7 +3,7 @@ Blender add-on for creating midi-driven animations from the Nonlinear Animation 
 
 An instrument can be defined as a collection of notes and actions.  The instrument is independent of any specific midi file, allowing for defining a set of actions for each note and later syncing them up to a midi file.  To define an instrument, expand the right-side panel in the Nonlinear Action View and select the Midi Instruments tab.
 
-This add-on is being developed for Blender 2.80.
+This add-on is being developed for Blender 2.83.
 
 
 <details>
@@ -105,5 +105,5 @@ The animate instrument box is not avalable if there is no selected midi file.  S
 ### Installation:
 * Installation is the normal installation process for multi-file add-ons.
   * Option 1: Download as a zip file. In Blender, go to Edit > Preferences > Add-ons, and click Install.  Select the zip file and click Install Add-on from File.
-  * Option 2: Clone into the 2.80/scripts/addons directory in the Blender installation.
+  * Option 2: Clone into the 2.83/scripts/addons directory in the Blender installation.
 * To enable the add-on, in Blender, go to Edit > Preferences > Add-ons, and select Animation in the drop-down. Select Community at the top if it isn't already selected. Check the box next to the add-on to enable it.

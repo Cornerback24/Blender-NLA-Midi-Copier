@@ -54,7 +54,7 @@ class DopeSheetMidiPanel(bpy.types.Panel):
     def poll(cls, context):
         if context.area.type == "DOPESHEET_EDITOR" and context.area.spaces[0].mode == "GPENCIL":
             dopesheet = context.area.spaces[0].dopesheet
-            return dopesheet.show_gpencil_3d_only and dopesheet.show_only_selected
+            return dopesheet.show_only_selected
         return False
 
     def draw(self, context):
@@ -115,8 +115,8 @@ class DopeSheetMidiSettingsPanel(bpy.types.Panel):
         col.prop(context.scene.dope_sheet_midi_data_property, "middle_c_note")
 
         dopesheet = context.area.spaces[0].dopesheet
-        if not (dopesheet.show_gpencil_3d_only and dopesheet.show_only_selected):
+        if not dopesheet.show_only_selected:
             col.separator()
-            col.label(text="Select \"Active Only\" and \"Only Selected\"")
+            col.label(text="Select \"Only Selected\"")
             col.label(text="in the Dope Sheet bar to show")
             col.label(text="the grease pencil midi panel.")

@@ -42,7 +42,7 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         :return:
         """
         dope_sheet_note_action_property = midi_data_property.note_action_property
-        frame_offset = (midi_data_property.midi_frame_start - 1) + dope_sheet_note_action_property.midi_frame_offset
+        frame_offset = midi_data_property.midi_frame_start + dope_sheet_note_action_property.midi_frame_offset
         frames_per_second = context.scene.render.fps
 
         grease_pencils = [x.data for x in context.selected_objects if x.type == "GPENCIL"]
@@ -72,7 +72,7 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         notes = midi_data.MidiDataUtil.get_notes(midi_data.dope_sheet_midi_data.get_track_id(context),
                                                  midi_data.dope_sheet_midi_data)
         note_id = midi_data.dope_sheet_midi_data.get_note_id(context)
-        notes = NoteFilterImplementations.  filter_notes(notes, dope_sheet_note_action_property.note_filter_groups,
+        notes = NoteFilterImplementations.filter_notes(notes, dope_sheet_note_action_property.note_filter_groups,
                                                        PitchUtils.note_pitch_from_id(note_id),
                                                        dope_sheet_note_action_property.add_filters, context)
 
@@ -96,10 +96,6 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         if context.scene.dope_sheet_midi_data_property.note_action_property.delete_source_keyframes:
             for keyframe in source_keyframes:
                 g_pencil_frames.remove(keyframe)
-
-            # update the active_frame since the previous active_frame has been deleted
-            if len(g_pencil_frames) > 0:
-                g_pencil_layer.active_frame = g_pencil_layer.frames[0]
 
     @staticmethod
     def copy_gpencil_frames_no_overlap_check(source_keyframes, g_pencil_frames, notes, frames_per_second, frame_offset,
