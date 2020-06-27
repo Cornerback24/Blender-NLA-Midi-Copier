@@ -61,7 +61,7 @@ Midi Instrument Panel
  
 ### Midi Instrument Panel Controls
 
-![Midi Instrument Panel](images/midi_instrument_panel.PNG)
+![Midi Instrument Panel](images/midi_instrument_panel.png)
 
 * Instrument
   * The selected instrument.  
@@ -81,7 +81,7 @@ Midi Instrument Panel
 
 #### Notes Box
 
-![Notes Box](images/notes_box.PNG)
+![Notes Box](images/notes_box.png)
 
 * Note:
   * The selected note.  If there are actions associated to the note, the number of actions will be displayed in parentheses. For example, C5 (2) indicates that there are two actions associated to the note C5. An astrix indicates than there are actions that may be copied to other notes due to pitch filters. An exclamation mark indicates there are actions that are missing an object or action, so they will not be copied.
@@ -94,7 +94,7 @@ Midi Instrument Panel
 
 #### Transpose Box
 
-![Transpose Box](images/transpose_box.PNG)
+![Transpose Box](images/transpose_box.png)
 
 * Transpose: The transpose buttons transpose the instrument. Transpose buttons are disabled if the transposition would result in notes outside of the 0-127 midi pitch range.
   * \- octave: shift all actions down an octave
@@ -111,7 +111,7 @@ Midi Instrument Panel
 
 #### Animate Box
 
-![Animate Box](images/animate_box.PNG)
+![Animate Box](images/animate_box.png)
 
 The animate instrument box is not available if there is no selected midi file.  Select a midi file in the Midi Panel.
 
@@ -176,7 +176,7 @@ Copy to Instrument
 
 ### Copy to Instrument
 
-![Copy to Instrument](images/copy_to_instrument_panel.PNG)
+![Copy to Instrument](images/copy_to_instrument_panel.png)
 
 The action defined in the Nla Midi panel can be copied to an instrument.
 
@@ -199,7 +199,7 @@ Midi Settings
 
 ### Midi Settings
 
-![Midi Settings](images/midi_settings_panel.PNG)
+![Midi Settings](images/midi_settings_panel.png)
 
 * Middle C
   * Sets the note that corresponds to middle C (midi pitch 60). This changes the displayed value of middle C and updates the display for instrument notes and the note in the midi panel. This does not change the midi note pitches.
