@@ -22,7 +22,14 @@ def get_instruments(midi_data_property, context):
 
 
 def get_instrument_notes(instrument_property, context):
-    return midi_data.get_instrument_notes(instrument_property, context)
+    return midi_data.get_instrument_notes(instrument_property, instrument_property.note_search_string.strip(),
+                                          LoadedMidiData.store_notes_list_one)
+
+
+def get_selected_instrument_notes(midi_data_property, context):
+    return midi_data.get_instrument_notes(midi_data.selected_instrument_for_copy_to_id(context),
+                                          midi_data_property.copy_to_instrument_note_search_string,
+                                          LoadedMidiData.store_notes_list_two)
 
 
 def selected_instrument(context):
@@ -56,6 +63,13 @@ ID_PROPERTIES_DICTIONARY = {"Armature": ("armature", "ARMATURE"),
 note_tree_types = "MATERIAL, TEXTURE, WORLD, SCENE, LIGHT"
 
 NO_INSTRUMENT_SELECTED = "[No Instrument Selected]"
+
+BLEND_MODES = [("None", "None (skip overlaps)", "No blending. Overlapping strips are not copied"),
+               ("REPLACE", "Replace", "Replace"),
+               ("COMBINE", "Combine", "Combine"),
+               ("ADD", "Add", "Add"),
+               ("SUBTRACT", "Subtract", "Subtract"),
+               ("MULTIPLY", "Multiply", "Multiply")]
 
 
 class MidiDataUtil:
@@ -114,6 +128,7 @@ class LoadedMidiData:
         self.all_notes = []  # enum property list of all notes (0 to 127), enum key is note id
         self.instruments_list = []  # list of defined instruments
         self.instrument_notes_list = []  # list of notes for the selected instrument
+        self.instrument_notes_list2 = []  # list of notes for the selected instruments, used for copy to instrument action
         self.instrument_note_actions_list = []  # list of actions for the selected note of the selected instrument
         self.notes_list_dict = {}  # key is track id String, value is list of note properties (where enum property id is note id)
         self.current_midi_filename = None  # name of the loaded midi file
@@ -207,14 +222,17 @@ class LoadedMidiData:
 
         return self.instruments_list
 
-    def get_instrument_notes(self, instrument_property, context):
+    def get_instrument_notes(self, instrument_property, search_string, store_and_return_list):
         """
         :return: list of notes for the instrument's selected_note_id EnumProperty (where enum property id is note pitch)
         """
+        new_notes_list = []
+        if instrument_property is None:
+            return store_and_return_list(self, new_notes_list)
+
         instrument_notes_action_dictionary = {}
         for x in instrument_property.notes:
             instrument_notes_action_dictionary[x.note_id] = x.actions
-        self.instrument_notes_list.clear()
         for pitch in range(128):
             note_display = PitchUtils.note_display_from_pitch(pitch, self.middle_c_id)
             append_to_note = ""
@@ -226,11 +244,35 @@ class LoadedMidiData:
                 if LoadedMidiData.__instrument_filters_may_not_match_pitch(actions_for_note, pitch):
                     append_to_note = " *"
                     append_to_description = "\n* Some actions have filters that may pitch different pitches"
+                if LoadedMidiData.__contains_incomplete_action(actions_for_note):
+                    append_to_note = append_to_note + " !"
+                    append_to_description = append_to_description + "\n! Some actions are missing an object or action"
             note_description = PitchUtils.note_description_from_pitch(pitch, self.middle_c_id)
-            self.instrument_notes_list.append((str(pitch), note_display + append_to_note,
-                                               note_description + append_to_description))
+            new_notes_list.append((str(pitch), note_display + append_to_note,
+                                   note_description + append_to_description))
 
+        new_notes_list = LoadedMidiData.notes_list_filtered(new_notes_list, search_string)
+        return store_and_return_list(self, new_notes_list)
+
+    def store_notes_list_one(self, notes_list):
+        self.instrument_notes_list = notes_list
         return self.instrument_notes_list
+
+    def store_notes_list_two(self, notes_list):
+        self.instrument_notes_list2 = notes_list
+        return self.instrument_notes_list2
+
+    @staticmethod
+    def notes_list_filtered(notes_list_enums, filter_string):
+        filter_string_is_digit = filter_string.isdigit()
+        # if digit, then check string equals note pitch, else check note display contains string
+        note_filter_lambda = \
+            (lambda note: filter_string == note[0]) if filter_string_is_digit else \
+                (lambda note: filter_string.lower() in note[1].lower())
+
+        filtered_notes = [note for note in notes_list_enums if note_filter_lambda(note)]
+        # to avoid issues with emtpy enum list, return all if no match instead of none
+        return filtered_notes if len(filtered_notes) > 0 else notes_list_enums
 
     @staticmethod
     def __instrument_filters_may_not_match_pitch(actions, pitch: int) -> bool:
@@ -261,6 +303,11 @@ class LoadedMidiData:
         for action in actions:
             if action.action is None:
                 return True
+            animated_object_property = ID_PROPERTIES_DICTIONARY[action.id_type][0]
+            animated_object = getattr(action, animated_object_property)
+            if animated_object is None:
+                return True
+        return False
 
     def get_all_notes(self, context):
         """
@@ -299,6 +346,17 @@ class LoadedMidiData:
         if instrument_id is not None and len(instrument_id) > 0 \
                 and instrument_id != NO_INSTRUMENT_SELECTED:
             return instrument_id
+        return None
+
+    def selected_instrument_for_copy_to_id(self, context):
+        """
+        :param context: the context
+        :return: the instrument to copy the action to (None if no instrument selected)
+        """
+        instrument_id = self.get_midi_data_property(context).copy_to_instrument_selected_instrument
+        if instrument_id is not None and len(instrument_id) > 0 \
+                and instrument_id != NO_INSTRUMENT_SELECTED:
+            return self.get_midi_data_property(context).instruments[int(instrument_id)]
         return None
 
 

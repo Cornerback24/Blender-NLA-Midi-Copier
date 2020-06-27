@@ -39,7 +39,7 @@ import bpy
 from typing import Callable
 from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier
 from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToInstrument, RemoveActionFromInstrument, \
-    TransposeInstrument
+    TransposeInstrument, CopyMidiPanelActionToInstrument
 from . import midi_data
 from bpy.props import EnumProperty
 
@@ -97,10 +97,12 @@ class MidiPanel(bpy.types.Panel):
 
         self.layout.separator()
 
-        if midi_file:
-            col = self.layout.column(align=True)
-            col.enabled = note_action_property.action is not None
-            col.operator(NLAMidiCopier.bl_idname, icon='FILE_SOUND')
+        col = self.layout.column(align=True)
+        copy_to_notes_button_row = col.row()
+        enable_copy_to_notes_button = midi_file is not None and len(midi_file) > 0 and \
+                                      note_action_property.action is not None
+        copy_to_notes_button_row.enabled = enable_copy_to_notes_button
+        copy_to_notes_button_row.operator(NLAMidiCopier.bl_idname, icon='FILE_SOUND')
 
     @staticmethod
     def draw_note_action_common(parent_layout, col, note_action_property, midi_data_property=None, action_index=None):
@@ -117,22 +119,23 @@ class MidiPanel(bpy.types.Panel):
         if is_main_property:
             col.prop(note_action_property, "copy_to_selected_objects")
         col.prop(note_action_property, "duplicate_object_on_overlap")
+        if note_action_property.action and note_action_property.duplicate_object_on_overlap:
+            row = col.row()
+            row.prop(note_action_property, "action_length")
         col = parent_layout.column(align=True)
         col.prop(note_action_property, "sync_length_with_notes")
+        if note_action_property.sync_length_with_notes:
+            col.prop(note_action_property, "scale_factor")
         col.prop(note_action_property, "add_filters")
-
         if note_action_property.add_filters:
             PanelUtils.draw_filter_box(col, note_action_property, not is_main_property, action_index, "midi_data")
 
         col = parent_layout.column(align=True)
+        col.prop(note_action_property, "blend_mode")
         col.prop(note_action_property, "nla_track_name")
         if is_main_property:
             col.prop(midi_data_property, "midi_frame_start")
         col.prop(note_action_property, "midi_frame_offset")
-        if note_action_property.action is not None and not note_action_property.sync_length_with_notes:
-            col.prop(note_action_property, "action_length")
-        if note_action_property.sync_length_with_notes:
-            col.prop(note_action_property, "scale_factor")
 
 
 class MidiInstrumentPanel(bpy.types.Panel):
@@ -150,6 +153,7 @@ class MidiInstrumentPanel(bpy.types.Panel):
         if selected_instrument is not None:
             self.draw_instrument_properties(selected_instrument)
             self.draw_instrument_notes(selected_instrument)
+            self.draw_transpose_instrument(selected_instrument)
             self.draw_animate_instrument(context, selected_instrument)
 
         self.layout.separator()
@@ -165,6 +169,10 @@ class MidiInstrumentPanel(bpy.types.Panel):
                                                               "animate_expanded")[0]
                 if instrument.animate_expanded:
                     animate_box.prop(instrument, "selected_midi_track")
+                    animate_box.prop(instrument, "copy_to_single_track")
+                    text_box_row = animate_box.row()
+                    text_box_row.prop(instrument, "nla_track_name")
+                    text_box_row.enabled = instrument.copy_to_single_track
                     animate_box.operator(NLAMidiInstrumentCopier.bl_idname, text="Animate " + instrument.name)
             except Exception as e:
                 print("Could not load midi file: " + str(e))
@@ -175,6 +183,7 @@ class MidiInstrumentPanel(bpy.types.Panel):
                                                     "notes_expanded")[0]
         if instrument.notes_expanded:
             notes_box.prop(instrument, "selected_note_id")
+            notes_box.prop(instrument, "note_search_string")
             notes_box.operator(AddActionToInstrument.bl_idname)
             instrument_note_property = PropertyUtils.instrument_selected_note_property(instrument)
             if instrument_note_property is not None:
@@ -187,17 +196,19 @@ class MidiInstrumentPanel(bpy.types.Panel):
 
         if instrument.properties_expanded:
             box.prop(instrument, "name")
-            box.prop(instrument, "default_midi_frame_offset")
-            col = box.column(align=True)
-            col.label(text="Transpose:")
-            col.prop(instrument, "transpose_filters")
-            col.separator()
-            transpose_row = col.row()
+            box.prop(instrument, "instrument_midi_frame_offset")
+            box.operator(DeleteInstrument.bl_idname, text="Delete " + instrument.name)
+
+    def draw_transpose_instrument(self, instrument):
+        box = PanelUtils.draw_collapsible_box(self.layout, "Transpose " + instrument.name, instrument,
+                                              "transpose_expanded")[0]
+        if instrument.transpose_expanded:
+            box.prop(instrument, "transpose_filters")
+            transpose_row = box.row()
             MidiInstrumentPanel.draw_transpose_operator(instrument, -12, "- octave", transpose_row)
             MidiInstrumentPanel.draw_transpose_operator(instrument, -1, "- step", transpose_row)
             MidiInstrumentPanel.draw_transpose_operator(instrument, +1, "+ step", transpose_row)
             MidiInstrumentPanel.draw_transpose_operator(instrument, +12, "+ octave", transpose_row)
-            box.operator(DeleteInstrument.bl_idname, text="Delete " + instrument.name)
 
     @staticmethod
     def draw_transpose_operator(instrument, steps: int, text: str, row: bpy.types.UILayout):
@@ -254,6 +265,28 @@ class MidiInstrumentPanel(bpy.types.Panel):
         if action.expanded:
             box.prop(action, "name")
             MidiPanel.draw_note_action_common(box, box.column(align=True), action, action_index=action_index)
+
+
+class CopyToInstrumentPanel(bpy.types.Panel):
+    bl_space_type = "NLA_EDITOR"
+    bl_region_type = "UI"
+    bl_category = "Midi"
+    bl_label = "Copy to Instrument"
+    bl_idname = "ANIMATION_PT_midi_copy_to_instrument_panel"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        col = self.layout.column(align=True)
+        midi_data_property = context.scene.midi_data_property
+        col.prop(midi_data_property, "copy_to_instrument_selected_instrument")
+        col.prop(midi_data_property, "copy_to_instrument_selected_note_id")
+        col.prop(midi_data_property, "copy_to_instrument_note_search_string")
+        copy_button_row = col.row()
+        copy_button_row.enabled = midi_data_property.copy_to_instrument_selected_instrument is not None and \
+                                  midi_data_property.copy_to_instrument_selected_instrument \
+                                  != midi_data.NO_INSTRUMENT_SELECTED and \
+                                  not midi_data_property.note_action_property.copy_to_selected_objects
+        copy_button_row.operator(CopyMidiPanelActionToInstrument.bl_idname)
 
 
 class MidiSettingsPanel(bpy.types.Panel):

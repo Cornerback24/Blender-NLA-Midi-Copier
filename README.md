@@ -13,7 +13,7 @@ Midi Panel
  
 ### Midi Panel controls:
 
-![Midi Panel](images/MidiPanelExample.PNG)
+![Midi Panel](images/midi_panel.PNG)
 
 * Choose midi file:
   * Select a midi file.
@@ -33,22 +33,24 @@ Midi Panel
   * If this option is selected, then the selected objects will be animated instead of the Object in the Object control. This option is only valid for Type Object. 
 * Duplicate Object on Overlap:
   * If this option is selected, then overlapping action strips will be placed on new objects that are duplicates of the original object being animated.  If this option is not selected, then overlapping action strips will be omitted. This option is only valid for Type Object.
-* Nla Track:
-  * The name of the NLA track to place action strips on.  Action strips will be placed on a new track created with this name.  A name wil be automatically generated if this field is blank. 
-* First Frame:
-  * The frame that the midi file starts on.
-* Frame Offset:
-  * Offset in frames to use when generating action strips (can be negative). For example, if the frame offset is -5, then the generated action strips will be placed starting 5 frames before the instances of the selected note.
 * Action Length (Frames):
-  * The length of the action. Used to determine if the action overlaps another generation action. Defaults to the true length of the action. As an example, if this is set to 50 frames, and two notes are only 30 frames apart, then the action for the second note will be considered to overlap the action for the first note.  The second note's action will either be omitted or copied to a duplicate object, depending on whether Duplicate Object on Overlap is selected. If this value is set to less than the true length of the action, it will be replaced by the true length of the action. This control is not available if no action is selected.
+  * The length of the action. Used to determine if the action overlaps another action when duplicating objects. Defaults to the true length of the action. As an example, if this is set to 50 frames, and two notes are only 30 frames apart, then the action for the second note will be considered to overlap the action. The second note's action will be copied to a duplicate object if Duplicate Object on Overlap is selected. If this value is set to less than the true length of the action, it will be replaced by the true length of the action. This control is not available if no action is selected.  
 * Sync Length with Notes
   * If selected, the length of the copied action will be scaled to match the length of the note it is copied to multiplied by the scale factor.
 * Scale Factor
-  * Affects the length of actions when "Sync Length with Notes" is selected. The copied action length will be equal to the length of the note multiplied by this scale factor. (Scale factor of 1 will match the note length exactly.)   
-* Copy Action to Notes:
-  * Generates action scripts from the selected action that line up with all instances of the selected note.
+  * Affects the length of actions when "Sync Length with Notes" is selected. The copied action length will be equal to the length of the note multiplied by this scale factor. (Scale factor of 1 will match the note length exactly.)
 * Add filters.  
-  * Adds filters. If selected, any defined filters will be applied when copying actions. No filters will be applied if this option is not selected. See the Filters section for more information about filters.  
+  * Adds filters. If selected, any defined filters will be applied when copying actions. No filters will be applied if this option is not selected. See the Filters section for more information about filters.
+* Blending
+  * Sets blending type for action strips placed on additional nla tracks if the first nla track does not have room for the action. If this is set to None, actions will be skipped if there is no room on the first nla track.     
+* Nla Track:
+  * The name of the NLA track to place action strips on.  If a track with this name exists, actions will be placed on it, otherwise a new track with this name will be created.  A name wil be automatically generated if this field is blank. 
+* First Frame:
+  * The frame that the midi file starts on.
+* Frame Offset:
+  * Offset in frames to use when generating action strips (can be negative). For example, if the frame offset is -5, then the generated action strips will be placed starting 5 frames before the instances of the selected note.   
+* Copy Action to Notes:
+  * Generates action scripts from the selected action that line up with all instances of the selected note.  
 
 </details>  
 
@@ -59,7 +61,7 @@ Midi Instrument Panel
  
 ### Midi Instrument Panel Controls
 
-![Midi Instrument Panel](images/MidiInstruentPanelExample.PNG)
+![Midi Instrument Panel](images/midi_instrument_panel.PNG)
 
 * Instrument
   * The selected instrument.  
@@ -70,8 +72,30 @@ Midi Instrument Panel
 
 * Name
   * The name of the instrument.
-* Default Frame Offset:
-  * The default frame offset used when creating a new action for the instrument.
+* Instrument Frame Offset:
+  * The frame offset used when animating the instrument. This is added to the frame offset for each action. 
+* Delete \<instrument name\>  
+  * Delete the instrument
+      
+
+
+#### Notes Box
+
+![Notes Box](images/notes_box.PNG)
+
+* Note:
+  * The selected note.  If there are actions associated to the note, the number of actions will be displayed in parentheses. For example, C5 (2) indicates that there are two actions associated to the note C5. An astrix indicates than there are actions that may be copied to other notes due to pitch filters. An exclamation mark indicates there are actions that are missing an object or action, so they will not be copied.
+* Search
+  * Search for a note by note name or midi pitch number. 
+* Add Action
+  * Adds an action for the selected note.    
+* Action Boxes
+  * Each action for the selected note is displayed in its own box. See the "Midi Panel Controls" section above for explanations of the controls in the action boxes.   
+
+#### Transpose Box
+
+![Transpose Box](images/transpose_box.PNG)
+
 * Transpose: The transpose buttons transpose the instrument. Transpose buttons are disabled if the transposition would result in notes outside of the 0-127 midi pitch range.
   * \- octave: shift all actions down an octave
   * \- step: shift all actions down a step
@@ -82,29 +106,21 @@ Midi Instrument Panel
   * Transpose if possible except all-inclusive: Transposes all pitch filters except pitch filters that include every midi pitch (pitch >= 0 or pitch <= 127). Pitch filters that would be transposed to a pitch outside the 0-127 midi pitch range are not transposed.  
   * Transpose if possible: Transposes pitch filters. Pitch filters that would be transposed to a pitch outside the 0-127 midi pitch range are not transposed.  
   * Transpose all except all-inclusive: Transposes all pitch filters except pitch filters that include every midi pitch (pitch >= 0 or pitch <= 127). Transpose buttons are disabled if any pitch filters would be transposed to a range outside of the 0-127 midi pitch range. 
-  * Transpose all: Transposes all pitch filters. Transpose buttons are disabled if any pitch filters would be transposed to a range outside of the 0-127 midi pitch range. 
-* Delete \<instrument name\>  
-  * Delete the instrument
-      
-
-
-#### Notes Box
-
-
-* Note:
-  * The selected note.  If there are actions associated to the note, the number of actions will be displayed in parentheses. For example, C5 (2) indicates that there are two actions associated to the note C5. An astrix indicates than there are actions that may be copied to other notes due to pitch filters.
-* Add Action
-  * Adds an action for the selected note.  
-* Action Boxes
-  * Each action for the selected note is displayed in its own box. See the "Midi Panel Controls" section above for explanations of the controls in the action boxes.   
+  * Transpose all: Transposes all pitch filters. Transpose buttons are disabled if any pitch filters would be transposed to a range outside of the 0-127 midi pitch range.
 
 
 #### Animate Box
 
-The animate instrument box is not avalable if there is no selected midi file.  Select a midi file in the Midi Panel.
+![Animate Box](images/animate_box.PNG)
+
+The animate instrument box is not available if there is no selected midi file.  Select a midi file in the Midi Panel.
 
 * Track
   * The track from the midi file to use when animating the instrument.
+* Copy to single track
+  * If selected, all actions for the instrument will be copied to a single NLA track (this is overwritten for any actions within that define their own NLA track). If this is not selected, a new track will be created for each note.
+* Nla Track:
+  * The name of the NLA track to copy actions to if "Copy to single track" is selected. A name will be generated if this field is blank.    
 * Animate \<instrument name\>
   * Animate the instrument.  The instrument's actions will be copied to notes from the selected track from the selected midi file.  The midi file is selected in the Midi Panel, and the selected track is selected in the Track field directly above this button.  The First Frame field in the Midi Panel will be used as the frame the midi file starts on.
 
@@ -155,10 +171,35 @@ Pitch filters overwrite instrument notes and the note selected in the midi panel
 
 <details>
 <summary>
+Copy to Instrument
+</summary>
+
+### Copy to Instrument
+
+![Copy to Instrument](images/copy_to_instrument_panel.PNG)
+
+The action defined in the Nla Midi panel can be copied to an instrument.
+
+* Instrument
+  * The instrument to copy the action to.
+* Note
+  * The note within the instrument to copy the action to. (If the search field is blank, this field is automatically updated when the note selected in the NLA midi panel is changed.)
+* Search
+  * Search for a note by note name or midi pitch number.
+* Copy to Instruments
+  * Copies the action in the NLA midi panel to the selected instrument and note. This option is not available if "Copy Action to Selected Objects" is selected in the NLA midi panel.    
+     
+</details>
+
+
+<details>
+<summary>
 Midi Settings
 </summary>
 
-# Midi Settings
+### Midi Settings
+
+![Midi Settings](images/midi_settings_panel.PNG)
 
 * Middle C
   * Sets the note that corresponds to middle C (midi pitch 60). This changes the displayed value of middle C and updates the display for instrument notes and the note in the midi panel. This does not change the midi note pitches.
@@ -170,7 +211,7 @@ Midi Settings
 Grease Pencil
 </summary>
 
-# Grease Pencil
+### Grease Pencil
 
 ![Grease Pencil Midi Panel](images/GreasePencilMidiPanelExample.PNG)
 

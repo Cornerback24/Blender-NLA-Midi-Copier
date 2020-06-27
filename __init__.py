@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 6, 2),
+        "version": (0, 7, 0),
         "blender": (2, 80, 0),
         "location": "View NLA Editor > Tool Shelf",
         "description": "Copy actions to action strips based on midi file input",
@@ -49,8 +49,8 @@ from bpy.types import NlaStrip
 from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier
 from .DopeSheetMidiCopierModule import DopeSheetMidiCopier
 from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToInstrument, RemoveActionFromInstrument, \
-    TransposeInstrument
-from .MidiPanelModule import MidiPanel, MidiInstrumentPanel, MidiSettingsPanel
+    TransposeInstrument, CopyMidiPanelActionToInstrument
+from .MidiPanelModule import MidiPanel, MidiInstrumentPanel, CopyToInstrumentPanel, MidiSettingsPanel
 from .DopeSheetMidiPanelModule import DopeSheetMidiPanel, DopeSheetMidiSettingsPanel
 from .MidiPropertiesModule import MidiPropertyGroup, NoteActionProperty, InstrumentNoteProperty, InstrumentProperty, \
     NoteFilterGroup, NoteFilterProperty
@@ -65,9 +65,9 @@ classes = [
     DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup,
     NoteActionProperty, InstrumentNoteProperty, InstrumentProperty,
     AddInstrument, DeleteInstrument, NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier,
-    AddActionToInstrument, RemoveActionFromInstrument, TransposeInstrument,
+    AddActionToInstrument, RemoveActionFromInstrument, TransposeInstrument, CopyMidiPanelActionToInstrument,
     AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter,
-    MidiPropertyGroup, MidiPanel, MidiFileSelector, MidiInstrumentPanel, MidiSettingsPanel,
+    MidiPropertyGroup, MidiPanel, MidiFileSelector, MidiInstrumentPanel, CopyToInstrumentPanel, MidiSettingsPanel,
     DopeSheetNoteActionProperty,
     DopeSheetMidiFileSelector, DopeSheetMidiCopier, DopeSheetMidiPropertyGroup, DopeSheetMidiPanel,
     DopeSheetMidiSettingsPanel]

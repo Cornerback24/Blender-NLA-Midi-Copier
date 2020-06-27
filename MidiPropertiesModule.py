@@ -5,9 +5,12 @@ if "bpy" in locals():
     importlib.reload(midi_data)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(NoteFilterImplementations)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PitchUtils)
 else:
     from . import midi_data
     from . import NoteFilterImplementations
+    from . import PitchUtils
 
 import bpy
 from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
@@ -98,24 +101,19 @@ class NoteActionProperty(PropertyGroup):
         IntProperty(name="Frame Offset",
                     description="Frame offset when copying strips")
 
-    delete_source_action_strip: \
-        BoolProperty(name="Delete Source Action",
-                     description="Delete the source action after copying",
-                     default=False)
-    delete_source_track: \
-        BoolProperty(name="Delete Source Track",
-                     description="Delete the track containing the source action if it is empty",
-                     default=False)
-
     nla_track_name: \
         StringProperty(name="Nla Track",
                        description="Name of the NLA Track that action strips will be placed on.\n " +
-                                   "A track name will be automatically generated if this is blank.")
+                                   "A track name will be automatically generated if this is blank")
 
     duplicate_object_on_overlap: \
         BoolProperty(name="Duplicate Object on Overlap",
                      description="Copy the action to a duplicated object if it overlaps another action",
                      default=False)
+
+    blend_mode: \
+        EnumProperty(items=midi_data.BLEND_MODES, name="Blending", description="Blending for overlapping strips",
+                     default="REPLACE")
 
     sync_length_with_notes: \
         BoolProperty(name="Sync Length with Notes",
@@ -139,7 +137,10 @@ class NoteActionProperty(PropertyGroup):
 
     action_length: \
         IntProperty(name="Action Length (Frames)",
-                    description="Length of the action, used to determine if the next action overlaps.\n" +
+                    description="Length of the action, used to determine if the next action " +
+                                "overlaps for object duplication. " +
+                                "It has no effect on the actual length of the copied action.\n" +
+                                "This option has no effect if \"Sync Length with Notes\" is selected.\n" +
                                 "This will be ignored if it is shorter than the actual length of the action")
 
     scale_factor: \
@@ -196,19 +197,43 @@ TRANSPOSE_FILTER_ITEMS = \
      ("transpose_all", "Transpose all", "Transpose all filters")]
 
 
+def instrument_note_filter_updated(self, context):
+    # sometimes the selected note ends up blank, look for a note to select in that case
+    if len(self.selected_note_id) == 0 and len(midi_data.midi_data.instrument_notes_list) > 0:
+        self.selected_note_id = midi_data.midi_data.instrument_notes_list[0][0]
+
+
+def midi_panel_instrument_note_filter_updated(self, context):
+    # sometimes the selected note ends up blank, look for a note to select in that case
+    if len(self.copy_to_instrument_selected_note_id) == 0 and len(midi_data.midi_data.instrument_notes_list2) > 0:
+        self.copy_to_instrument_selected_note_id = midi_data.midi_data.instrument_notes_list2[0][0]
+
+
 class InstrumentProperty(PropertyGroup):
     name: StringProperty(name="Name")
-    default_midi_frame_offset: IntProperty(name="Default Frame Offset",
-                                           description="Frame offset when copying strips")
+    instrument_midi_frame_offset: IntProperty(name="Instrument Frame Offset",
+                                              description="Frame offset when copying strips")
     notes: CollectionProperty(type=InstrumentNoteProperty, name="Notes")
     selected_note_id: EnumProperty(items=midi_data.get_instrument_notes,
                                    name="Note", description="Note")
 
+    note_search_string: StringProperty(name="Search", description="Search notes", update=instrument_note_filter_updated)
+
     selected_midi_track: EnumProperty(items=get_tracks_list,
                                       name="Track",
                                       description="Selected Midi Track")
+    copy_to_single_track: BoolProperty(name="Copy to single track",
+                                       description="If selected, copy actions to a single nla track. "
+                                                   "Otherwise create a track for each note. "
+                                                   "This is overwritten for any actions that have an Nla Track",
+                                       default=True)
+    nla_track_name: StringProperty(name="Nla Track",
+                                   description="Name of the nla track to copy actions to. "
+                                               "A name will be generated of this field is blank. "
+                                               "This field is not used if \"Copy to Single Track\" is not selected")
     # properties for drawing the panel
     properties_expanded: BoolProperty(name="Expanded", default=True)
+    transpose_expanded: BoolProperty(name="Transpose:", default=False)
     notes_expanded: BoolProperty(name="Expanded", default=True)
     animate_expanded: BoolProperty(name="Expanded", default=True)
     transpose_filters: EnumProperty(items=TRANSPOSE_FILTER_ITEMS, name="Transpose Filters",
@@ -229,12 +254,22 @@ def update_middle_c(self, context):
     midi_data.midi_data.middle_c_id = self.middle_c_note
 
 
+def update_notes_list(midi_property_group, context):
+    copy_to_instrument = midi_property_group.copy_to_instrument_selected_instrument
+    if copy_to_instrument is not None and copy_to_instrument != midi_data.NO_INSTRUMENT_SELECTED and \
+            not midi_property_group.copy_to_instrument_note_search_string:
+        # update the selected note in the copy to instrument panel to match
+        midi_property_group.copy_to_instrument_selected_note_id = str(PitchUtils.note_pitch_from_id(
+            midi_property_group.notes_list))
+
+
 class MidiPropertyGroup(PropertyGroup):
     # defining get= (and not set=) disables editing in the UI
     midi_file: StringProperty(name="Midi File", description="Select Midi File", get=get_midi_file_name)
     notes_list: EnumProperty(items=get_notes_list,
                              name="Note",
-                             description="Note")
+                             description="Note",
+                             update=update_notes_list)
     track_list: EnumProperty(items=get_tracks_list,
                              name="Track",
                              description="Selected Midi Track")
@@ -247,6 +282,14 @@ class MidiPropertyGroup(PropertyGroup):
     instruments: CollectionProperty(type=InstrumentProperty, name="Instruments")
     selected_instrument_id: EnumProperty(items=midi_data.get_instruments, name="Instrument",
                                          description="Select an instrument")
+
+    copy_to_instrument_selected_instrument: EnumProperty(items=midi_data.get_instruments, name="Instrument",
+                                                         description="Instrument to copy the action to")
+    copy_to_instrument_selected_note_id: EnumProperty(items=midi_data.get_selected_instrument_notes,
+                                                      name="Note", description="Note to copy the action to")
+    copy_to_instrument_note_search_string: StringProperty(name="Search", description="Search notes",
+                                                          update=midi_panel_instrument_note_filter_updated)
+
     middle_c_note: EnumProperty(items=middle_c_options,
                                 name="Middle C", description="The note corresponding to middle C (midi note 60)",
                                 default="C4", update=update_middle_c)
