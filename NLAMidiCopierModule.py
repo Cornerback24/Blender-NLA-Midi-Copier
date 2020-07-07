@@ -83,6 +83,7 @@ class NlaTracksManager:
         self.track_overlap_index: int = 0
         self.skip_overlaps: bool = blend_mode == "None"
         self.original_track: [NlaTrackInfo] = self.next_track()
+        self.objects_using_data = None
         pass
 
     def action_to_copy(self, first_frame: int, last_frame: int, action_scale_factor: float) -> Optional[ActionToCopy]:
@@ -124,10 +125,12 @@ class NlaTracksManager:
                         nla_track_info = self.next_track()
                 return nla_track_info
 
-    def next_track(self) -> NlaTrackInfo:
+    def next_track(self) -> Optional[NlaTrackInfo]:
         nla_tracks_empty = len(self.nla_track_infos) == 0
         if self.duplicate_on_overlap and not nla_tracks_empty:
             duplicated_object = self.duplicated_object()
+            if duplicated_object is None:
+                return None
             # the original object should already have a track for the actions, look for the duplicated track
             duplicated_nla_track = None
             if duplicated_object.animation_data is not None:
@@ -164,11 +167,30 @@ class NlaTracksManager:
     def duplicated_object(self):
         # this method assumes no objects are selected when called
         # neither the original object nor the duplicated object will be selected when this method returns
-        self.animated_object.select_set(True)
+        if self.action.id_root == "OBJECT":
+            return NlaTracksManager.duplicate_object(self.animated_object, self.context)
+        else:
+            if self.objects_using_data is None:
+                object_type = self.action.id_root
+                self.objects_using_data = [x for x in self.context.blend_data.objects if
+                                           x.type == object_type and x.data == self.animated_object]
+            if len(self.objects_using_data) == 0:
+                return None  # no objects to duplicate
+
+            duplicated_object = NlaTracksManager.duplicate_object(self.objects_using_data[0], self.context)
+            # create linked duplicates for any other objects using the data
+            for x in self.objects_using_data[1:]:
+                duplicate = NlaTracksManager.duplicate_object(x, self.context)
+                duplicate.data = duplicated_object.data
+            return duplicated_object.data
+
+    @staticmethod
+    def duplicate_object(object_to_duplicate, context):
+        object_to_duplicate.select_set(True)
         bpy.ops.object.duplicate()
-        duplicated_object = self.context.selected_objects[0]
+        duplicated_object = context.selected_objects[0]
         duplicated_object.select_set(False)
-        self.animated_object.select_set(False)
+        object_to_duplicate.select_set(False)
         return duplicated_object
 
 
@@ -181,7 +203,7 @@ class NoteActionCopier:
                             additional_frame_offset
         self.frames_per_second = context.scene.render.fps
         self.context = context
-        self.duplicate_on_overlap = note_action_property.id_type == "Object" and \
+        self.duplicate_on_overlap = midi_data.id_type_is_object(note_action_property.id_type) and \
                                     note_action_property.duplicate_object_on_overlap
         self.scale_to_note_length = note_action_property.sync_length_with_notes
         self.scale_factor = note_action_property.scale_factor
@@ -330,18 +352,23 @@ class NLAMidiCopier(bpy.types.Operator):
 
         id_type = note_action_property.id_type
 
-        selected_objects = bpy.context.selected_objects if id_type == "OBJECT" else []
+        selected_objects = context.selected_objects if midi_data.id_type_is_object(id_type) else []
         for x in selected_objects:
             x.select_set(False)
         note_action_copier = NoteActionCopier(note_action_property, context, None)
 
-        if note_action_copier.animated_object is not None:
-            note_action_copier.copy_notes_to_object(midi_data.get_track_id(context), midi_data.get_note_id(context))
-        elif id_type == "Object" and note_action_property.copy_to_selected_objects:
-            selected_objects = bpy.context.selected_objects
+        if note_action_property.copy_to_selected_objects and midi_data.id_type_is_object(id_type):
+            if midi_data.ID_PROPERTIES_DICTIONARY[id_type][1] == "OBJECT":
+                objects_to_copy = selected_objects
+            else:
+                object_type = midi_data.ID_PROPERTIES_DICTIONARY[id_type][1]
+                # multiple objects may use the same data so use a set to eliminate duplicates
+                objects_to_copy = {x.data for x in selected_objects if x.type == object_type}
 
             note_action_copier.copy_notes_to_objects(midi_data.get_track_id(context),
-                                                     midi_data.get_note_id(context), selected_objects)
+                                                     midi_data.get_note_id(context), objects_to_copy)
+        elif note_action_copier.animated_object is not None:
+            note_action_copier.copy_notes_to_object(midi_data.get_track_id(context), midi_data.get_note_id(context))
 
         # preserve state of which objects were selected
         for x in selected_objects:

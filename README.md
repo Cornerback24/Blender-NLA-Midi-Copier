@@ -30,9 +30,9 @@ Midi Panel
 * Action:
   * The action to generate NLA Strips from. Only actions valid for the selected Type will be shown.
 * Copy Action to Selected Objects:
-  * If this option is selected, then the selected objects will be animated instead of the Object in the Object control. This option is only valid for Type Object. 
+  * If this option is selected, then the selected objects will be animated instead of the Object in the Object control. This option is only valid for Type Object or any type that can be object data (such as Mesh and Curve). 
 * Duplicate Object on Overlap:
-  * If this option is selected, then overlapping action strips will be placed on new objects that are duplicates of the original object being animated.  If this option is not selected, then overlapping action strips will be omitted. This option is only valid for Type Object.
+  * If this option is selected, then overlapping action strips will be placed on new objects that are duplicates of the original object being animated. This option is only valid for Type Object or any type that can be object data (such as Mesh and Curve). If the type is not Object, then all objects using the data will be duplicated. For example if the action is defined on a Curve, all objects using the Curve will be duplicated.
 * Action Length (Frames):
   * The length of the action. Used to determine if the action overlaps another action when duplicating objects. Defaults to the true length of the action. As an example, if this is set to 50 frames, and two notes are only 30 frames apart, then the action for the second note will be considered to overlap the action. The second note's action will be copied to a duplicate object if Duplicate Object on Overlap is selected. If this value is set to less than the true length of the action, it will be replaced by the true length of the action. This control is not available if no action is selected.  
 * Sync Length with Notes
@@ -163,7 +163,7 @@ Pitch filters overwrite instrument notes and the note selected in the midi panel
 * Relative Start Time
   * Filters notes by their start time (time is based on the beginning of the midi file). For example, "Relative Start Time > 5 Seconds" will include only notes that start after 5 seconds into the midi file.  
 * Pitch
-  * Filters notes by pitch. For example, "Pitch > B3" will include all pitches above B3 (so C3 and higher). If a pitch filter is present, it will overwrite the note selected in the midi panel or in the instrument (only affects the filter group the filter is defined in).
+  * Filters notes by pitch. For example, "Pitch > B3" will include all pitches above B3 (so C3 and higher). If a pitch filter is present, it will overwrite the note selected in the midi panel or in the instrument (only affects the filter group the filter is defined in). If the pitch is "Selected" it will match the selected pitch in the midi panel, or the pitch of the instrument note if the filter is part of an instrument. 
 * Velocity
   * Filters notes by their midi velocity. For example, "Velocity = 127" will include only notes with a velocity of 127.     
 
@@ -237,6 +237,6 @@ See the midi panel section for more information about the other controls.
 
 ### Installation:
 * Installation is the normal installation process for multi-file add-ons.
-  * Option 1: Download as a zip file. In Blender, go to Edit > Preferences > Add-ons, and click Install.  Select the zip file and click Install Add-on from File.
+  * Option 1: [Download as a zip file](https://github.com/Cornerback24/Blender-NLA-Midi-Copier/archive/master.zip). In Blender, go to Edit > Preferences > Add-ons, and click Install.  Select the zip file and click Install Add-on from File.
   * Option 2: Clone into the 2.83/scripts/addons directory in the Blender installation.
 * To enable the add-on, in Blender, go to Edit > Preferences > Add-ons, and select Animation in the drop-down. Select Community at the top if it isn't already selected. Check the box next to the add-on to enable it.

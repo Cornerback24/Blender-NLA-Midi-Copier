@@ -56,6 +56,13 @@ class DopeSheetNoteFilterGroup(PropertyGroup):
     expanded: BoolProperty(name="Expanded", default=True)
 
 
+def on_add_filters_selected(note_action_property, context):
+    if note_action_property.add_filters:
+        # add a filter group if none exist (for ease of use)
+        if len(note_action_property.note_filter_groups) == 0:
+            note_action_property.note_filter_groups.add()
+
+
 class DopeSheetNoteActionProperty(PropertyGroup):
     midi_frame_offset: \
         IntProperty(name="Frame Offset",
@@ -87,7 +94,8 @@ class DopeSheetNoteActionProperty(PropertyGroup):
     add_filters: \
         BoolProperty(name="Add filters",
                      description="Add filters to exclude notes",
-                     default=False)
+                     default=False,
+                     update=on_add_filters_selected)
 
     filters_expanded: BoolProperty(name="Expanded", default=True)
 

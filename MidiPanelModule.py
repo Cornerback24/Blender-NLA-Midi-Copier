@@ -109,19 +109,22 @@ class MidiPanel(bpy.types.Panel):
         is_main_property = midi_data_property is not None  # false if this is part of a instrument
         col.prop(note_action_property, "id_type")
         if note_action_property.id_type is not None:
-            col.prop(note_action_property, midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][0])
+            object_row = col.row()
+            object_row.enabled = not note_action_property.copy_to_selected_objects
+            object_row.prop(note_action_property, midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][0])
             col.prop(note_action_property, "action")
 
         parent_layout.separator()
 
         col = parent_layout.column(align=True)
-        col.enabled = note_action_property.id_type == "Object"
+        col.enabled = midi_data.id_type_is_object(note_action_property.id_type)
         if is_main_property:
             col.prop(note_action_property, "copy_to_selected_objects")
         col.prop(note_action_property, "duplicate_object_on_overlap")
         if note_action_property.action and note_action_property.duplicate_object_on_overlap:
             row = col.row()
             row.prop(note_action_property, "action_length")
+
         col = parent_layout.column(align=True)
         col.prop(note_action_property, "sync_length_with_notes")
         if note_action_property.sync_length_with_notes:
@@ -250,9 +253,10 @@ class MidiInstrumentPanel(bpy.types.Panel):
                     for filter_group in note_action.note_filter_groups:
                         for note_filter in filter_group.note_filters:
                             if note_filter.filter_type == "note_pitch_filter":
-                                pitch = PitchUtils.note_pitch_from_id(note_filter.note_pitch)
-                                if not can_transpose_lambda(pitch, note_filter.comparison_operator):
-                                    return False
+                                if not PitchUtils.note_id_is_selected_note(note_filter.note_pitch):
+                                    pitch = PitchUtils.note_pitch_from_id(note_filter.note_pitch)
+                                    if not can_transpose_lambda(pitch, note_filter.comparison_operator):
+                                        return False
         return True
 
     def draw_action(self, action, action_index: int, parent: bpy.types.UILayout) -> None:

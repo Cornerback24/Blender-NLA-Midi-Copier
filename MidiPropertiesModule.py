@@ -22,6 +22,10 @@ def get_all_notes(self, context):
     return midi_data.midi_data.get_all_notes(context)
 
 
+def get_all_notes_for_pitch_filter(self, context):
+    return midi_data.midi_data.get_all_notes(context, True)
+
+
 def get_tracks_list(self, context):
     return midi_data.get_tracks_list(self, context)
 
@@ -33,12 +37,15 @@ def get_notes_list(self, context):
 def action_poll(note_action_property, action):
     id_root = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][1]
     return action.id_root == id_root or (
-            action.id_root == "NODETREE" and id_root in midi_data.note_tree_types)
+            action.id_root == "NODETREE" and id_root in midi_data.node_tree_types)
 
 
 def on_id_type_updated(note_action_property, context):
     # clear the action since it no longer applies to the selected id type
     note_action_property.action = None
+    if note_action_property.copy_to_selected_objects and not midi_data.id_type_is_object(note_action_property.id_type):
+        # copy to selected objects only works if the id_type corresponds to an object type
+        note_action_property.copy_to_selected_objects = False
 
 
 def on_action_updated(note_action_property, context):
@@ -48,26 +55,21 @@ def on_action_updated(note_action_property, context):
         note_action_property.action_length = action.frame_range[1] - action.frame_range[0]
 
 
-def on_object_updated(note_action_property, context):
-    if note_action_property.object is not None:
-        # either copy to note_action_property.object or to selected objects, not both
-        note_action_property.copy_to_selected_objects = False
+def on_add_filters_selected(note_action_property, context):
+    if note_action_property.add_filters:
+        # add a filter group if none exist (for ease of use)
+        if len(note_action_property.note_filter_groups) == 0:
+            note_action_property.note_filter_groups.add()
 
 
-def on_copy_to_selected_objects_updated(note_action_property, context):
-    if note_action_property.copy_to_selected_objects:
-        # either copy to note_action_property.object or to selected objects, not both
-        note_action_property.object = None
+COMPARISON_ENUM_PROPERTY_ITEMS = [("less_than", "<", "Less than", 0),
+                                  ("less_than_or_equal_to", "<=", "Less than or equal to", 1),
+                                  ("equal_to", "=", "Equal to", 2),
+                                  ("greater_than_or_equal_to", ">=", "Greater than or equal to", 3),
+                                  ("greater_than", ">", "Greater than", 4)]
 
-
-COMPARISON_ENUM_PROPERTY_ITEMS = [("less_than", "<", "Less than"),
-                                  ("less_than_or_equal_to", "<=", "Less than or equal to"),
-                                  ("equal_to", "=", "Equal to"),
-                                  ("greater_than_or_equal_to", ">=", "Greater than or equal to"),
-                                  ("greater_than", ">", "Greater than")]
-
-TIME_UNITS = [("frames", "Frames", "Frames"),
-              ("seconds", "Seconds", "Seconds")]
+TIME_UNITS = [("frames", "Frames", "Frames", 0),
+              ("seconds", "Seconds", "Seconds", 1)]
 
 
 class NoteFilterProperty(PropertyGroup):
@@ -75,7 +77,7 @@ class NoteFilterProperty(PropertyGroup):
                               description="Filter Type", default="note_pitch_filter")
     comparison_operator: EnumProperty(items=COMPARISON_ENUM_PROPERTY_ITEMS, name="Comparison Operator",
                                       description="Comparison Operator", default="equal_to")
-    note_pitch: EnumProperty(items=get_all_notes, name="Pitch", description="Pitch")
+    note_pitch: EnumProperty(items=get_all_notes_for_pitch_filter, name="Pitch", description="Pitch")
     non_negative_int: IntProperty(name="Non Negative Int", description="Non-negative integer", min=0)
     positive_int: IntProperty(name="Positive Int", description="Positive Integer", min=1, default=1)
     positive_int_2: IntProperty(name="Positive Int", description="Positive Integer", min=1, default=1)
@@ -91,7 +93,9 @@ class NoteFilterGroup(PropertyGroup):
 
 class NoteActionProperty(PropertyGroup):
     id_type: EnumProperty(
-        items=sorted([(x, x, x) for x in midi_data.ID_PROPERTIES_DICTIONARY.keys()], key=lambda x: x[0]),
+        items=sorted(
+            [(x, x, x, midi_data.ID_PROPERTIES_DICTIONARY[x][2]) for x in midi_data.ID_PROPERTIES_DICTIONARY.keys()],
+            key=lambda x: x[0]),
         name="Type", description="Type of object to apply the action to", default="Object", update=on_id_type_updated)
 
     action: PointerProperty(type=bpy.types.Action, name="Action", description="The action to create action strips from",
@@ -124,7 +128,8 @@ class NoteActionProperty(PropertyGroup):
     add_filters: \
         BoolProperty(name="Add filters",
                      description="Add filters to exclude notes",
-                     default=False)
+                     default=False,
+                     update=on_add_filters_selected)
 
     filters_expanded: BoolProperty(name="Expanded", default=True)
 
@@ -133,7 +138,7 @@ class NoteActionProperty(PropertyGroup):
     copy_to_selected_objects: \
         BoolProperty(name="Copy Action to Selected Objects",
                      description="Copy the action to all selected objects.",
-                     default=False, update=on_copy_to_selected_objects_updated)
+                     default=False)
 
     action_length: \
         IntProperty(name="Action Length (Frames)",
@@ -155,27 +160,34 @@ class NoteActionProperty(PropertyGroup):
     expanded: BoolProperty(name="Expanded", default=True)
 
     armature: PointerProperty(type=bpy.types.Armature, name="Armature", description="The armature to animate")
+    brush: PointerProperty(type=bpy.types.Brush, name="Brush", description="The brush to animate")
     camera: PointerProperty(type=bpy.types.Camera, name="Camera", description="The camera to animate")
     cachefile: PointerProperty(type=bpy.types.CacheFile, name="Cache File", description="The cache file to animate")
+    collection: PointerProperty(type=bpy.types.Collection, name="Collection", description="The collection animate")
     curve: PointerProperty(type=bpy.types.Curve, name="Curve", description="The curve to animate")
     greasepencil: PointerProperty(type=bpy.types.GreasePencil, name="Grease Pencil",
                                   description="The grease pencil to animate")
+    image: PointerProperty(type=bpy.types.Image, name="Image", description="The image to animate")
     key: PointerProperty(type=bpy.types.Key, name="Key", description="The key to animate")
     lattice: PointerProperty(type=bpy.types.Lattice, name="Lattice", description="The lattice to animate")
     light: PointerProperty(type=bpy.types.Light, name="Light", description="The light to animate")
+    light_probe: PointerProperty(type=bpy.types.LightProbe, name="Light  Probe",
+                                 description="The light_probe to animate")
     mask: PointerProperty(type=bpy.types.Mask, name="Mask", description="The mask to animate")
     material: PointerProperty(type=bpy.types.Material, name="Material", description="The material to animate")
     meta: PointerProperty(type=bpy.types.MetaBall, name="MetaBall", description="The meta to animate")
     mesh: PointerProperty(type=bpy.types.Mesh, name="Mesh", description="The mesh to animate")
     movieclip: PointerProperty(type=bpy.types.MovieClip, name="Movie Clip", description="The movie clip to animate")
     nodetree: PointerProperty(type=bpy.types.NodeTree, name="Node Tree", description="The node tree to animate")
-    object: PointerProperty(type=bpy.types.Object, name="Object", description="The object to animate",
-                            update=on_object_updated)
-    light_probe: PointerProperty(type=bpy.types.LightProbe, name="Light  Probe",
-                                 description="The light_probe to animate")
+    object: PointerProperty(type=bpy.types.Object, name="Object", description="The object to animate")
+    paintcurve: PointerProperty(type=bpy.types.PaintCurve, name="Paintcurve", description="The paintcurve to animate")
+    palette: PointerProperty(type=bpy.types.Palette, name="Palette", description="The palette to animate")
     scene: PointerProperty(type=bpy.types.Scene, name="Scene", description="The scene to animate")
+    sound: PointerProperty(type=bpy.types.Sound, name="Sound", description="The sound to animate")
     speaker: PointerProperty(type=bpy.types.Speaker, name="Speaker", description="The speaker to animate")
+    text: PointerProperty(type=bpy.types.Text, name="Text", description="The text to animate")
     texture: PointerProperty(type=bpy.types.Texture, name="Texture", description="The texture to animate")
+    volume: PointerProperty(type=bpy.types.Volume, name="Volume", description="The volume to animate")
     world: PointerProperty(type=bpy.types.World, name="World", description="The world to animate")
 
 
@@ -186,15 +198,15 @@ class InstrumentNoteProperty(PropertyGroup):
 
 
 TRANSPOSE_FILTER_ITEMS = \
-    [("no_transpose", "Do not transpose", "Do not transpose"),
+    [("no_transpose", "Do not transpose", "Do not transpose", 0),
      ("transpose_if_possible_leave_all_inclusive", "Transpose if possible except all-inclusive",
       "Transpose filters if possible. Does not transpose filters that can't be transposed due to range constraints. "
-      "Does not transpose filters than include every pitch"),
+      "Does not transpose filters than include every pitch", 1),
      ("transpose_if_possible", "Transpose if possible",
-      "Transpose filters if possible. Does not transpose filters that can't be transposed due to range constraints"),
+      "Transpose filters if possible. Does not transpose filters that can't be transposed due to range constraints", 2),
      ("transpose_all_leave_all_inclusive", "Transpose all except all-inclusive",
-      "Transpose all filters except for filters than include every pitch"),
-     ("transpose_all", "Transpose all", "Transpose all filters")]
+      "Transpose all filters except for filters than include every pitch", 3),
+     ("transpose_all", "Transpose all", "Transpose all filters", 4)]
 
 
 def instrument_note_filter_updated(self, context):
@@ -247,7 +259,7 @@ def get_midi_file_name(self):
     return ""
 
 
-middle_c_options = [("C3", "C3", "C3"), ("C4", "C4", "C4"), ("C5", "C5", "C5")]
+middle_c_options = [("C3", "C3", "C3", 0), ("C4", "C4", "C4", 1), ("C5", "C5", "C5", 2)]
 
 
 def update_middle_c(self, context):

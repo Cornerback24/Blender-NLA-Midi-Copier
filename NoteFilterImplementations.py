@@ -21,6 +21,7 @@ class NoteFilterBase(ABC):
     NAME = None  # name of the filter
     DESCRIPTION = None  # Description of the filter
     NAME_DISPLAY_WEIGHT = 0.37  # percentage of the row on the ui that will be allocated to the filter type property
+    NUMBER = 0  # Number for storing in enum property. Must be unique for each enum class.
 
     def __init__(self, note_filter_property):
         self.note_filter = note_filter_property
@@ -83,10 +84,16 @@ class PitchFilter(NoteFilterBase):
     ID = "note_pitch_filter"
     NAME = "Pitch"
     DESCRIPTION = "Filter by the note's pitch. (This overrides the selected note.)"
+    NUMBER = 2
+
+    def __init__(self, note_filter_property):
+        super().__init__(note_filter_property)
+        self.pitch = None
 
     def filtered_notes(self, notes: List[Tuple[int, Note]], context) -> List[Tuple[int, Note]]:
-        pitch = PitchUtils.note_pitch_from_id(self.note_filter.note_pitch)
-        return self.filter_by_callable(notes, lambda note: self.compare_values(note.pitch, pitch))
+        if self.pitch is None:
+            self.pitch = PitchUtils.note_pitch_from_id(self.note_filter.note_pitch)
+        return self.filter_by_callable(notes, lambda note: self.compare_values(note.pitch, self.pitch))
 
     @staticmethod
     def draw_ui(parent_layout, note_filter_property):
@@ -97,6 +104,7 @@ class StartTime(NoteFilterBase):
     ID = "note_start_time_relative_frames"
     NAME = "Relative Start Time"
     DESCRIPTION = "Filter notes by start time (relative to the start of the midi file)"
+    NUMBER = 3
 
     def filtered_notes(self, notes: List[Tuple[int, Note]], context) -> List[Tuple[int, Note]]:
         start_time_frames = \
@@ -119,6 +127,7 @@ class NoteLength(NoteFilterBase):
     ID = "note_length_filter"
     NAME = "Note Length"
     DESCRIPTION = "Filter notes by length"
+    NUMBER = 1
 
     def filtered_notes(self, notes: List[Tuple[int, Note]], context):
         note_length_frames = PropertyUtils.time_in_frames(
@@ -138,6 +147,7 @@ class NoteVelocity(NoteFilterBase):
     ID = "note_velocity_filter"
     NAME = "Velocity"
     DESCRIPTION = "Filter notes by velocity"
+    NUMBER = 4
 
     def filtered_notes(self, notes: List[Tuple[int, Note]], context):
         return self.filter_by_callable(notes,
@@ -154,6 +164,7 @@ class AlternationFilter(NoteFilterBase):
     DESCRIPTION = "Filter notes by an alternation pattern. " \
                   "(For example only every fourth note, starting with the third note.)"
     NAME_DISPLAY_WEIGHT = 0.2
+    NUMBER = 0
 
     def filtered_notes(self, notes: List[Tuple[int, Note]], context) -> List[Tuple[int, Note]]:
         alternation_factor = self.note_filter.positive_int
@@ -177,11 +188,12 @@ FILTER_REGISTRY = [AlternationFilter, NoteLength, PitchFilter, StartTime, NoteVe
 # map id to filter class
 ID_TO_FILTER = {note_filter.ID: note_filter for note_filter in FILTER_REGISTRY}
 # notes filters for enum property
-FILTER_ENUM_PROPERTY_ITEMS = [(note_filter.ID, note_filter.NAME, note_filter.DESCRIPTION) for note_filter in
-                              FILTER_REGISTRY]
+FILTER_ENUM_PROPERTY_ITEMS = [(note_filter.ID, note_filter.NAME, note_filter.DESCRIPTION, note_filter.NUMBER) for
+                              note_filter in FILTER_REGISTRY]
 
 
-def __notes_passing_filter(notes: List[Note], filter_group_property, default_pitch, context) -> List[Tuple[int, Note]]:
+def __notes_passing_filter(notes: List[Note], filter_group_property, default_pitch: int, context) -> \
+        List[Tuple[int, Note]]:
     """
     :param notes: list of notes
     :param filter_group_property: filter group property
@@ -195,6 +207,9 @@ def __notes_passing_filter(notes: List[Note], filter_group_property, default_pit
         notes_paired_to_index = [note_index_pair for note_index_pair in notes_paired_to_index if
                                  note_index_pair[1].pitch == default_pitch]
     for note_filter in note_filters:
+        if isinstance(note_filter, PitchFilter) and PitchUtils.note_id_is_selected_note(
+                note_filter.note_filter.note_pitch):
+            note_filter.pitch = default_pitch
         notes_paired_to_index = note_filter.filtered_notes(notes_paired_to_index, context)
     return notes_paired_to_index
 

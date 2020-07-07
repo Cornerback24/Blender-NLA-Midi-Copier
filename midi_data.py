@@ -36,40 +36,76 @@ def selected_instrument(context):
     return midi_data.selected_instrument(context)
 
 
-# key is display name, value is (NoteActionProperty field name, Action id_root)
-ID_PROPERTIES_DICTIONARY = {"Armature": ("armature", "ARMATURE"),
-                            "Camera": ("camera", "CAMERA"),
+# key is display name, value is (NoteActionProperty field name, Action id_root, enum number)
+ID_PROPERTIES_DICTIONARY = {"Armature": ("armature", "ARMATURE", 0),
+                            "Brush": ("brush", "BRUSH", 18),
+                            # "Action": ("action", "ACTION),
+                            "Camera": ("camera", "CAMERA", 1),
                             # "Cache File": ("cachefile", "CACHEFILE"),
-                            "Curve": ("curve", "CURVE"),
-                            "Grease Pencil": ("greasepencil", "GREASEPENCIL"),
-                            "Key": ("key", "KEY"),
-                            "Lattice": ("lattice", "LATTICE"),
-                            "Light": ("light", "LIGHT"),
-                            "Light Probe": ("light_probe", "LIGHT_PROBE"),
-                            "Mask": ("mask", "MASK"),
-                            "Material": ("material", "MATERIAL"),
-                            "MetaBall": ("meta", "META"),
-                            "Mesh": ("mesh", "MESH"),
-                            "Movie Clip": ("movieclip", "MOVIECLIP"),
+                            "Collection": ("collection", "COLLECTION", 19),
+                            "Curve": ("curve", "CURVE", 2),
+                            # "Font": ("font", "FONT"),
+                            "Grease Pencil": ("greasepencil", "GREASEPENCIL", 3),
+                            "Image": ("image", "IMAGE", 20),
+                            "Key": ("key", "KEY", 4),
+                            "Lattice": ("lattice", "LATTICE", 5),
+                            # "Library": ("library", "LIBRARY"),
+                            "Light": ("light", "LIGHT", 6),
+                            "Light Probe": ("light_probe", "LIGHT_PROBE", 7),
+                            # "Linestyle": ("linestyle", "LINESTYLE"),
+                            "Mask": ("mask", "MASK", 8),
+                            "Material": ("material", "MATERIAL", 9),
+                            "MetaBall": ("meta", "META", 10),
+                            "Mesh": ("mesh", "MESH", 11),
+                            "Movie Clip": ("movieclip", "MOVIECLIP", 12),
                             # "Node Tree": ("nodetree", "NODETREE"),
-                            "Object": ("object", "OBJECT"),
-                            "Scene": ("scene", "SCENE"),
-                            "Speaker": ("speaker", "SPEAKER"),
-                            "Texture": ("texture", "TEXTURE"),
-                            "World": ("world", "WORLD")}
+                            "Object": ("object", "OBJECT", 13),
+                            "Paintcurve": ("paintcurve", "PAINTCURVE", 21),
+                            "Palette": ("palette", "PALETTE", 22),
+                            # "Particle": ("particle", "PARTICLE"),
+                            "Scene": ("scene", "SCENE", 14),
+                            "Sound": ("sound", "SOUND", 23),
+                            "Speaker": ("speaker", "SPEAKER", 15),
+                            "Text": ("text", "TEXT", 24),
+                            "Texture": ("texture", "TEXTURE", 16),
+                            "Volume": ("volume", "VOLUME", 17),
+                            # "Window Manager": ("windowmanager", "WINDOWMANAGER"),
+                            # "Workspace": ("workspace", "WORKSPACE"),
+                            "World": ("world", "WORLD", 25)}
+
+OBJECT_ID_TYPES = {
+    "ARMATURE",
+    "CAMERA",
+    "CURVE",
+    "FONT",
+    "GPENCIL",
+    "LATTICE",
+    "LIGHT",
+    "LIGHT_PROBE",
+    "MESH",
+    "META",
+    "OBJECT",
+    "SPEAKER",
+    "VOLUME"
+}
+
+
+def id_type_is_object(midi_data_id_type: str):
+    return ID_PROPERTIES_DICTIONARY[midi_data_id_type][1] in OBJECT_ID_TYPES
+
 
 # node trees don't show up in the selector,
 # so applying an action is done by selecting the object the node tree belongs to
-note_tree_types = "MATERIAL, TEXTURE, WORLD, SCENE, LIGHT"
+node_tree_types = "MATERIAL, TEXTURE, WORLD, SCENE, LIGHT"
 
 NO_INSTRUMENT_SELECTED = "[No Instrument Selected]"
 
-BLEND_MODES = [("None", "None (skip overlaps)", "No blending. Overlapping strips are not copied"),
-               ("REPLACE", "Replace", "Replace"),
-               ("COMBINE", "Combine", "Combine"),
-               ("ADD", "Add", "Add"),
-               ("SUBTRACT", "Subtract", "Subtract"),
-               ("MULTIPLY", "Multiply", "Multiply")]
+BLEND_MODES = [("None", "None (skip overlaps)", "No blending. Overlapping strips are not copied", 0),
+               ("REPLACE", "Replace", "Replace", 1),
+               ("COMBINE", "Combine", "Combine", 2),
+               ("ADD", "Add", "Add", 3),
+               ("SUBTRACT", "Subtract", "Subtract", 4),
+               ("MULTIPLY", "Multiply", "Multiply", 5)]
 
 
 class MidiDataUtil:
@@ -126,6 +162,7 @@ class LoadedMidiData:
         self.track_list = []  # list of tracks in the midi file
         self.notes_list = []  # list of notes for the selected midi track
         self.all_notes = []  # enum property list of all notes (0 to 127), enum key is note id
+        self.all_notes_for_pitch_filter = []  # enum property list of all notes (0 to 127), enum key is note id
         self.instruments_list = []  # list of defined instruments
         self.instrument_notes_list = []  # list of notes for the selected instrument
         self.instrument_notes_list2 = []  # list of notes for the selected instruments, used for copy to instrument action
@@ -271,7 +308,7 @@ class LoadedMidiData:
                 (lambda note: filter_string.lower() in note[1].lower())
 
         filtered_notes = [note for note in notes_list_enums if note_filter_lambda(note)]
-        # to avoid issues with emtpy enum list, return all if no match instead of none
+        # to avoid issues with empty enum list, return all if no match instead of none
         return filtered_notes if len(filtered_notes) > 0 else notes_list_enums
 
     @staticmethod
@@ -289,11 +326,18 @@ class LoadedMidiData:
                              note_filter.filter_type == "note_pitch_filter"]
             if len(pitch_filters) > 0:
                 final_filter = pitch_filters[-1]
-                filter_pitch = PitchUtils.note_pitch_from_id(final_filter.note_pitch)
-                if not (final_filter.comparison_operator == "equal_to" and filter_pitch == pitch):
+                #  check if the last applied pitch filter is equal to selected note
+                if not (final_filter.comparison_operator == "equal_to" and (
+                        PitchUtils.note_id_is_selected_note(final_filter.note_pitch) or
+                        PitchUtils.note_pitch_from_id(final_filter.note_pitch) == pitch)):
                     return True
+                # last applied pitch filter is equal to selected note, check if any previous filters filter selected
+                # note out
                 for pitch_filter in pitch_filters:
-                    filter_pitch = PitchUtils.note_pitch_from_id(pitch_filter.note_pitch)
+                    if PitchUtils.note_id_is_selected_note(final_filter.note_pitch):
+                        filter_pitch = pitch
+                    else:
+                        filter_pitch = PitchUtils.note_pitch_from_id(pitch_filter.note_pitch)
                     if not PropertyUtils.compare(pitch_filter.comparison_operator, pitch, filter_pitch):
                         return True
         return False
@@ -309,18 +353,24 @@ class LoadedMidiData:
                 return True
         return False
 
-    def get_all_notes(self, context):
+    def get_all_notes(self, context, for_pitch_filter=False):
         """
         :return: list of all notes (pitches 0 - 127) as enum properties (where enum property id is note id)
         """
         if self.get_middle_c_id(context) != self.middle_c_on_last_all_notes_update:
             self.all_notes = []
+            self.all_notes_for_pitch_filter = []
             self.middle_c_on_last_all_notes_update = self.get_middle_c_id(context)
             for pitch in range(128):
                 note_display = PitchUtils.note_display_from_pitch(pitch, self.middle_c_id)
                 note_description = PitchUtils.note_description_from_pitch(pitch, self.middle_c_id)
-                self.all_notes.append((PitchUtils.note_id_from_pitch(pitch), note_display, note_description))
-        return self.all_notes
+                note_enum = (PitchUtils.note_id_from_pitch(pitch), note_display, note_description)
+                self.all_notes.append(note_enum)
+                self.all_notes_for_pitch_filter.append(note_enum)
+            self.all_notes_for_pitch_filter.append(("selected", "Selected",
+                                                    "The selected pitch in the Midi panel, or the pitch corresponding "
+                                                    "to the instrument note if this filter is part of an instrument"))
+        return self.all_notes_for_pitch_filter if for_pitch_filter else self.all_notes
 
     def get_middle_c_id(self, context):
         if self.middle_c_id is None:

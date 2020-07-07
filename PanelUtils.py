@@ -51,19 +51,19 @@ def draw_collapsible_box(parent: bpy.types.UILayout, text: str, object_with_expa
 
 def draw_filter_box(parent_layout, note_action_property, is_instrument_property, action_index, midi_data_accessor):
     box = draw_collapsible_box(parent_layout, "Filters", note_action_property, "filters_expanded")[0]
-    col = box.column(align=True)
     if note_action_property.filters_expanded:
-        add_filter_group_operator = col.operator(AddNoteFilterGroup.bl_idname)
-        add_filter_group_operator.is_part_of_instrument = is_instrument_property
-        add_filter_group_operator.midi_data_accessor = midi_data_accessor
-        if is_instrument_property:
-            add_filter_group_operator.action_index = action_index
-
         filter_group_index = 0
         for filter_group in note_action_property.note_filter_groups:
             draw_filter_group(box, filter_group, is_instrument_property, action_index, filter_group_index,
                               midi_data_accessor)
             filter_group_index += 1
+
+        col = box.column(align=True)
+        add_filter_group_operator = col.operator(AddNoteFilterGroup.bl_idname)
+        add_filter_group_operator.is_part_of_instrument = is_instrument_property
+        add_filter_group_operator.midi_data_accessor = midi_data_accessor
+        if is_instrument_property:
+            add_filter_group_operator.action_index = action_index
 
 
 def draw_filter_group(parent_layout, filter_group_property, is_instrument_property, action_index,
@@ -80,20 +80,25 @@ def draw_filter_group(parent_layout, filter_group_property, is_instrument_proper
     remove_operator.filter_group_index = filter_group_index
 
     if filter_group_property.expanded:
-        filter_index = 0
-        filter_count = len(filter_group_property.note_filters)
-        for filter_property in filter_group_property.note_filters:
-            draw_filter(box, filter_property, is_instrument_property, action_index, filter_group_index,
-                        filter_index, filter_count, midi_data_accessor)
-            filter_index = filter_index + 1
+        draw_filters_list(action_index, box, filter_group_index, filter_group_property, is_instrument_property,
+                          midi_data_accessor)
 
-        final_row = box.row()
-        add_filter_operator = final_row.operator(AddNoteFilter.bl_idname, text='Add filter')
-        add_filter_operator.is_part_of_instrument = is_instrument_property
-        add_filter_operator.midi_data_accessor = midi_data_accessor
-        if is_instrument_property:
-            add_filter_operator.action_index = action_index
-        add_filter_operator.filter_group_index = filter_group_index
+
+def draw_filters_list(action_index, box, filter_group_index, filter_group_property, is_instrument_property,
+                      midi_data_accessor):
+    filter_index = 0
+    filter_count = len(filter_group_property.note_filters)
+    for filter_property in filter_group_property.note_filters:
+        draw_filter(box, filter_property, is_instrument_property, action_index, filter_group_index,
+                    filter_index, filter_count, midi_data_accessor)
+        filter_index = filter_index + 1
+    final_row = box.row()
+    add_filter_operator = final_row.operator(AddNoteFilter.bl_idname, text='Add filter')
+    add_filter_operator.is_part_of_instrument = is_instrument_property
+    add_filter_operator.midi_data_accessor = midi_data_accessor
+    if is_instrument_property:
+        add_filter_operator.action_index = action_index
+    add_filter_operator.filter_group_index = filter_group_index
 
 
 def draw_filter(parent_layout, filter_property, is_instrument_property, action_index, filter_group_index,

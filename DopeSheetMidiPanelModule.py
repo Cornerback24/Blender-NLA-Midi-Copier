@@ -47,7 +47,7 @@ class DopeSheetMidiPanel(bpy.types.Panel):
     bl_space_type = "DOPESHEET_EDITOR"
     bl_region_type = "UI"
     bl_category = "Midi"
-    bl_label = "NLA Midi"
+    bl_label = "Grease Pencil Midi"
     bl_idname = "ANIMATION_PT_dope_sheet_midi_panel"
 
     @classmethod

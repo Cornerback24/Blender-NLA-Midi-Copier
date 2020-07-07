@@ -237,6 +237,7 @@ class TransposeInstrument(bpy.types.Operator):
                     for filter_group in note_action.note_filter_groups:
                         for note_filter in filter_group.note_filters:
                             if note_filter.filter_type == "note_pitch_filter":
-                                pitch = PitchUtils.note_pitch_from_id(note_filter.note_pitch)
-                                if should_transpose(pitch, note_filter.comparison_operator):
-                                    note_filter.note_pitch = PitchUtils.note_id_from_pitch(pitch + transpose_steps)
+                                if not PitchUtils.note_id_is_selected_note(note_filter.note_pitch):
+                                    pitch = PitchUtils.note_pitch_from_id(note_filter.note_pitch)
+                                    if should_transpose(pitch, note_filter.comparison_operator):
+                                        note_filter.note_pitch = PitchUtils.note_id_from_pitch(pitch + transpose_steps)

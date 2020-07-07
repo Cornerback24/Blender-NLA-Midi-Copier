@@ -39,6 +39,10 @@ def note_pitch_from_id(note_id_str: str) -> int:
     return NOTE_ID_TO_PITCH[note_id_str]
 
 
+def note_id_is_selected_note(note_id_str: str) -> bool:
+    return note_id_str == "selected"
+
+
 def note_id_from_pitch(pitch: int) -> str:
     return Note.PITCH_DICTIONARY[pitch]
 
