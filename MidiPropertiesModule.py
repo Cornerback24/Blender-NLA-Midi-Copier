@@ -54,14 +54,6 @@ def on_action_updated(note_action_property, context):
     if action is not None:
         note_action_property.action_length = action.frame_range[1] - action.frame_range[0]
 
-
-def on_add_filters_selected(note_action_property, context):
-    if note_action_property.add_filters:
-        # add a filter group if none exist (for ease of use)
-        if len(note_action_property.note_filter_groups) == 0:
-            note_action_property.note_filter_groups.add()
-
-
 COMPARISON_ENUM_PROPERTY_ITEMS = [("less_than", "<", "Less than", 0),
                                   ("less_than_or_equal_to", "<=", "Less than or equal to", 1),
                                   ("equal_to", "=", "Equal to", 2),
@@ -128,8 +120,7 @@ class NoteActionProperty(PropertyGroup):
     add_filters: \
         BoolProperty(name="Add filters",
                      description="Add filters to exclude notes",
-                     default=False,
-                     update=on_add_filters_selected)
+                     default=False)
 
     filters_expanded: BoolProperty(name="Expanded", default=True)
 
