@@ -18,21 +18,38 @@ from .midi_analysis.Note import Note
 
 
 class ActionToCopy:
-    def __init__(self, action, nla_track, first_frame: int, last_frame: int, scale_factor: float, blend_type: str):
+    def __init__(self, action, nla_track, first_frame: int, last_frame: int, scale_factor: float, blend_type: str,
+                 strips_to_shift):
         self.action = action
         self.nla_track = nla_track
         self.first_frame = first_frame
         self.last_frame = last_frame
         self.scale_factor = scale_factor
         self.blend_type = blend_type
+        self.strips_to_shift = strips_to_shift
 
     def copy_action(self):
+        # shift strips to the right if adding the non-scaled action will caused an overlap
+        shift_amount_frames = 0
+        if len(self.strips_to_shift) > 0:
+            true_action_length = self.action.frame_range[1] - self.action.frame_range[0]
+            shift_amount_frames = self.first_frame + true_action_length - self.strips_to_shift[0].frame_start + 1
+            for strip in reversed(self.strips_to_shift):
+                strip.frame_end = strip.frame_end + shift_amount_frames
+                strip.frame_start = strip.frame_start + shift_amount_frames
+
         nla_strips = self.nla_track.strips
         copied_strip = nla_strips.new(str(self.first_frame) + ' ' + self.action.name, self.first_frame, self.action)
         copied_strip.scale = self.scale_factor
         if self.blend_type is not None:
             copied_strip.blend_type = self.blend_type
             copied_strip.extrapolation = "NOTHING"
+
+        # moved shifted strips back
+        if shift_amount_frames > 0:
+            for strip in self.strips_to_shift:
+                strip.frame_start = strip.frame_start - shift_amount_frames
+                strip.frame_end = strip.frame_end - shift_amount_frames
 
 
 class NlaTrackInfo:
@@ -45,6 +62,14 @@ class NlaTrackInfo:
         self.last_action_added: Optional[ActionToCopy] = None
 
     def existing_action_overlap(self, first_frame: int, last_frame: int):
+        """
+        :param first_frame: the first frame of the action
+        :param last_frame:  the last frame of the action
+        :return: True if the action overlaps an action that exists on the track
+        (does not include actions that will be copied). This method needs to be called in ascending order by first frame
+        of actions being checked (does not check for actions that are known to be before the last action that was
+        checked in order to be more efficient).
+        """
         while self.current_nla_strip_index < self.nla_strip_count and \
                 self.nla_strips[self.current_nla_strip_index].frame_start <= last_frame:
             if self.nla_strips[self.current_nla_strip_index].frame_end >= first_frame:
@@ -53,6 +78,11 @@ class NlaTrackInfo:
         return False
 
     def overlaps_last_added_action(self, action_first_frame: int, action_last_frame: int) -> bool:
+        """
+        :param action_first_frame: the first frame of the action
+        :param action_last_frame: the last frame of the action
+        :return: True if the action overlaps the most recent action that was added to be copied
+        """
         if self.last_action_added is None:
             overlaps_last_action = False
         else:
@@ -60,13 +90,27 @@ class NlaTrackInfo:
                                    self.last_action_added.first_frame
         return overlaps_last_action
 
+    def actions_to_shift_when_copy(self, action_last_frame: int):
+        """
+        :param action_last_frame: copied actions's last frame
+        :return: list of actions that would need to be shifted to the right in order to make room for the copied action
+        """
+        if self.current_nla_strip_index >= self.nla_strip_count:
+            return []
+        else:
+            if self.nla_strips[self.current_nla_strip_index].frame_start <= action_last_frame:
+                return self.nla_strips[self.current_nla_strip_index:]
+            else:
+                return []
+
     def has_room_for_action(self, action_first_frame: int, action_last_frame: int) -> bool:
         return not self.existing_action_overlap(action_first_frame, action_last_frame) \
                and not self.overlaps_last_added_action(action_first_frame, action_last_frame)
 
-    def add_action(self, action, first_frame: int, last_frame: int, scale_factor: float) -> ActionToCopy:
+    def add_action(self, action, first_frame: int, last_frame: int, scale_factor: float,
+                   actions_to_shift) -> ActionToCopy:
         self.last_action_added = ActionToCopy(action, self.nla_track, first_frame, last_frame, scale_factor,
-                                              self.blend_type)
+                                              self.blend_type, actions_to_shift)
         return self.last_action_added
 
 
@@ -84,17 +128,25 @@ class NlaTracksManager:
         self.skip_overlaps: bool = blend_mode == "None"
         self.original_track: [NlaTrackInfo] = self.next_track()
         self.objects_using_data = None
+        self.true_action_length = self.action.frame_range[1] - self.action.frame_range[0]
         pass
 
     def action_to_copy(self, first_frame: int, last_frame: int, action_scale_factor: float) -> Optional[ActionToCopy]:
         nla_track_info = self.track_for_action(first_frame, last_frame)
         if nla_track_info is not None:
-            return nla_track_info.add_action(self.action, first_frame, last_frame, action_scale_factor)
+            # If the action is scaled down, there may be a conflict when adding the action at first since it will not
+            # be caused down at that point and could extend past the next strip. In this case, temporarily shift
+            # actions to the right to make space.
+            actions_to_shift = nla_track_info.actions_to_shift_when_copy(
+                first_frame + self.true_action_length) if action_scale_factor < 1 else []
+            return nla_track_info.add_action(self.action, first_frame, last_frame, action_scale_factor,
+                                             actions_to_shift)
         return None
 
     def track_for_action(self, first_frame: int, last_frame: int) -> Optional[NlaTrackInfo]:
         if self.duplicate_on_overlap:
-            # if the original track has room, don't duplicate the object (duplicated object would not have room either)
+            # if the original track doesn't have room, don't duplicate the object
+            # (duplicated object would not have room either)
             if self.original_track.existing_action_overlap(first_frame, last_frame):
                 return None
             else:
@@ -207,6 +259,7 @@ class NoteActionCopier:
                                     note_action_property.duplicate_object_on_overlap
         self.scale_to_note_length = note_action_property.sync_length_with_notes
         self.scale_factor = note_action_property.scale_factor
+        self.copy_to_note_end = note_action_property.copy_to_note_end
         self.action = note_action_property.action
         self.filter_groups_property = note_action_property.note_filter_groups
         self.add_filters = note_action_property.add_filters
@@ -301,7 +354,8 @@ class NoteActionCopier:
         :param note: Note object
         :return: the first frame for an action syncing up to this note
         """
-        return (note.startTime / 1000) * self.frames_per_second + self.frame_offset
+        return ((note.endTime if self.copy_to_note_end else note.startTime) / 1000) \
+               * self.frames_per_second + self.frame_offset
 
     @staticmethod
     def get_animation_data(animated_object):

@@ -39,6 +39,8 @@ Midi Panel
   * If selected, the length of the copied action will be scaled to match the length of the note it is copied to multiplied by the scale factor.
 * Scale Factor
   * Affects the length of actions when "Sync Length with Notes" is selected. The copied action length will be equal to the length of the note multiplied by this scale factor. (Scale factor of 1 will match the note length exactly.)
+* Copy to Note End
+  * Copies the action to the end of the note instead of the beginning.
 * Add filters.  
   * Adds filters. If selected, any defined filters will be applied when copying actions. No filters will be applied if this option is not selected. See the Filters section for more information about filters.
 * Blending

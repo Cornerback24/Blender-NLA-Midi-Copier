@@ -117,6 +117,11 @@ class NoteActionProperty(PropertyGroup):
                                  "they are copied to",
                      default=False)
 
+    copy_to_note_end: \
+        BoolProperty(name="Copy to Note End",
+                     description="Copy the action to the end of the note instead of the beginning",
+                     default=False)
+
     add_filters: \
         BoolProperty(name="Add filters",
                      description="Add filters to exclude notes",

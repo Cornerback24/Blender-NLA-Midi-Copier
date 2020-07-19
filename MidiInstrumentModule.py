@@ -127,6 +127,7 @@ class CopyMidiPanelActionToInstrument(bpy.types.Operator):
         copy_to.duplicate_object_on_overlap = copy_from.duplicate_object_on_overlap
         copy_to.blend_mode = copy_from.blend_mode
         copy_to.sync_length_with_notes = copy_from.sync_length_with_notes
+        copy_to.copy_to_note_end = copy_from.copy_to_note_end
         copy_to.add_filters = copy_from.add_filters
         copy_to.filters_expanded = copy_from.filters_expanded
         copy_to.action_length = copy_from.action_length
