@@ -137,3 +137,9 @@ def draw_filter(parent_layout, filter_property, is_instrument_property, action_i
         remove_filter_operator.action_index = action_index
     remove_filter_operator.filter_group_index = filter_group_index
     remove_filter_operator.filter_index = filter_index
+
+
+def indented_row(parent_layout):
+    split = parent_layout.row().split(factor=0.05)
+    split1, row = split.row(), split.row()
+    return row

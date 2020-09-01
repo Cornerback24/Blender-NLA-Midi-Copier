@@ -27,13 +27,26 @@ def get_instrument_notes(instrument_property, context):
 
 
 def get_selected_instrument_notes(midi_data_property, context):
-    return midi_data.get_instrument_notes(midi_data.selected_instrument_for_copy_to_id(context),
-                                          midi_data_property.copy_to_instrument_note_search_string,
-                                          LoadedMidiData.store_notes_list_two)
+    """
+    :return: the notes for the selected instrument in the Copy panel, or all notes if copy to instrument is not selected
+    """
+    if midi_data_property.bulk_copy_property.copy_to_instrument:
+        return midi_data.get_instrument_notes(midi_data.selected_instrument_for_copy_to_id(context),
+                                              midi_data_property.copy_to_instrument_note_search_string.strip(),
+                                              LoadedMidiData.store_notes_list_two)
+    else:
+        return midi_data.get_all_notes_list(midi_data_property.copy_to_instrument_note_search_string.strip(),
+                                            LoadedMidiData.store_copy_panel_notes_list)
 
 
 def selected_instrument(context):
     return midi_data.selected_instrument(context)
+
+
+def get_bulk_copy_starting_note(bulk_copy_property, context):
+    # enum property for the starting note for bulk copy
+    return midi_data.get_all_notes_list(bulk_copy_property.bulk_copy_starting_note_search_string,
+                                        LoadedMidiData.store_bulk_copy_notes_list)
 
 
 # key is display name, value is (NoteActionProperty field name, Action id_root, enum number)
@@ -91,7 +104,21 @@ OBJECT_ID_TYPES = {
 
 
 def id_type_is_object(midi_data_id_type: str):
+    """
+    :param midi_data_id_type: the id_type (as defined in NoteActionProperty)
+    :return: True if the type corresponds to a Blender Object or a Blender Object.data type
+    """
     return ID_PROPERTIES_DICTIONARY[midi_data_id_type][1] in OBJECT_ID_TYPES
+
+
+def can_resolve_data_from_selected_objects(midi_data_id_type: str):
+    """
+    :param midi_data_id_type: the id_type (as defined in NoteActionProperty)
+    :return: True if the type corresponds to a data type that can be resolved for each object
+     given the scene's selected objects.(For example, True for mesh since an object's mesh can be found using
+     object.data.)
+    """
+    return id_type_is_object(midi_data_id_type)
 
 
 # node trees don't show up in the selector,
@@ -167,6 +194,8 @@ class LoadedMidiData:
         self.instrument_notes_list = []  # list of notes for the selected instrument
         self.instrument_notes_list2 = []  # list of notes for the selected instruments, used for copy to instrument action
         self.instrument_note_actions_list = []  # list of actions for the selected note of the selected instrument
+        self.bulk_copy_starting_notes_list = []  # list of notes than can be selected as the starting note for bulk copy
+        self.copy_panel_notes_list = []  # list of notes for the Note field in the Copy panel when Copy to Instrument is note selected
         self.notes_list_dict = {}  # key is track id String, value is list of note properties (where enum property id is note id)
         self.current_midi_filename = None  # name of the loaded midi file
         self.middle_c_id = None  # note id being used for middle c
@@ -261,6 +290,10 @@ class LoadedMidiData:
 
     def get_instrument_notes(self, instrument_property, search_string, store_and_return_list):
         """
+        :param instrument_property the property for the instrument to get the notes from
+        :param search_string string to filter notes
+        :param store_and_return_list lambda that stores the notes to a field in this LoadedMidiData instance
+        and returns the stored list
         :return: list of notes for the instrument's selected_note_id EnumProperty (where enum property id is note pitch)
         """
         new_notes_list = []
@@ -291,6 +324,22 @@ class LoadedMidiData:
         new_notes_list = LoadedMidiData.notes_list_filtered(new_notes_list, search_string)
         return store_and_return_list(self, new_notes_list)
 
+    def get_all_notes_list(self, search_string, store_and_return_list):
+        """
+        :param search_string to filter notes
+        :param store_and_return_list lambda that stores the notes to a field in this LoadedMidiData instance
+        and returns the stored list
+        :return: a list of notes to select (all pitches, filtered by search_string)
+        """
+        new_notes_list = []
+        for pitch in range(128):
+            note_display = PitchUtils.note_display_from_pitch(pitch, self.middle_c_id)
+            note_description = PitchUtils.note_description_from_pitch(pitch, self.middle_c_id)
+            new_notes_list.append((str(pitch), note_display, note_description))
+
+        new_notes_list = LoadedMidiData.notes_list_filtered(new_notes_list, search_string)
+        return store_and_return_list(self, new_notes_list)
+
     def store_notes_list_one(self, notes_list):
         self.instrument_notes_list = notes_list
         return self.instrument_notes_list
@@ -298,6 +347,14 @@ class LoadedMidiData:
     def store_notes_list_two(self, notes_list):
         self.instrument_notes_list2 = notes_list
         return self.instrument_notes_list2
+
+    def store_bulk_copy_notes_list(self, notes_list):
+        self.bulk_copy_starting_notes_list = notes_list
+        return self.bulk_copy_starting_notes_list
+
+    def store_copy_panel_notes_list(self, notes_list):
+        self.copy_panel_notes_list = notes_list
+        return self.copy_panel_notes_list
 
     @staticmethod
     def notes_list_filtered(notes_list_enums, filter_string):
@@ -355,6 +412,8 @@ class LoadedMidiData:
 
     def get_all_notes(self, context, for_pitch_filter=False):
         """
+        :param context the context
+        :param for_pitch_filter true if the enum property is for a pitch filter
         :return: list of all notes (pitches 0 - 127) as enum properties (where enum property id is note id)
         """
         if self.get_middle_c_id(context) != self.middle_c_on_last_all_notes_update:

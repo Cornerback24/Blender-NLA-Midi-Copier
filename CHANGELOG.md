@@ -1,6 +1,10 @@
+- 0.8.0 2020-8-31
+  * Add copy along path option for quickly animating multiple objects to different notes if they all share the same action.
+  * Fix overlaps being detected when nla strip is adjacent but not overlapping
+  * Change scaling so that nla strip end times are always integer frames
 - 0.7.3 2020-7-18
   * Add ability to copy to end of note
-  * Fix issue where copying a scaled down action to a track with existing actions could result in a no room for strip error                                                                                              
+  * Fix issue where copying a scaled down action to a track with existing actions could result in a no room for strip error.                                                                                              
 - 0.7.2 2020-7-11
   * Fix copying to instrument creating a blank filter group (revert automatically adding filter group)
 - 0.7.1 2020-7-6

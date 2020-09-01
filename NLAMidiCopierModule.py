@@ -6,10 +6,16 @@ if "bpy" in locals():
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PitchUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(ObjectUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PropertyUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(NoteFilterImplementations)
 else:
     from . import midi_data
     from . import PitchUtils
+    from . import ObjectUtils
+    from . import PropertyUtils
     from . import NoteFilterImplementations
 
 import bpy
@@ -40,7 +46,7 @@ class ActionToCopy:
 
         nla_strips = self.nla_track.strips
         copied_strip = nla_strips.new(str(self.first_frame) + ' ' + self.action.name, self.first_frame, self.action)
-        copied_strip.scale = self.scale_factor
+        copied_strip.frame_end = self.last_frame
         if self.blend_type is not None:
             copied_strip.blend_type = self.blend_type
             copied_strip.extrapolation = "NOTHING"
@@ -71,8 +77,8 @@ class NlaTrackInfo:
         checked in order to be more efficient).
         """
         while self.current_nla_strip_index < self.nla_strip_count and \
-                self.nla_strips[self.current_nla_strip_index].frame_start <= last_frame:
-            if self.nla_strips[self.current_nla_strip_index].frame_end >= first_frame:
+                self.nla_strips[self.current_nla_strip_index].frame_start < last_frame:
+            if self.nla_strips[self.current_nla_strip_index].frame_end > first_frame:
                 return True
             self.current_nla_strip_index = self.current_nla_strip_index + 1
         return False
@@ -86,7 +92,7 @@ class NlaTrackInfo:
         if self.last_action_added is None:
             overlaps_last_action = False
         else:
-            overlaps_last_action = action_first_frame <= self.last_action_added.last_frame and action_last_frame >= \
+            overlaps_last_action = action_first_frame < self.last_action_added.last_frame and action_last_frame > \
                                    self.last_action_added.first_frame
         return overlaps_last_action
 
@@ -255,7 +261,7 @@ class NoteActionCopier:
                             additional_frame_offset
         self.frames_per_second = context.scene.render.fps
         self.context = context
-        self.duplicate_on_overlap = midi_data.id_type_is_object(note_action_property.id_type) and \
+        self.duplicate_on_overlap = midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type) and \
                                     note_action_property.duplicate_object_on_overlap
         self.scale_to_note_length = note_action_property.sync_length_with_notes
         self.scale_factor = note_action_property.scale_factor
@@ -292,7 +298,7 @@ class NoteActionCopier:
         for note in notes:
             action_length, action_scale_factor = self.copied_action_length_and_scale_factor(note, non_scaled_length)
             first_frame = self.first_frame(note)
-            to_copy = nla_tracks.action_to_copy(first_frame, first_frame + action_length, action_scale_factor)
+            to_copy = nla_tracks.action_to_copy(first_frame, round(first_frame + action_length), action_scale_factor)
             if to_copy is not None:
                 actions_to_copy.append(to_copy)
         for action_to_copy in actions_to_copy:
@@ -349,13 +355,13 @@ class NoteActionCopier:
             self.animated_object = x
             self.copy_notes_to_object(track_id, note_id)
 
-    def first_frame(self, note):
+    def first_frame(self, note) -> int:
         """
         :param note: Note object
         :return: the first frame for an action syncing up to this note
         """
-        return ((note.endTime if self.copy_to_note_end else note.startTime) / 1000) \
-               * self.frames_per_second + self.frame_offset
+        return int(((note.endTime if self.copy_to_note_end else note.startTime) / 1000) \
+               * self.frames_per_second + self.frame_offset)
 
     @staticmethod
     def get_animation_data(animated_object):
@@ -364,15 +370,6 @@ class NoteActionCopier:
         if animation_data is None:
             animation_data = animated_object.animation_data_create()
         return animation_data
-
-    @staticmethod
-    def copy_action(frame, action, nla_track, scale_factor, blend_type=None):
-        nla_strips = nla_track.strips
-        copied_strip = nla_strips.new(str(frame) + ' ' + action.name, frame, action)
-        copied_strip.scale = scale_factor
-        if blend_type is not None:
-            copied_strip.blend_type = blend_type
-            copied_strip.extrapolation = "NOTHING"
 
     @staticmethod
     def get_selected_nla_strips_and_deselect(context):
@@ -406,12 +403,12 @@ class NLAMidiCopier(bpy.types.Operator):
 
         id_type = note_action_property.id_type
 
-        selected_objects = context.selected_objects if midi_data.id_type_is_object(id_type) else []
+        selected_objects = context.selected_objects if midi_data.can_resolve_data_from_selected_objects(id_type) else []
         for x in selected_objects:
             x.select_set(False)
         note_action_copier = NoteActionCopier(note_action_property, context, None)
 
-        if note_action_property.copy_to_selected_objects and midi_data.id_type_is_object(id_type):
+        if note_action_property.copy_to_selected_objects and midi_data.can_resolve_data_from_selected_objects(id_type):
             if midi_data.ID_PROPERTIES_DICTIONARY[id_type][1] == "OBJECT":
                 objects_to_copy = selected_objects
             else:
@@ -481,3 +478,129 @@ class NLAMidiAllInstrumentCopier(bpy.types.Operator):
     def action_common(self, context):
         for instrument in context.scene.midi_data_property.instruments:
             NLAMidiInstrumentCopier.animate_instrument(context, instrument)
+
+
+class NLABulkMidiCopier(bpy.types.Operator):
+    """
+    This operator handles both copying to an instrument and copying to notes from the bulk copy panel.
+    """
+    bl_idname = "ops.nla_bulk_midi_copier"
+    bl_label = "Copy Action to Notes"
+    bl_description = "Copy the selected Action to the selected note"
+    bl_options = {"REGISTER", "UNDO"}
+    scale_to_pitch_map = {"C": 0, "C#": 1, "D": 2, "D#": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "G#": 8, "A": 9, "A#": 10,
+                          "B": 11}
+    in_major_scale = {0, 2, 4, 5, 7, 9, 11}  # pitches in a major scale (where 0 is tonic)
+    tooltip: bpy.props.StringProperty()
+
+    def execute(self, context):
+        self.action_common(context)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        self.action_common(context)
+        return {'FINISHED'}
+
+    @classmethod
+    def description(cls, context, properties):
+        return properties.tooltip
+
+    def action_common(self, context):
+        copy_along_path: bool = context.scene.midi_data_property.bulk_copy_property.copy_along_path
+        if copy_along_path:
+            NLABulkMidiCopier.notes_along_path(context)
+        else:
+            NLABulkMidiCopier.single_note(context)
+
+    @staticmethod
+    def single_note(context):
+        midi_panel_note_action_property = context.scene.midi_data_property.note_action_property
+        bulk_copy_property = context.scene.midi_data_property.bulk_copy_property
+        note_pitch: int = int(context.scene.midi_data_property.copy_to_instrument_selected_note_id)
+        NLABulkMidiCopier.animate_or_copy_to_instrument(bulk_copy_property.copy_to_instrument,
+                                                        PitchUtils.note_id_from_pitch(note_pitch),
+                                                        midi_panel_note_action_property, context)
+
+    @staticmethod
+    def notes_along_path(context):
+        """
+        Copies the action to objects along the path, incrementing the note for each object.
+        """
+        bulk_copy_property = context.scene.midi_data_property.bulk_copy_property
+        objs = ObjectUtils.objects_sorted_by_path(context.selected_objects,
+                                                  bulk_copy_property.bulk_copy_curve)
+        midi_data_property = midi_data.midi_data.get_midi_data_property(context)
+        note_action_property = midi_data_property.note_action_property
+        action_id_root = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][1]
+        note_action_object_field = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][0]
+
+        original_object_value = getattr(note_action_property, note_action_object_field)
+        if action_id_root == "OBJECT":
+            animated_objects = objs
+        else:
+            animated_objects = list(dict.fromkeys([x.data for x in objs if x.type == action_id_root]))
+
+        notes_to_copy = NLABulkMidiCopier.notes_to_copy(midi_data_property.bulk_copy_property, midi_data.midi_data)
+
+        for i in range(min(len(notes_to_copy), len(animated_objects))):
+            animated_object = animated_objects[i]
+            note_to_copy = notes_to_copy[i]
+            setattr(note_action_property, note_action_object_field, animated_object)
+            NLABulkMidiCopier.animate_or_copy_to_instrument(bulk_copy_property.copy_to_instrument, note_to_copy,
+                                                            note_action_property, context)
+
+        setattr(note_action_property, note_action_object_field, original_object_value)
+
+    @staticmethod
+    def notes_to_copy(bulk_copy_property, loaded_midi_data) -> List[str]:
+        notes_to_copy_list = []
+        note_pitch: int = int(bulk_copy_property.bulk_copy_starting_note)
+
+        filter_by_active_track = bulk_copy_property.only_notes_in_selected_track
+        filter_by_scale = False
+        in_scale = True
+        if bulk_copy_property.scale_filter_type == "In scale":
+            filter_by_scale = True
+        elif bulk_copy_property.scale_filter_type == "Not in scale":
+            filter_by_scale = True
+            in_scale = False
+
+        notes_in_active_track = {}
+        if filter_by_active_track:
+            notes_in_active_track = {x[0] for x in loaded_midi_data.notes_list}
+        scale_pitch = None
+        if filter_by_scale:
+            scale_pitch = NLABulkMidiCopier.scale_to_pitch_map[bulk_copy_property.scale_filter_scale]
+
+        while note_pitch <= 127:
+            note_id: str = PitchUtils.note_id_from_pitch(note_pitch)
+            passes_scale_filter = (((note_pitch - scale_pitch) % 12) in NLABulkMidiCopier.in_major_scale) == in_scale \
+                if filter_by_scale else True
+            passes_track_filter = note_id in notes_in_active_track if filter_by_active_track else True
+            if passes_scale_filter and passes_track_filter:
+                notes_to_copy_list.append(note_id)
+            note_pitch = note_pitch + 1
+
+        return notes_to_copy_list
+
+    @staticmethod
+    def animate_or_copy_to_instrument(copy_to_instrument: bool, note_id: str, note_action_property, context):
+        """
+        :param copy_to_instrument: If true, copies the note action property to the instrument defined by
+        midi_data.midi_data.selected_instrument_for_copy_to_id, otherwise copies the action using the given note
+        :param note_id: note to copy to
+        :param note_action_property: the note action property
+        :param context: the context
+        """
+        if copy_to_instrument:
+            instrument = midi_data.midi_data.selected_instrument_for_copy_to_id(context)
+            if instrument is None:
+                return
+            copied_note_action_property = PropertyUtils.get_note_action_property(instrument,
+                                                                                 PitchUtils.note_pitch_from_id(note_id))
+            midi_panel_note_action_property = context.scene.midi_data_property.note_action_property
+            PropertyUtils.copy_note_action_property(midi_panel_note_action_property, copied_note_action_property,
+                                                    midi_data.ID_PROPERTIES_DICTIONARY)
+        else:
+            NoteActionCopier(note_action_property, context, None) \
+                .copy_notes_to_object(midi_data.get_track_id(context), note_id)

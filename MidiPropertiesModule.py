@@ -43,9 +43,14 @@ def action_poll(note_action_property, action):
 def on_id_type_updated(note_action_property, context):
     # clear the action since it no longer applies to the selected id type
     note_action_property.action = None
-    if note_action_property.copy_to_selected_objects and not midi_data.id_type_is_object(note_action_property.id_type):
+    if note_action_property.copy_to_selected_objects and \
+            not midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type):
         # copy to selected objects only works if the id_type corresponds to an object type
         note_action_property.copy_to_selected_objects = False
+    # copy along path only works if the id_type corresponds to an object type
+    if context.scene.midi_data_property.bulk_copy_property.copy_along_path and \
+            not midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type):
+        context.scene.midi_data_property.bulk_copy_property.copy_along_path = False
 
 
 def on_action_updated(note_action_property, context):
@@ -53,6 +58,7 @@ def on_action_updated(note_action_property, context):
     # update the action length property to match the actual length of the action
     if action is not None:
         note_action_property.action_length = action.frame_range[1] - action.frame_range[0]
+
 
 COMPARISON_ENUM_PROPERTY_ITEMS = [("less_than", "<", "Less than", 0),
                                   ("less_than_or_equal_to", "<=", "Less than or equal to", 1),
@@ -213,8 +219,19 @@ def instrument_note_filter_updated(self, context):
 
 def midi_panel_instrument_note_filter_updated(self, context):
     # sometimes the selected note ends up blank, look for a note to select in that case
-    if len(self.copy_to_instrument_selected_note_id) == 0 and len(midi_data.midi_data.instrument_notes_list2) > 0:
-        self.copy_to_instrument_selected_note_id = midi_data.midi_data.instrument_notes_list2[0][0]
+    if self.bulk_copy_property.copy_to_instrument:
+        if len(self.copy_to_instrument_selected_note_id) == 0 and len(midi_data.midi_data.instrument_notes_list2) > 0:
+            self.copy_to_instrument_selected_note_id = midi_data.midi_data.instrument_notes_list2[0][0]
+    else:
+        if len(self.copy_to_instrument_selected_note_id) == 0 and len(midi_data.midi_data.copy_panel_notes_list) > 0:
+            self.copy_to_instrument_selected_note_id = midi_data.midi_data.copy_panel_notes_list[0][0]
+
+
+def bulk_copy_start_note_filter_updated(bulk_copy_property, context):
+    # sometimes the selected note ends up blank, look for a note to select in that case
+    if len(bulk_copy_property.bulk_copy_starting_note) == 0 and len(
+            midi_data.midi_data.bulk_copy_starting_notes_list) > 0:
+        bulk_copy_property.bulk_copy_starting_note = midi_data.midi_data.bulk_copy_starting_notes_list[0][0]
 
 
 class InstrumentProperty(PropertyGroup):
@@ -271,6 +288,41 @@ def update_notes_list(midi_property_group, context):
             midi_property_group.notes_list))
 
 
+def object_is_curve(bulk_copy_property_group, bpy_object):
+    return bpy_object.type == "CURVE"
+
+
+scale_filter_options = [("No filter", "No filter", "Do not filter by scale", 0),
+                        ("In scale", "In scale", "Only include nodes in the selected scale", 1),
+                        ("Not in scale", "Not in scale", "Only include notes that are not in the selected scale", 2)]
+scale_options = [("A", "A", "A", 9), ("A#", "A#", "A#", 10), ("B", "B", "B", 11), ("C", "C", "C", 0),
+                 ("C#", "C#", "C#", 1), ("D", "D", "D", 2), ("D#", "D#", "D#", 3), ("E", "E", "E", 4),
+                 ("F", "F", "F", 5), ("F#", "F#", "F#", 6), ("G", "G", "G", 7), ("G#", "G#", "G#", 8), ]
+
+
+class BulkCopyPropertyGroup(PropertyGroup):
+    copy_along_path: BoolProperty(name="Copy along path",
+                                  description="Animate selected objects, ordered by a path.\n"
+                                              "Each object is animated to a different note, ascending by pitch along "
+                                              "the path")
+    copy_along_path_options_expanded: BoolProperty(name="Expanded", default=True)
+    copy_to_instrument: BoolProperty(name="Copy to Instrument", default=False,
+                                     description="Copies actions to an instrument if selected, otherwise copies "
+                                                 "actions directly to NLA strips")
+    bulk_copy_curve: PointerProperty(type=bpy.types.Object, name="Path", poll=object_is_curve,
+                                     description="The path of selected objects to animate")
+    bulk_copy_starting_note: EnumProperty(items=midi_data.get_bulk_copy_starting_note,
+                                          name="Starting Note", description="The note to use for the first object")
+    bulk_copy_starting_note_search_string: StringProperty(name="Search", description="Search notes",
+                                                          update=bulk_copy_start_note_filter_updated)
+    scale_filter_type: EnumProperty(items=scale_filter_options, name="Filter by Scale", description="Filter by Scale")
+    scale_filter_scale: EnumProperty(items=scale_options, name="Scale", description="Major Scale")
+    only_notes_in_selected_track: BoolProperty(name="Only Notes in Selected Track",
+                                               description="Only copy to notes in the selected Track "
+                                                           "in the NLA Midi Panel",
+                                               default=False)
+
+
 class MidiPropertyGroup(PropertyGroup):
     # defining get= (and not set=) disables editing in the UI
     midi_file: StringProperty(name="Midi File", description="Select Midi File", get=get_midi_file_name)
@@ -297,6 +349,7 @@ class MidiPropertyGroup(PropertyGroup):
                                                       name="Note", description="Note to copy the action to")
     copy_to_instrument_note_search_string: StringProperty(name="Search", description="Search notes",
                                                           update=midi_panel_instrument_note_filter_updated)
+    bulk_copy_property: PointerProperty(type=BulkCopyPropertyGroup)
 
     middle_c_note: EnumProperty(items=middle_c_options,
                                 name="Middle C", description="The note corresponding to middle C (midi note 60)",

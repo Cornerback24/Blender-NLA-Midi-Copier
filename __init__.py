@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 7, 3),
+        "version": (0, 8, 0),
         "blender": (2, 80, 0),
         "location": "View NLA Editor > Tool Shelf",
         "description": "Copy actions to action strips based on midi file input",
@@ -46,14 +46,14 @@ else:
 import bpy
 from bpy.props import PointerProperty
 from bpy.types import NlaStrip
-from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier
+from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier
 from .DopeSheetMidiCopierModule import DopeSheetMidiCopier
 from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToInstrument, RemoveActionFromInstrument, \
-    TransposeInstrument, CopyMidiPanelActionToInstrument
+    TransposeInstrument
 from .MidiPanelModule import MidiPanel, MidiInstrumentPanel, CopyToInstrumentPanel, MidiSettingsPanel
 from .DopeSheetMidiPanelModule import DopeSheetMidiPanel, DopeSheetMidiSettingsPanel
 from .MidiPropertiesModule import MidiPropertyGroup, NoteActionProperty, InstrumentNoteProperty, InstrumentProperty, \
-    NoteFilterGroup, NoteFilterProperty
+    NoteFilterGroup, NoteFilterProperty, BulkCopyPropertyGroup
 from .DopeSheetMidiPropertiesModule import DopeSheetMidiPropertyGroup, DopeSheetNoteActionProperty, \
     DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup
 from .MidiPanelModule import MidiFileSelector
@@ -62,10 +62,10 @@ from .NoteFilterModule import AddNoteFilter, RemoveNoteFilter, AddNoteFilterGrou
 
 classes = [
     NoteFilterProperty, NoteFilterGroup,
-    DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup,
-    NoteActionProperty, InstrumentNoteProperty, InstrumentProperty,
-    AddInstrument, DeleteInstrument, NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier,
-    AddActionToInstrument, RemoveActionFromInstrument, TransposeInstrument, CopyMidiPanelActionToInstrument,
+    DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup, BulkCopyPropertyGroup,
+    NoteActionProperty, InstrumentNoteProperty, InstrumentProperty, AddInstrument, DeleteInstrument, NLAMidiCopier,
+    NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier,
+    AddActionToInstrument, RemoveActionFromInstrument, TransposeInstrument,
     AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter,
     MidiPropertyGroup, MidiPanel, MidiFileSelector, MidiInstrumentPanel, CopyToInstrumentPanel, MidiSettingsPanel,
     DopeSheetNoteActionProperty,

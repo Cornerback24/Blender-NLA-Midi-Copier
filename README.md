@@ -3,7 +3,8 @@ Blender add-on for creating midi-driven animations from the Nonlinear Animation 
 
 An instrument can be defined as a collection of notes and actions.  The instrument is independent of any specific midi file, allowing for defining a set of actions for each note and later syncing them up to a midi file.  To define an instrument, expand the right-side panel in the Nonlinear Action View and select the Midi Instruments tab.
 
-This add-on is written for Blender 2.83.
+This add-on is written for Blender 2.83.  
+Add-on Version 0.8.0. [Changelog here](CHANGELOG.md).
 
 
 <details>
@@ -52,7 +53,7 @@ Midi Panel
 * Frame Offset:
   * Offset in frames to use when generating action strips (can be negative). For example, if the frame offset is -5, then the generated action strips will be placed starting 5 frames before the instances of the selected note.   
 * Copy Action to Notes:
-  * Generates action scripts from the selected action that line up with all instances of the selected note.  
+  * Generates action strips from the selected action that line up with all instances of the selected note.  
 
 </details>  
 
@@ -173,23 +174,57 @@ Pitch filters overwrite instrument notes and the note selected in the midi panel
 
 <details>
 <summary>
-Copy to Instrument
+Copy along Path and Copy to Instrument
 </summary>
 
-### Copy to Instrument
+### Copy along Path and Copy to Instrument
 
 ![Copy to Instrument](images/copy_to_instrument_panel.png)
 
-The action defined in the Nla Midi panel can be copied to an instrument.
+The action defined in the NLA Midi panel can be copied to multiple objects, with a different note for each object, by ordering the selected objects along a path. The action can also be copied to an instrument (with or without copying along a path). 
 
-* Instrument
-  * The instrument to copy the action to.
+#### Copy to Instrument
 * Note
-  * The note within the instrument to copy the action to. (If the search field is blank, this field is automatically updated when the note selected in the NLA midi panel is changed.)
+  * The note to copy the action to. (If the search field is blank, this field is automatically updated when the note selected in the NLA midi panel is changed.) This property is not used when Copy along path is selected.
 * Search
   * Search for a note by note name or midi pitch number.
+* Copy to Instrument
+  * If selected, copies the action defined in the NLA Midi panel to the selected instrument. If not selected, generates action strips for the selected note.
+* Instrument
+  * The instrument to copy the action to.     
 * Copy to Instruments
-  * Copies the action in the NLA midi panel to the selected instrument and note. This option is not available if "Copy Action to Selected Objects" is selected in the NLA midi panel.    
+  * Copies the action in the NLA midi panel to the selected instrument and note. This option is not available if "Copy Action to Selected Objects" is selected in the NLA midi panel.
+* Copy Action to Notes
+  * Generates action strips from the selected action. This action treats "Copy Action to Selected Objects" in the NLA Midi panel as being deselected.  Either the "Copy to Instruments" or the "Copy Action to Notes" button will be available, depending on if "Copy to Instrument" is selected.
+  
+#### Copy Along Path  
+![Copy to Instrument](images/copy_along_path.png)
+Copy along path is a tool that can be used to quickly copy actions to multiple objects, with a different note for each object, if every object uses the same action.   
+As an example, there are 7 cubes, and they are all animated using the CubeAction. Cube1 is animated to note D2, Cube2 is animated to note C4, and so on, with each cube corresponding to a different note in the midi track. 
+These cubes can all be animated at once by creating a path to define the ordering of the cubes (starting at the lowest pitch and ending at the highest), and using the Copy along path option.
+
+* Copy along path
+  * If selected, then all selected objects are animated, each to a different note. This option is may be disabled depending on the Type selected in the NLA Midi panel.  
+* Path
+  * A path defining the ordering of the selected objects. Any Curve can be used as the path. The path itself will not be included as one of the animated objects, even if it is selected.  
+    Only the points along the path are used in the calculation for ordering the objects. This means that curved paths may produce unexpected results, since the calculation uses straight lines between each point on the path. 
+    Generally, for paths that are not straight, the more points on the path, the more accurate the result.
+  * Starting Note
+    * The note that the first object along the path will be animated to, if the note is not filtered out. If the note is filtered out, the first object will be animated to the first note that is not filtered out and has a pitch greater than this note.
+  * Search
+    * Search for a note by note name or midi pitch number.  
+  * Filter by scale
+    * Options for filtering notes by a major scale.
+    * No filter
+      * Does not filter notes by a scale.
+    * In scale
+      * Only include notes in the selected scale.
+    * Not in scale
+      * Only include notes that are not in the selected scale.
+  * Scale
+    * The scale to filter by. This is a major scale, so for example a selection of "C" filters using notes in the C major scale.     
+  * Only Notes in Selected Track
+    * Only include notes in the selected midi track in the NLA Midi panel. 
      
 </details>
 
