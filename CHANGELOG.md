@@ -1,3 +1,5 @@
+- 0.8.1 2020-9-22
+  * Fix parsing SequencerSpecificEvent
 - 0.8.0 2020-8-31
   * Add copy along path option for quickly animating multiple objects to different notes if they all share the same action.
   * Fix overlaps being detected when nla strip is adjacent but not overlapping

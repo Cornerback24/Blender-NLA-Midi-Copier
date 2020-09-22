@@ -367,7 +367,7 @@ class KeySignatureEvent(MetaEvent):
                 + str(self.numberOfAccidentals) + majorOrMinor)
 
 
-class SequencerSpecificEvent:
+class SequencerSpecificEvent(MetaEvent):
     def __init__(self):
         super().__init__()
         # raw event data without the variable-length length property
