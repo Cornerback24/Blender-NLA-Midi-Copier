@@ -81,15 +81,9 @@ class MidiPanel(bpy.types.Panel):
         midi_data_property = context.scene.midi_data_property
         midi_file = midi_data_property.midi_file
         if midi_data_property.midi_file:
-            try:
-                midi_data.midi_data.update_midi_file(midi_data_property.midi_file, False, context)
-                col.prop(midi_data_property, "midi_file")
-
-                col.prop(midi_data_property, "track_list")
-                col.prop(midi_data_property, "notes_list")
-            except Exception as e:
-                print("Could not load midi file: " + str(e))
-                midi_data.midi_data.update_midi_file(None, False, context)
+            col.prop(midi_data_property, "midi_file")
+            col.prop(midi_data_property, "track_list")
+            col.prop(midi_data_property, "notes_list")
 
         note_action_property = midi_data_property.note_action_property
 
@@ -169,20 +163,16 @@ class MidiInstrumentPanel(bpy.types.Panel):
 
     def draw_animate_instrument(self, context, instrument):
         if context.scene.midi_data_property.midi_file:
-            try:
-                midi_data.midi_data.update_midi_file(context.scene.midi_data_property.midi_file, False, context)
-                animate_box = PanelUtils.draw_collapsible_box(self.layout, "Animate " + instrument.name, instrument,
-                                                              "animate_expanded")[0]
-                if instrument.animate_expanded:
-                    animate_box.prop(instrument, "selected_midi_track")
-                    animate_box.prop(instrument, "copy_to_single_track")
-                    text_box_row = animate_box.row()
-                    text_box_row.prop(instrument, "nla_track_name")
-                    text_box_row.enabled = instrument.copy_to_single_track
-                    animate_box.operator(NLAMidiInstrumentCopier.bl_idname, text="Animate " + instrument.name)
-            except Exception as e:
-                print("Could not load midi file: " + str(e))
-                midi_data.midi_data.update_midi_file(None, False, context)
+
+            animate_box = PanelUtils.draw_collapsible_box(self.layout, "Animate " + instrument.name, instrument,
+                                                          "animate_expanded")[0]
+            if instrument.animate_expanded:
+                animate_box.prop(instrument, "selected_midi_track")
+                animate_box.prop(instrument, "copy_to_single_track")
+                text_box_row = animate_box.row()
+                text_box_row.prop(instrument, "nla_track_name")
+                text_box_row.enabled = instrument.copy_to_single_track
+                animate_box.operator(NLAMidiInstrumentCopier.bl_idname, text="Animate " + instrument.name)
 
     def draw_instrument_notes(self, instrument):
         notes_box = PanelUtils.draw_collapsible_box(self.layout, instrument.name + " Notes", instrument,
@@ -337,7 +327,6 @@ class CopyToInstrumentPanel(bpy.types.Panel):
         disabled_tooltip: str = ""  # reason why the copy button is disabled
         copy_button_enabled = True
         if bulk_copy_property.copy_to_instrument:
-            print(midi_data_property.copy_to_instrument_selected_instrument)
             if midi_data_property.copy_to_instrument_selected_instrument is None or \
                     midi_data_property.copy_to_instrument_selected_instrument == midi_data.NO_INSTRUMENT_SELECTED:
                 copy_button_enabled = False
@@ -373,3 +362,5 @@ class MidiSettingsPanel(bpy.types.Panel):
     def draw(self, context):
         col = self.layout.column(align=True)
         col.prop(context.scene.midi_data_property, "middle_c_note")
+        col.separator()
+        PanelUtils.draw_tempo_settings(col, context.scene.midi_data_property.tempo_settings)

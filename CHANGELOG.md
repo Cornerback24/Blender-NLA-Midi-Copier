@@ -1,3 +1,9 @@
+- 0.9.0 2020-9-26
+  * Add support for type 0 midi files (all notes in type 0 files will be put on one track)
+  * Add ability to change tempo in midi settings panel
+  * Add copy to note end to grease pencil keyframes
+  * Fix accessing midi tracks when the display name is different from the file's track name
+  * Fix tracks not being selectable when the track name is a null character (display name is changed in this case) 
 - 0.8.1 2020-9-22
   * Fix parsing SequencerSpecificEvent
 - 0.8.0 2020-8-31

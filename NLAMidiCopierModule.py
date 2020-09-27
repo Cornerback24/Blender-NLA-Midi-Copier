@@ -265,7 +265,7 @@ class NoteActionCopier:
                                     note_action_property.duplicate_object_on_overlap
         self.scale_to_note_length = note_action_property.sync_length_with_notes
         self.scale_factor = note_action_property.scale_factor
-        self.copy_to_note_end = note_action_property.copy_to_note_end
+        self.copy_to_note_end: bool = note_action_property.copy_to_note_end
         self.action = note_action_property.action
         self.filter_groups_property = note_action_property.note_filter_groups
         self.add_filters = note_action_property.add_filters
@@ -297,7 +297,8 @@ class NoteActionCopier:
         actions_to_copy = []
         for note in notes:
             action_length, action_scale_factor = self.copied_action_length_and_scale_factor(note, non_scaled_length)
-            first_frame = self.first_frame(note)
+            first_frame = midi_data.midi_data.note_frame(note, self.frames_per_second, self.frame_offset,
+                                                         self.copy_to_note_end)
             to_copy = nla_tracks.action_to_copy(first_frame, round(first_frame + action_length), action_scale_factor)
             if to_copy is not None:
                 actions_to_copy.append(to_copy)
@@ -333,7 +334,7 @@ class NoteActionCopier:
         :param note: Note object
         :return: length of the Note in frames
         """
-        return midi_data.MidiDataUtil.note_length_frames(note, self.frames_per_second) \
+        return midi_data.midi_data.note_length_frames(note, self.frames_per_second) \
             if self.scale_to_note_length else self.action_length
 
     def copy_notes_to_object(self, track_id, note_id: str):
@@ -354,14 +355,6 @@ class NoteActionCopier:
         for x in objects:
             self.animated_object = x
             self.copy_notes_to_object(track_id, note_id)
-
-    def first_frame(self, note) -> int:
-        """
-        :param note: Note object
-        :return: the first frame for an action syncing up to this note
-        """
-        return int(((note.endTime if self.copy_to_note_end else note.startTime) / 1000) \
-               * self.frames_per_second + self.frame_offset)
 
     @staticmethod
     def get_animation_data(animated_object):

@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 8, 1),
+        "version": (0, 9, 0),
         "blender": (2, 80, 0),
         "location": "View NLA Editor > Tool Shelf",
         "description": "Copy actions to action strips based on midi file input",
@@ -29,6 +29,8 @@ if "bpy" in locals():
     importlib.reload(MidiInstrumentModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(NoteFilterModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(midi_data)
 else:
     # noinspection PyUnresolvedReferences
     from . import NLAMidiCopierModule
@@ -42,6 +44,10 @@ else:
     from . import MidiInstrumentModule
     # noinspection PyUnresolvedReferences
     from . import NoteFilterModule
+    # noinspection PyUnresolvedReferences
+    from . import midi_data
+    # noinspection PyUnresolvedReferences
+    from bpy.app.handlers import persistent
 
 import bpy
 from bpy.props import PointerProperty
@@ -53,9 +59,9 @@ from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToIn
 from .MidiPanelModule import MidiPanel, MidiInstrumentPanel, CopyToInstrumentPanel, MidiSettingsPanel
 from .DopeSheetMidiPanelModule import DopeSheetMidiPanel, DopeSheetMidiSettingsPanel
 from .MidiPropertiesModule import MidiPropertyGroup, NoteActionProperty, InstrumentNoteProperty, InstrumentProperty, \
-    NoteFilterGroup, NoteFilterProperty, BulkCopyPropertyGroup
+    NoteFilterGroup, NoteFilterProperty, BulkCopyPropertyGroup, TempoPropertyGroup
 from .DopeSheetMidiPropertiesModule import DopeSheetMidiPropertyGroup, DopeSheetNoteActionProperty, \
-    DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup
+    DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup, DopeSheetTempoPropertyGroup
 from .MidiPanelModule import MidiFileSelector
 from .DopeSheetMidiPanelModule import DopeSheetMidiFileSelector
 from .NoteFilterModule import AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter
@@ -67,10 +73,27 @@ classes = [
     NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier,
     AddActionToInstrument, RemoveActionFromInstrument, TransposeInstrument,
     AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter,
+    TempoPropertyGroup,
     MidiPropertyGroup, MidiPanel, MidiFileSelector, MidiInstrumentPanel, CopyToInstrumentPanel, MidiSettingsPanel,
-    DopeSheetNoteActionProperty,
+    DopeSheetNoteActionProperty, DopeSheetTempoPropertyGroup,
     DopeSheetMidiFileSelector, DopeSheetMidiCopier, DopeSheetMidiPropertyGroup, DopeSheetMidiPanel,
     DopeSheetMidiSettingsPanel]
+
+
+def load_midi_file(midi_data_property, context):
+    if midi_data_property.midi_file:
+        try:
+            midi_data.midi_data.update_midi_file(midi_data_property.midi_file, False, context)
+        except Exception as e:
+            print("Could not load midi file: " + str(e))
+            midi_data.midi_data.update_midi_file(None, False, context)
+
+
+@persistent
+def on_load(scene):
+    context = bpy.context
+    load_midi_file(context.scene.midi_data_property, context)
+    load_midi_file(context.scene.dope_sheet_midi_data_property, context)
 
 
 # noinspection PyArgumentList
@@ -79,6 +102,7 @@ def register():
         bpy.utils.register_class(clazz)
     bpy.types.Scene.midi_data_property = PointerProperty(type=MidiPropertyGroup)
     bpy.types.Scene.dope_sheet_midi_data_property = PointerProperty(type=DopeSheetMidiPropertyGroup)
+    bpy.app.handlers.load_post.append(on_load)
 
 
 def unregister():

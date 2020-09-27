@@ -143,3 +143,20 @@ def indented_row(parent_layout):
     split = parent_layout.row().split(factor=0.05)
     split1, row = split.row(), split.row()
     return row
+
+
+def draw_tempo_settings(parent_layout, tempo_property):
+    bpm_row = parent_layout.row()
+    bpm_row.prop(tempo_property, "use_file_tempo")
+    if not tempo_property.use_file_tempo:
+        bpm_row.prop(tempo_property, "beats_per_minute")
+    else:
+        bpm_row.prop(tempo_property, "file_beats_per_minute")
+
+    ticks_per_beat_row = parent_layout.row()
+    ticks_per_beat_row.enabled = not tempo_property.use_file_tempo
+    ticks_per_beat_row.prop(tempo_property, "use_file_ticks_per_beat")
+    if not tempo_property.use_file_ticks_per_beat:
+        ticks_per_beat_row.prop(tempo_property, "ticks_per_beat")
+    else:
+        ticks_per_beat_row.prop(tempo_property, "file_ticks_per_beat")

@@ -323,6 +323,42 @@ class BulkCopyPropertyGroup(PropertyGroup):
                                                default=False)
 
 
+def get_midi_file_beats_per_minute(self):
+    if "file_beats_per_minute" in self:
+        return self["file_beats_per_minute"]
+    return 0
+
+
+def get_midi_file_ticks_per_beat(self):
+    if "file_ticks_per_beat" in self:
+        return self["file_ticks_per_beat"]
+    return 0
+
+
+def on_tempo_property_update(tempo_property, context):
+    midi_data.midi_data.update_tempo(context)
+
+
+class TempoPropertyGroup(PropertyGroup):
+    use_file_tempo: BoolProperty(name="File Tempo", default=True,
+                                 description="Use the tempo defined by the midi file", update=on_tempo_property_update)
+    beats_per_minute: FloatProperty(name="Bpm", default=120, description="Beats per minute",
+                                    update=on_tempo_property_update, min=0.01)
+    # defining get= (and not set=) disables editing in the UI
+    file_beats_per_minute: FloatProperty(name="Bpm", default=120, description="Beats per minute",
+                                         get=get_midi_file_beats_per_minute, update=on_tempo_property_update)
+    use_file_ticks_per_beat: BoolProperty(name="File Ticks per Beat", default=True,
+                                          description="Use the ticks per beat defined by the midi file. "
+                                                      "(Selecting this and changing only the beats per minute should be"
+                                                      " sufficient for most tempo changes.)",
+                                          update=on_tempo_property_update)
+    ticks_per_beat: IntProperty(name="Ticks per beat", default=96, description="Ticks per beat", min=1,
+                                update=on_tempo_property_update)
+    # defining get= (and not set=) disables editing in the UI
+    file_ticks_per_beat: IntProperty(name="Ticks per beat", default=96, description="Ticks per beat",
+                                     get=get_midi_file_ticks_per_beat, update=on_tempo_property_update)
+
+
 class MidiPropertyGroup(PropertyGroup):
     # defining get= (and not set=) disables editing in the UI
     midi_file: StringProperty(name="Midi File", description="Select Midi File", get=get_midi_file_name)
@@ -354,3 +390,4 @@ class MidiPropertyGroup(PropertyGroup):
     middle_c_note: EnumProperty(items=middle_c_options,
                                 name="Middle C", description="The note corresponding to middle C (midi note 60)",
                                 default="C4", update=update_middle_c)
+    tempo_settings: PointerProperty(type=TempoPropertyGroup)

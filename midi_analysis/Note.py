@@ -1,16 +1,21 @@
 class Note:
     # start and end times are in ms
-    def __init__(self, start, pitch, velocity, channel):
+    def __init__(self, start, startTicks, pitch, velocity, channel):
         self.pitch = pitch  # note number
         self.channel = channel
         self.startTime = start
         self.endTime = None
+        self.startTimeTicks = startTicks
+        self.endTimeTicks = None
         self.velocity = velocity
         self.releaseVelocity = None
         return
 
     def setEndTime(self, endTime):
         self.endTime = endTime
+
+    def setEndTimeTicks(self, endTimeTicks):
+        self.endTimeTicks = endTimeTicks
 
     def setReleaseVelocity(self, releaseVelocity):
         self.releaseVelocity = releaseVelocity

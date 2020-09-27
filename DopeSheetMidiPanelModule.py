@@ -64,15 +64,9 @@ class DopeSheetMidiPanel(bpy.types.Panel):
         midi_data_property = context.scene.dope_sheet_midi_data_property
 
         if midi_data_property.midi_file:
-            try:
-                midi_data.dope_sheet_midi_data.update_midi_file(midi_data_property.midi_file, False, context)
-                col.prop(midi_data_property, "midi_file")
-
-                col.prop(midi_data_property, "track_list")
-                col.prop(midi_data_property, "notes_list")
-            except Exception as e:
-                print("Could not load midi file: " + str(e))
-                midi_data.dope_sheet_midi_data.update_midi_file(None, False, context)
+            col.prop(midi_data_property, "midi_file")
+            col.prop(midi_data_property, "track_list")
+            col.prop(midi_data_property, "notes_list")
 
         dope_sheet_note_action_property = midi_data_property.note_action_property
 
@@ -82,6 +76,7 @@ class DopeSheetMidiPanel(bpy.types.Panel):
         col.prop(dope_sheet_note_action_property, "delete_source_keyframes")
         col.prop(dope_sheet_note_action_property, "skip_overlaps")
         col.prop(dope_sheet_note_action_property, "sync_length_with_notes")
+        col.prop(dope_sheet_note_action_property, "copy_to_note_end")
         col.prop(dope_sheet_note_action_property, "add_filters")
 
         if dope_sheet_note_action_property.add_filters:
@@ -113,6 +108,8 @@ class DopeSheetMidiSettingsPanel(bpy.types.Panel):
     def draw(self, context):
         col = self.layout.column(align=True)
         col.prop(context.scene.dope_sheet_midi_data_property, "middle_c_note")
+        col.separator()
+        PanelUtils.draw_tempo_settings(col, context.scene.dope_sheet_midi_data_property.tempo_settings)
 
         dopesheet = context.area.spaces[0].dopesheet
         if not dopesheet.show_only_selected:

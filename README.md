@@ -4,7 +4,7 @@ Blender add-on for creating midi-driven animations from the Nonlinear Animation 
 An instrument can be defined as a collection of notes and actions.  The instrument is independent of any specific midi file, allowing for defining a set of actions for each note and later syncing them up to a midi file.  To define an instrument, expand the right-side panel in the Nonlinear Action View and select the Midi Instruments tab.
 
 This add-on is written for Blender 2.83.  
-Add-on Version 0.8.0. [Changelog here](CHANGELOG.md).
+Add-on Version 0.9.0. [Changelog here](CHANGELOG.md).
 
 
 <details>
@@ -240,6 +240,15 @@ Midi Settings
 
 * Middle C
   * Sets the note that corresponds to middle C (midi pitch 60). This changes the displayed value of middle C and updates the display for instrument notes and the note in the midi panel. This does not change the midi note pitches.
+* File Tempo
+  * If selected, the tempo from the midi file is used to calculate note times. If not selected, the bpm setting is used. Tempo changes in the midi file are ignored if this is not selected.
+* Bpm
+  * The beats per minute. If "File Tempo" is selected, this shows the midi file's bpm.
+* File Ticks per Beat
+  * If this or "File Tempo" is selected, the ticks per beat from the midi file is used to calculate note times. If not selected, the Ticks per beat setting is used. For most tempo changes, leaving this option selected should be sufficient.
+* Ticks per beat
+  * The ticks per beat. If "File Ticks per Beat" is selected, this shows the midi file's ticks per beat. 
+  (Midi files count time in ticks. Most midi files divide minutes into beats, and beats into ticks. Some midi files may be in frames per second (and ticks per frame) instead of beats per minute. For these files, the file bpm will be shown as 60, and the file ticks per beat will show the number of ticks per second.)
 
 </details>
 

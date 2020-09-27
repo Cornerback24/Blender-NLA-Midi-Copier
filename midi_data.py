@@ -143,6 +143,10 @@ class MidiDataUtil:
         :param name_list: list of names to deconfict with
         :return: the first value of name, name2, name3 that is not in the list
         """
+        # null characters in strings can prevent the enum property from working
+        name = name.strip('\x00')
+        if len(name) == 0:
+            name = "Track"
         if name not in name_list:
             return name
         else:
@@ -161,22 +165,12 @@ class MidiDataUtil:
         :return: list of all of the notes from the loaded midi file matching the track, sorted by time
         """
 
-        track = next((x for x in loaded_midi_data.midi_data.tracks if x.name == track_id), None)
+        track = loaded_midi_data.tracks_dict[track_id]
 
         notes = [x for x in track.notes]
 
         notes.sort()
         return notes
-
-    @staticmethod
-    def note_length_frames(note, frames_per_second):
-        """
-        :param note: the Note to get the length of
-        :param frames_per_second: project's frames per second
-        :return: the length of the note in frames rounded to the nearest frame
-        """
-        # note.length() is in ms
-        return math.floor((note.length() / 1000) * frames_per_second)
 
 
 class LoadedMidiData:
@@ -184,9 +178,10 @@ class LoadedMidiData:
         """
         :param get_midi_data_property: function to get this property from the context
         """
-        self.midi_data = None
+        self.midi_data = None  # the MidiData object representing the midi file
         # api documentation says that references to the values returned by callbacks need to be kept around to prevent issues
         self.track_list = []  # list of tracks in the midi file
+        self.tracks_dict = {}  # map track name to midi track
         self.notes_list = []  # list of notes for the selected midi track
         self.all_notes = []  # enum property list of all notes (0 to 127), enum key is note id
         self.all_notes_for_pitch_filter = []  # enum property list of all notes (0 to 127), enum key is note id
@@ -200,14 +195,19 @@ class LoadedMidiData:
         self.current_midi_filename = None  # name of the loaded midi file
         self.middle_c_id = None  # note id being used for middle c
         self.middle_c_on_last_tracks_update = None  # value of the middle_c_id property when the tracks were updated last
-        self.middle_c_on_last_all_notes_update = None  # v alue of the middle_c_id property when the list of all notes updated last
+        self.middle_c_on_last_all_notes_update = None  # value of the middle_c_id property when the list of all notes updated last
         self.get_midi_data_property = get_midi_data_property
+        self.ms_per_tick = None  # ms per tick, used if not using file tempo
+        self.use_file_tempo = True  # whether to use the file tempo or the tempo property
 
-    def update_midi_file(self, midi_filename: str, force_update: bool, context):
+    def update_midi_file(self, midi_filename: str, force_update: bool, context, set_tempo_properties: bool = True):
         """
         Updates the current midi file
         :param force_update: if true will reload the midi file even if it has the same name
         :param midi_filename: path to the midi file
+        :param context: the contet
+        :param set_tempo_properties: if True, update the properties that store the file's tempo information to be
+        displayed in the midi settings panel
         """
         if midi_filename is None:
             self.midi_data = None
@@ -216,7 +216,31 @@ class LoadedMidiData:
             return
         self.current_midi_filename = midi_filename
         self.midi_data = MidiData(midi_filename)
+        if set_tempo_properties:
+            if self.midi_data.isTicksPerBeat:
+                # need to access properties with dictionary style because they are read-only
+                self.get_midi_data_property(context).tempo_settings["file_beats_per_minute"] = \
+                    60000 / self.midi_data.msPerBeat
+                self.get_midi_data_property(context).tempo_settings["file_ticks_per_beat"] = self.midi_data.ticksPerBeat
+            else:
+                # midi file is in frames per second instead of beats per minute
+                # for simplicity, display values in ticks per second using one beat per second
+                # (most midi files will be in beats per minute, not frames per second)
+                self.get_midi_data_property(context).tempo_settings["file_beats_per_minute"] = 60
+                self.get_midi_data_property(context).tempo_settings[
+                    "file_ticks_per_beat"] = self.midi_data.ticksPerSecond
+
         self.__create_track_list(context)
+        self.update_tempo(context)
+
+    def update_tempo(self, context):
+        tempo_property = self.get_midi_data_property(context).tempo_settings
+        self.use_file_tempo = tempo_property.use_file_tempo
+        ticks_per_beat = tempo_property.file_ticks_per_beat if tempo_property.use_file_ticks_per_beat \
+            else tempo_property.ticks_per_beat
+        beats_per_minute = tempo_property.beats_per_minute
+        if ticks_per_beat > 0 and beats_per_minute > 0:
+            self.ms_per_tick = 60000 / (ticks_per_beat * beats_per_minute)
 
     def __create_track_list(self, context):
         self.notes_list_dict = {}
@@ -233,6 +257,7 @@ class LoadedMidiData:
                                                      PitchUtils.note_description_from_pitch(pitch, self.middle_c_id))
                                                     for pitch in note_pitches_ordered]
                 tracks.append(track_name)
+                self.tracks_dict[track_name] = track
         tracks.sort()
         self.track_list = [(x, x, x) for x in tracks]
 
@@ -241,7 +266,12 @@ class LoadedMidiData:
         """
         :return: list of tracks in the current midi file
         """
-        if self.middle_c_on_last_tracks_update != self.get_middle_c_id(context):
+        if self.midi_data is None:
+            # if midi_data is None here, it is probably because scripts were reloaded in blender
+            # (on_load is not called in that case, so need to read in the midi file here)
+            self.update_midi_file(self.get_midi_data_property(context).midi_file, False, context, False)
+            self.__create_track_list(context)
+        elif self.middle_c_on_last_tracks_update != self.get_middle_c_id(context):
             # middle c changed, update display
             self.__create_track_list(context)
         return self.track_list
@@ -467,6 +497,28 @@ class LoadedMidiData:
                 and instrument_id != NO_INSTRUMENT_SELECTED:
             return self.get_midi_data_property(context).instruments[int(instrument_id)]
         return None
+
+    def note_frame(self, note, frames_per_second: float, frame_offset: int, note_end: bool) -> int:
+        """
+        :param note: the note to calculate frame for
+        :param frames_per_second: frames per second
+        :param frame_offset: frame offset to add
+        :param note_end: if true, calculate time for the end of the note instead of the beginning
+        :return: the frame number
+        """
+        time_ms = (note.endTime if self.use_file_tempo else note.endTimeTicks * self.ms_per_tick) if note_end \
+            else (note.startTime if self.use_file_tempo else note.startTimeTicks * self.ms_per_tick)
+        return int((time_ms / 1000) * frames_per_second + frame_offset)
+
+    def note_length_frames(self, note, frames_per_second):
+        """
+        :param note: the note to get the length of
+        :param frames_per_second: project's frames per second
+        :return: the length of the note in frames rounded to the nearest frame
+        """
+        ms_length = note.length() if self.use_file_tempo else \
+            (note.endTimeTicks - note.startTimeTicks) * self.ms_per_tick
+        return math.floor((ms_length / 1000) * frames_per_second)
 
 
 midi_data = LoadedMidiData(lambda context: context.scene.midi_data_property)

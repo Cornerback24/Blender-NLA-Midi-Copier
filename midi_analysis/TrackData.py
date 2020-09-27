@@ -28,6 +28,7 @@ class TrackData:
                       + " already playing, skipping...")
             else:
                 self.incompleteNotes[event.noteNumber] = Note(event.startTime,
+                                                              event.startTimeTicks,
                                                               event.noteNumber,
                                                               event.velocity,
                                                               event.channel)
@@ -35,6 +36,7 @@ class TrackData:
               (isinstance(event, NoteOnEvent) and event.isNoteOff())):
             if event.noteNumber in self.incompleteNotes:
                 self.incompleteNotes[event.noteNumber].setEndTime(event.startTime)
+                self.incompleteNotes[event.noteNumber].setEndTimeTicks(event.startTimeTicks)
                 self.notes.append(self.incompleteNotes[event.noteNumber])
                 del self.incompleteNotes[event.noteNumber]
             elif self.debug:

@@ -58,6 +58,8 @@ class MidiEvent:
         self.deltaTime = None
         # start time in ms
         self.startTime = None
+        # start time in ticks
+        self.startTimeTicks = None
 
     # set the delta time in clock ticks from the bytes representing delta time
     def setDeltaTimeFromBytes(self, deltaTimeBytes):
@@ -73,8 +75,11 @@ class MidiEvent:
                 " deltaTime: " + str(self.deltaTime))
 
     # set start time in ms
-    def setStartTime(self, startTime):
-        self.startTime = startTime    
+    def setStartTimeMs(self, startTimeMs):
+        self.startTime = startTimeMs
+
+    def setStartTimeTicks(self, startTimeTicks):
+        self.startTimeTicks = startTimeTicks
 
 
 # ---------------------- Meta Events ------------------------------

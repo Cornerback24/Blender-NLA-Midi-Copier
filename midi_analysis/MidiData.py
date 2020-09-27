@@ -22,7 +22,7 @@ class MidiData:
             self.isTicksPerBeat = True
             self.ticksPerBeat = headerData.ticksPerBeat
 
-        if headerData.formatType != 1:
+        if headerData.formatType != 1 and headerData.formatType != 0:
             raise NotSupportedException("Midi files of format " + str(headerData.formatType)
                                         + " are not supported")
 
@@ -45,7 +45,7 @@ class MidiData:
             # set up tempoChanges
             tempoChanges.reset()
             self.msPerBeat = 500  # default 120 bpm
-            deltaTimeTotal = 0
+            deltaTimeTotal = 0  # current time in ticks
             msTotal = 0  # current time in ms
             # add events
             while not (isinstance(event, EndOfTrackEvent)):
@@ -67,7 +67,8 @@ class MidiData:
                     msTotal = (event.deltaTime / self.ticksPerSecond) * .001
                 # add event to trackData
                 deltaTimeTotal = nextTotal
-                event.setStartTime(msTotal)
+                event.setStartTimeMs(msTotal)
+                event.setStartTimeTicks(deltaTimeTotal)
                 trackData.addEvent(event)
             self.tracks.append(trackData)
 

@@ -44,21 +44,25 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         dope_sheet_note_action_property = midi_data_property.note_action_property
         frame_offset = midi_data_property.midi_frame_start + dope_sheet_note_action_property.midi_frame_offset
         frames_per_second = context.scene.render.fps
+        copy_to_note_end = dope_sheet_note_action_property.copy_to_note_end
 
         grease_pencils = [x.data for x in context.selected_objects if x.type == "GPENCIL"]
 
         for grease_pencil in grease_pencils:
             for layer in grease_pencil.layers:
                 if not layer.lock:  # don't edit locked layers
-                    DopeSheetMidiCopier.copy_gpencil_frames(layer, frame_offset, frames_per_second, context)
+                    DopeSheetMidiCopier.copy_gpencil_frames(layer, frame_offset, frames_per_second, copy_to_note_end,
+                                                            context)
 
     @staticmethod
-    def copy_gpencil_frames(g_pencil_layer, frame_offset, frames_per_second, context):
+    def copy_gpencil_frames(g_pencil_layer, frame_offset: int, frames_per_second: float, copy_to_note_end: bool,
+                            context):
         """
         Copies frames on the g_pencil_layer based on the project's DopeSheetMidiPropertyGroup property
         :param g_pencil_layer: GPencilLayer object
         :param frame_offset: offset in frames from the start of the note to copy the first keyframe to
         :param frames_per_second: project frames per second
+        :param copy_to_note_end: copy to the end of the note
         :param context: blender context object
         :return: None
         """
@@ -80,18 +84,22 @@ class DopeSheetMidiCopier(bpy.types.Operator):
             if dope_sheet_note_action_property.sync_length_with_notes:
                 scale_factor = dope_sheet_note_action_property.scale_factor
                 DopeSheetMidiCopier.copy_gpencil_frames_with_overlap_check(
-                    source_keyframes, g_pencil_frames, notes, frames_per_second, frame_offset, scale_factor)
+                    source_keyframes, g_pencil_frames, notes, frames_per_second, frame_offset, copy_to_note_end,
+                    scale_factor)
             else:
                 DopeSheetMidiCopier.copy_gpencil_frames_with_overlap_check(source_keyframes, g_pencil_frames, notes,
-                                                                           frames_per_second, frame_offset)
+                                                                           frames_per_second, frame_offset,
+                                                                           copy_to_note_end)
         else:
             if dope_sheet_note_action_property.sync_length_with_notes:
                 scale_factor = dope_sheet_note_action_property.scale_factor
                 DopeSheetMidiCopier.copy_gpencil_frames_no_overlap_check(
-                    source_keyframes, g_pencil_frames, notes, frames_per_second, frame_offset, scale_factor)
+                    source_keyframes, g_pencil_frames, notes, frames_per_second, frame_offset, copy_to_note_end,
+                    scale_factor)
             else:
                 DopeSheetMidiCopier.copy_gpencil_frames_no_overlap_check(source_keyframes, g_pencil_frames, notes,
-                                                                         frames_per_second, frame_offset, None)
+                                                                         frames_per_second, frame_offset,
+                                                                         copy_to_note_end, None)
 
         if context.scene.dope_sheet_midi_data_property.note_action_property.delete_source_keyframes:
             for keyframe in source_keyframes:
@@ -99,7 +107,7 @@ class DopeSheetMidiCopier(bpy.types.Operator):
 
     @staticmethod
     def copy_gpencil_frames_no_overlap_check(source_keyframes, g_pencil_frames, notes, frames_per_second, frame_offset,
-                                             scale_factor=None):
+                                             copy_to_note_end, scale_factor):
         """
         Copies the source_keyframes in the g_pencil_frames to every note in notes.
 
@@ -108,6 +116,7 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         :param notes: list of notes to copy frames to
         :param frames_per_second: project frames per second
         :param frame_offset: offset in frames from the start of the note to copy the first keyframe to
+        :param copy_to_note_end: copy to the end of the note
         :param scale_factor: scale the copied frames to fit the length of the note times this scale factor,
                              no scaling if None
         :return: None
@@ -116,7 +125,8 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         last_keyframe_frame_number = max([frame.frame_number for frame in source_keyframes])
 
         for note in notes:
-            first_frame = (note.startTime / 1000) * frames_per_second + frame_offset
+            first_frame = midi_data.dope_sheet_midi_data.note_frame(note, frames_per_second, frame_offset,
+                                                                    copy_to_note_end)
             for keyframe in source_keyframes:
                 copied_frame = g_pencil_frames.copy(keyframe)
 
@@ -126,8 +136,8 @@ class DopeSheetMidiCopier(bpy.types.Operator):
                                                           last_keyframe_frame_number, frames_per_second))
 
     @staticmethod
-    def copy_gpencil_frames_with_overlap_check(source_keyframes, g_pencil_frames, notes, frames_per_second,
-                                               frame_offset, scale_factor=None):
+    def copy_gpencil_frames_with_overlap_check(source_keyframes, g_pencil_frames, notes, frames_per_second: float,
+                                               frame_offset: int, copy_to_note_end: bool, scale_factor=None):
         """
         Copies the source_keyframes in the g_pencil_frames to every note in notes, skipping any overlaps.
 
@@ -136,6 +146,7 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         :param notes: list of notes to copy frames to
         :param frames_per_second: project frames per second
         :param frame_offset: offset in frames from the start of the note to copy the first keyframe to
+        :param copy_to_note_end: copy to the end of the note
         :param scale_factor: scale the copied frames to fit the length of the note times this scale factor,
                              no scaling if None
         :return: None
@@ -150,7 +161,8 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         last_frame = -1 - action_length  # initialize to frame before any actions will be copied to
 
         for note in notes:
-            first_frame = (note.startTime / 1000) * frames_per_second + frame_offset
+            first_frame = midi_data.dope_sheet_midi_data.note_frame(note, frames_per_second, frame_offset,
+                                                                    copy_to_note_end)
             # check for overlap
             if first_frame - last_frame > 0:
                 if scale_factor is not None:
@@ -187,7 +199,7 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         """
         if last_keyframe_frame_number == first_keyframe_frame_number or initial_scale_factor is None:
             return 1
-        return (midi_data.MidiDataUtil.note_length_frames(note, frames_per_second) * initial_scale_factor) / (
+        return (midi_data.dope_sheet_midi_data.note_length_frames(note, frames_per_second) * initial_scale_factor) / (
                 last_keyframe_frame_number - first_keyframe_frame_number)
 
     @staticmethod
@@ -198,4 +210,4 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         :param scale_factor: scale factor to apply to note length
         :return: the length of the note in frames
         """
-        return midi_data.MidiDataUtil.note_length_frames(note, frames_per_second) * scale_factor
+        return midi_data.dope_sheet_midi_data.note_length_frames(note, frames_per_second) * scale_factor
