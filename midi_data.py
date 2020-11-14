@@ -518,7 +518,8 @@ class LoadedMidiData:
         """
         ms_length = note.length() if self.use_file_tempo else \
             (note.endTimeTicks - note.startTimeTicks) * self.ms_per_tick
-        return math.floor((ms_length / 1000) * frames_per_second)
+        # minimum one frame
+        return max(math.floor((ms_length / 1000) * frames_per_second), 1)
 
 
 midi_data = LoadedMidiData(lambda context: context.scene.midi_data_property)

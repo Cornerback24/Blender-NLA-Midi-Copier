@@ -1,3 +1,5 @@
+- 0.9.1 2020-11-14
+  * Fix no room for strip error that could occur when scaling actions  
 - 0.9.0 2020-9-26
   * Add support for type 0 midi files (all notes in type 0 files will be put on one track)
   * Add ability to change tempo in midi settings panel

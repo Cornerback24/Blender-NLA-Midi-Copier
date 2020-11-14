@@ -144,6 +144,7 @@ class NoteActionProperty(PropertyGroup):
 
     action_length: \
         IntProperty(name="Action Length (Frames)",
+                    min=1,
                     description="Length of the action, used to determine if the next action " +
                                 "overlaps for object duplication. " +
                                 "It has no effect on the actual length of the copied action.\n" +

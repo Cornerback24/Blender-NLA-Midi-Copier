@@ -287,6 +287,8 @@ class NoteActionCopier:
         if not notes:
             return  # no notes to copy, do nothing
 
+        # The length of the action if no scaling is done. This value is only used if no scaling is done.
+        # If there is scaling, this value is may not represent the length of an action that is not scaled.
         non_scaled_length: float = self.note_action_length(notes[0])
         nla_tracks = NlaTracksManager(action=self.action,
                                       track_name=track_name,
@@ -318,7 +320,8 @@ class NoteActionCopier:
         :return: Length of the action to sync with the note, in frames. Includes extra length beyond the action for
         user-defined object duplication action length.
         """
-        return self.note_length_frames(note) * self.scale_factor \
+        # minimum one frame
+        return max(self.note_length_frames(note) * self.scale_factor, 1) \
             if self.scale_to_note_length else (
             self.action_length if self.duplicate_on_overlap else self.true_action_length)
 
