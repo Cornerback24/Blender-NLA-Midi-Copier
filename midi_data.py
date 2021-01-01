@@ -118,7 +118,7 @@ def can_resolve_data_from_selected_objects(midi_data_id_type: str):
      given the scene's selected objects.(For example, True for mesh since an object's mesh can be found using
      object.data.)
     """
-    return id_type_is_object(midi_data_id_type)
+    return id_type_is_object(midi_data_id_type) or midi_data_id_type == "Material"
 
 
 # node trees don't show up in the selector,

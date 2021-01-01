@@ -4,7 +4,7 @@ Blender add-on for creating midi-driven animations from the Nonlinear Animation 
 An instrument can be defined as a collection of notes and actions.  The instrument is independent of any specific midi file, allowing for defining a set of actions for each note and later syncing them up to a midi file.  To define an instrument, expand the right-side panel in the Nonlinear Action View and select the Midi Instruments tab.
 
 This add-on is written for Blender 2.90, and is compatible with Blender 2.83.    
-Add-on Version 0.9.1. [Changelog here](CHANGELOG.md).
+Add-on Version 0.9.2. [Changelog here](CHANGELOG.md).
 
 
 <details>
@@ -31,7 +31,7 @@ Midi Panel
 * Action:
   * The action to generate NLA Strips from. Only actions valid for the selected Type will be shown.
 * Copy Action to Selected Objects:
-  * If this option is selected, then the selected objects will be animated instead of the Object in the Object control. This option is only valid for Type Object or any type that can be object data (such as Mesh and Curve). 
+  * If this option is selected, then the selected objects will be animated instead of the Object in the Object control. This option is only valid for Type Object, Type Material, or any type that can be object data (such as Mesh and Curve). If the type is Material, the action wll be copied to the active materials of the selected objects.
 * Duplicate Object on Overlap:
   * If this option is selected, then overlapping action strips will be placed on new objects that are duplicates of the original object being animated. This option is only valid for Type Object or any type that can be object data (such as Mesh and Curve). If the type is not Object, then all objects using the data will be duplicated. For example if the action is defined on a Curve, all objects using the Curve will be duplicated.
 * Action Length (Frames):
@@ -204,7 +204,7 @@ As an example, there are 7 cubes, and they are all animated using the CubeAction
 These cubes can all be animated at once by creating a path to define the ordering of the cubes (starting at the lowest pitch and ending at the highest), and using the Copy along path option.
 
 * Copy along path
-  * If selected, then all selected objects are animated, each to a different note. This option is may be disabled depending on the Type selected in the NLA Midi panel.  
+  * If selected, then all selected objects are animated, each to a different note. This option is only valid for Type Object, Type Material, or any type that can be object data (such as Mesh and Curve). If the type is Material, the action wll be copied to the active materials of the selected objects.
 * Path
   * A path defining the ordering of the selected objects. Any Curve can be used as the path. The path itself will not be included as one of the animated objects, even if it is selected.  
     Only the points along the path are used in the calculation for ordering the objects. This means that curved paths may produce unexpected results, since the calculation uses straight lines between each point on the path. 

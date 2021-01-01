@@ -1,3 +1,5 @@
+- 0.9.2 2020-12-31
+  * Add copy to selected and copy along path support for materials
 - 0.9.1 2020-11-14
   * Fix no room for strip error that could occur when scaling actions  
 - 0.9.0 2020-9-26

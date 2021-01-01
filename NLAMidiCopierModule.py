@@ -141,7 +141,7 @@ class NlaTracksManager:
         nla_track_info = self.track_for_action(first_frame, last_frame)
         if nla_track_info is not None:
             # If the action is scaled down, there may be a conflict when adding the action at first since it will not
-            # be caused down at that point and could extend past the next strip. In this case, temporarily shift
+            # be scaled down at that point and could extend past the next strip. In this case, temporarily shift
             # actions to the right to make space.
             actions_to_shift = nla_track_info.actions_to_shift_when_copy(
                 first_frame + self.true_action_length) if action_scale_factor < 1 else []
@@ -261,7 +261,7 @@ class NoteActionCopier:
                             additional_frame_offset
         self.frames_per_second = context.scene.render.fps
         self.context = context
-        self.duplicate_on_overlap = midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type) and \
+        self.duplicate_on_overlap = midi_data.id_type_is_object(note_action_property.id_type) and \
                                     note_action_property.duplicate_object_on_overlap
         self.scale_to_note_length = note_action_property.sync_length_with_notes
         self.scale_factor = note_action_property.scale_factor
@@ -407,6 +407,9 @@ class NLAMidiCopier(bpy.types.Operator):
         if note_action_property.copy_to_selected_objects and midi_data.can_resolve_data_from_selected_objects(id_type):
             if midi_data.ID_PROPERTIES_DICTIONARY[id_type][1] == "OBJECT":
                 objects_to_copy = selected_objects
+            elif midi_data.ID_PROPERTIES_DICTIONARY[id_type][1] == "MATERIAL":
+                # multiple objects may have the same active material so use a set to eliminate duplicates
+                objects_to_copy = {x.active_material for x in selected_objects if x.active_material is not None}
             else:
                 object_type = midi_data.ID_PROPERTIES_DICTIONARY[id_type][1]
                 # multiple objects may use the same data so use a set to eliminate duplicates
@@ -533,7 +536,13 @@ class NLABulkMidiCopier(bpy.types.Operator):
         original_object_value = getattr(note_action_property, note_action_object_field)
         if action_id_root == "OBJECT":
             animated_objects = objs
+        elif action_id_root == "MATERIAL":
+            # active materials with duplicates removed
+            # (In case the action's id_root is probably NODETREE, but the note_action_property id_type is Material.
+            # The action will be copied to the material's nodetree animation data.)
+            animated_objects = list(dict.fromkeys([x.active_material for x in objs if x.active_material is not None]))
         else:
+            # object data with duplicates removed
             animated_objects = list(dict.fromkeys([x.data for x in objs if x.type == action_id_root]))
 
         notes_to_copy = NLABulkMidiCopier.notes_to_copy(midi_data_property.bulk_copy_property, midi_data.midi_data)

@@ -111,12 +111,17 @@ class MidiPanel(bpy.types.Panel):
         parent_layout.separator()
 
         col = parent_layout.column(align=True)
-        col.enabled = midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type)
         if is_main_property:
-            col.prop(note_action_property, "copy_to_selected_objects")
-        col.prop(note_action_property, "duplicate_object_on_overlap")
+            row = col.row()
+            row.enabled = midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type)
+            row.prop(note_action_property, "copy_to_selected_objects")
+        row = col.row()
+        can_duplicate_on_overlap = midi_data.id_type_is_object(note_action_property.id_type)
+        row.enabled = can_duplicate_on_overlap
+        row.prop(note_action_property, "duplicate_object_on_overlap")
         if note_action_property.action and note_action_property.duplicate_object_on_overlap:
             row = col.row()
+            row.enabled = can_duplicate_on_overlap
             row.prop(note_action_property, "action_length")
 
         col = parent_layout.column(align=True)
