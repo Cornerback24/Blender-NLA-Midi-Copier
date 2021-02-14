@@ -410,6 +410,9 @@ class NLAMidiCopier(bpy.types.Operator):
             elif midi_data.ID_PROPERTIES_DICTIONARY[id_type][1] == "MATERIAL":
                 # multiple objects may have the same active material so use a set to eliminate duplicates
                 objects_to_copy = {x.active_material for x in selected_objects if x.active_material is not None}
+            elif midi_data.ID_PROPERTIES_DICTIONARY[id_type][1] == "KEY":
+                objects_to_copy = {getattr(x.data, 'shape_keys', None) for x in selected_objects if
+                                    getattr(x.data, 'shape_keys', None) is not None}
             else:
                 object_type = midi_data.ID_PROPERTIES_DICTIONARY[id_type][1]
                 # multiple objects may use the same data so use a set to eliminate duplicates
@@ -541,6 +544,9 @@ class NLABulkMidiCopier(bpy.types.Operator):
             # (In case the action's id_root is probably NODETREE, but the note_action_property id_type is Material.
             # The action will be copied to the material's nodetree animation data.)
             animated_objects = list(dict.fromkeys([x.active_material for x in objs if x.active_material is not None]))
+        elif action_id_root == "KEY":
+            animated_objects = list(dict.fromkeys(
+                [getattr(x.data, 'shape_keys', None) for x in objs if getattr(x.data, 'shape_keys', None) is not None]))
         else:
             # object data with duplicates removed
             animated_objects = list(dict.fromkeys([x.data for x in objs if x.type == action_id_root]))
