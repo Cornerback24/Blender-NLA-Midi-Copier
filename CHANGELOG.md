@@ -1,3 +1,5 @@
+- 0.9.3 2021-2-14
+  * Add copy to selected and copy along path support for shape keys
 - 0.9.2 2020-12-31
   * Add copy to selected and copy along path support for materials
 - 0.9.1 2020-11-14
