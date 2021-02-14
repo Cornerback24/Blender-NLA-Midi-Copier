@@ -4,7 +4,7 @@ Blender add-on for creating midi-driven animations from the Nonlinear Animation 
 An instrument can be defined as a collection of notes and actions.  The instrument is independent of any specific midi file, allowing for defining a set of actions for each note and later syncing them up to a midi file.  To define an instrument, expand the right-side panel in the Nonlinear Action View and select the Midi Instruments tab.
 
 This add-on is written for Blender 2.90, and is compatible with Blender 2.83.    
-Add-on Version 0.9.2. [Changelog here](CHANGELOG.md).
+Add-on Version 0.9.3. [Changelog here](CHANGELOG.md).
 
 
 <details>
@@ -199,9 +199,8 @@ The action defined in the NLA Midi panel can be copied to multiple objects, with
   
 #### Copy Along Path  
 ![Copy to Instrument](images/copy_along_path.png)
-Copy along path is a tool that can be used to quickly copy actions to multiple objects, with a different note for each object, if every object uses the same action.   
-As an example, there are 7 cubes, and they are all animated using the CubeAction. Cube1 is animated to note D2, Cube2 is animated to note C4, and so on, with each cube corresponding to a different note in the midi track. 
-These cubes can all be animated at once by creating a path to define the ordering of the cubes (starting at the lowest pitch and ending at the highest), and using the Copy along path option.
+Copy along path is a tool that can be used to quickly copy actions to multiple objects, with a different note for each object, if every object uses the same action.
+This is useful for animating something like a piano without having to animate each key individually. The piano's keys can all be animated at once by creating a path to define the ordering of the keys (starting at the lowest pitch and ending at the highest), and using the Copy along path option.
 
 * Copy along path
   * If selected, then all selected objects are animated, each to a different note. This option is only valid for Type Object, Type Material, or any type that can be object data (such as Mesh and Curve). If the type is Material, the action wll be copied to the active materials of the selected objects.
