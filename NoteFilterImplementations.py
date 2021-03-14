@@ -97,7 +97,8 @@ class PitchFilter(NoteFilterBase):
 
     @staticmethod
     def draw_ui(parent_layout, note_filter_property):
-        NoteFilterBase.draw_comparison_and_value(parent_layout, note_filter_property, "note_pitch")
+        NoteFilterBase.draw_comparison_and_value(parent_layout, note_filter_property, "note_pitch",
+                                                 "note_pitch_search_string")
 
 
 class StartTime(NoteFilterBase):

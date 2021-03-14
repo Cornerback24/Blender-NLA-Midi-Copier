@@ -1,5 +1,6 @@
 from typing import Any
 import math
+from bpy.props import StringProperty, EnumProperty
 
 
 def instrument_selected_note_property(instrument):
@@ -103,3 +104,66 @@ def time_in_frames(time, time_unit: str, context) -> int:
 def ms_to_frames(ms: float, context) -> int:
     frames_per_second = context.scene.render.fps
     return math.floor(ms / 1000 * frames_per_second)
+
+
+def note_updated_function(note_attribute, note_filter_attribute):
+    def note_updated(data):
+        note = getattr(data, note_attribute)
+        if note is not None:
+            setattr(data, note_filter_attribute, note)
+
+    return lambda data, context: note_updated(data)
+
+
+def find_matching_note(notes_list_enums, note_string):
+    filter_string_is_digit = note_string.isdigit()
+    # if digit, then check string equals note pitch, else check note display contains string
+    if filter_string_is_digit:
+        for note in notes_list_enums:
+            if note_string == note[0]:
+                return note
+    else:
+        matches = [note for note in notes_list_enums if note_string.lower() in note[1].lower()]
+        if len(matches) == 1:
+            return matches[0]
+
+    return None
+
+
+def updated_note_from_filter(notes_list, search_string: str, current_note: str):
+    matching_note = find_matching_note(notes_list, search_string)
+    if matching_note is not None and not matching_note[0] == current_note:
+        return matching_note[0]
+
+
+def note_search_updated_function(note_attribute, note_search_attribute, get_notes_list):
+    def note_search_updated(data, context):
+        notes_list = get_notes_list(data, context)
+        matching_note = updated_note_from_filter(notes_list,
+                                                 getattr(data, note_search_attribute),
+                                                 getattr(data, note_attribute))
+
+        if matching_note is not None:
+            setattr(data, note_attribute, matching_note)
+
+    return lambda data, context: note_search_updated(data, context)
+
+
+def note_property(name: str, description: str, get_notes_list, note_attribute: str, note_search_attribute: str,
+                  default_pitch=0):
+    """
+    :param name: note property name
+    :param description: note property description
+    :param get_notes_list: function to get list of note enums
+    :param note_attribute: note property attribute
+    :param note_search_attribute: note search property attribute
+    :param default_pitch: default pitch for property
+    :return:
+    """
+    return EnumProperty(items=get_notes_list, name=name, description=description, default=default_pitch,
+                        update=note_updated_function(note_attribute, note_search_attribute))
+
+
+def note_search_property(note_attribute, note_search_attribute, get_notes_list):
+    return StringProperty(name="Search", description="Enter a note name or midi note number to select a note",
+                          update=note_search_updated_function(note_attribute, note_search_attribute, get_notes_list))

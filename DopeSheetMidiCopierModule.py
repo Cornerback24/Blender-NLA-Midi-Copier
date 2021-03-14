@@ -13,6 +13,7 @@ else:
     from . import PitchUtils
 
 import bpy
+from .midi_data import MidiDataType
 
 
 class DopeSheetMidiCopier(bpy.types.Operator):
@@ -73,9 +74,9 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         g_pencil_frames = g_pencil_layer.frames
 
         dope_sheet_note_action_property = context.scene.dope_sheet_midi_data_property.note_action_property
-        notes = midi_data.MidiDataUtil.get_notes(midi_data.dope_sheet_midi_data.get_track_id(context),
-                                                 midi_data.dope_sheet_midi_data)
-        note_id = midi_data.dope_sheet_midi_data.get_note_id(context)
+        notes = midi_data.MidiDataUtil.get_notes(midi_data.get_midi_data(MidiDataType.DOPESHEET).get_track_id(context),
+                                                 midi_data.get_midi_data(MidiDataType.DOPESHEET))
+        note_id = midi_data.get_midi_data(MidiDataType.DOPESHEET).get_note_id(context)
         notes = NoteFilterImplementations.filter_notes(notes, dope_sheet_note_action_property.note_filter_groups,
                                                        PitchUtils.note_pitch_from_id(note_id),
                                                        dope_sheet_note_action_property.add_filters, context)
@@ -125,8 +126,9 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         last_keyframe_frame_number = max([frame.frame_number for frame in source_keyframes])
 
         for note in notes:
-            first_frame = midi_data.dope_sheet_midi_data.note_frame(note, frames_per_second, frame_offset,
-                                                                    copy_to_note_end)
+            first_frame = midi_data.get_midi_data(MidiDataType.DOPESHEET).note_frame(note, frames_per_second,
+                                                                                     frame_offset,
+                                                                                     copy_to_note_end)
             for keyframe in source_keyframes:
                 copied_frame = g_pencil_frames.copy(keyframe)
 
@@ -161,8 +163,9 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         last_frame = -1 - action_length  # initialize to frame before any actions will be copied to
 
         for note in notes:
-            first_frame = midi_data.dope_sheet_midi_data.note_frame(note, frames_per_second, frame_offset,
-                                                                    copy_to_note_end)
+            first_frame = midi_data.get_midi_data(MidiDataType.DOPESHEET).note_frame(note, frames_per_second,
+                                                                                     frame_offset,
+                                                                                     copy_to_note_end)
             # check for overlap
             if first_frame - last_frame > 0:
                 if scale_factor is not None:
@@ -199,8 +202,9 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         """
         if last_keyframe_frame_number == first_keyframe_frame_number or initial_scale_factor is None:
             return 1
-        return (midi_data.dope_sheet_midi_data.note_length_frames(note, frames_per_second) * initial_scale_factor) / (
-                last_keyframe_frame_number - first_keyframe_frame_number)
+        return (midi_data.get_midi_data(MidiDataType.DOPESHEET)
+                .note_length_frames(note, frames_per_second) * initial_scale_factor) / (
+                       last_keyframe_frame_number - first_keyframe_frame_number)
 
     @staticmethod
     def note_action_length(note, frames_per_second, scale_factor):
@@ -210,4 +214,5 @@ class DopeSheetMidiCopier(bpy.types.Operator):
         :param scale_factor: scale factor to apply to note length
         :return: the length of the note in frames
         """
-        return midi_data.dope_sheet_midi_data.note_length_frames(note, frames_per_second) * scale_factor
+        return midi_data.get_midi_data(MidiDataType.DOPESHEET).note_length_frames(note,
+                                                                                  frames_per_second) * scale_factor

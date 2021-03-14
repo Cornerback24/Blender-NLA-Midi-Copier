@@ -13,6 +13,8 @@ else:
     from . import PitchUtils
 import bpy
 
+from .midi_data import MidiDataType
+
 
 class AddInstrument(bpy.types.Operator):
     bl_idname = "ops.nla_midi_add_instrument"
@@ -51,11 +53,11 @@ class DeleteInstrument(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return midi_data.midi_data.selected_instrument_id(context) is not None
+        return midi_data.get_midi_data(MidiDataType.NLA).selected_instrument_id(context) is not None
 
     def action_common(self, context):
         instruments = context.scene.midi_data_property.instruments
-        selected_instrument_id = midi_data.midi_data.selected_instrument_id(context)
+        selected_instrument_id = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument_id(context)
         if selected_instrument_id is not None:
             instrument_index = int(selected_instrument_id)
             context.scene.midi_data_property.selected_instrument_id = midi_data.NO_INSTRUMENT_SELECTED
@@ -77,7 +79,7 @@ class AddActionToInstrument(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        instrument = midi_data.selected_instrument(context)
+        instrument = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context)
         if instrument is not None:
             # create new action for instrument
             PropertyUtils.get_note_action_property(instrument, int(instrument.selected_note_id))
@@ -100,7 +102,7 @@ class RemoveActionFromInstrument(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        instrument = midi_data.selected_instrument(context)
+        instrument = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context)
         if instrument is not None:
 
             instrument_note_property = PropertyUtils.instrument_selected_note_property(instrument)
@@ -133,7 +135,7 @@ class TransposeInstrument(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        instrument = midi_data.selected_instrument(context)
+        instrument = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context)
         for note in instrument.notes:
             note.note_id += self.properties.transpose_steps
         if instrument.transpose_filters == "transpose_all":

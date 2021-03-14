@@ -3,8 +3,8 @@ Blender add-on for creating midi-driven animations from the Nonlinear Animation 
 
 An instrument can be defined as a collection of notes and actions.  The instrument is independent of any specific midi file, allowing for defining a set of actions for each note and later syncing them up to a midi file.  To define an instrument, expand the right-side panel in the Nonlinear Action View and select the Midi Instruments tab.
 
-This add-on is written for Blender 2.90, and is compatible with Blender 2.83.    
-Add-on Version 0.9.3. [Changelog here](CHANGELOG.md).
+This add-on is written for Blender 2.92.    
+Add-on Version 0.10.0. [Changelog here](CHANGELOG.md).
 
 
 <details>
@@ -14,7 +14,7 @@ Midi Panel
  
 ### Midi Panel controls:
 
-![Midi Panel](images/midi_panel.PNG)
+![Midi Panel](images/midi_panel.png)
 
 * Choose midi file:
   * Select a midi file.
@@ -23,7 +23,7 @@ Midi Panel
 * Track:
   * Choose a track from the midi file. (Tracks with no notes will not be shown.)
 * Note:
-  * Choose a note from the selected track. (Only notes played in the selected track will be shown.)
+  * Choose a note from the selected track. (Only notes played in the selected track will be shown.) A note can also be selected by typing a note name or midi note number in the box next to the drop-down.
 * Type:
   * The type of object to animate. Select "Object" to animate objects in the scene. Change this value to animate something other than an object.  For example, select "Light" to animate the brightness of a light.
 * Object:
@@ -88,8 +88,6 @@ Midi Instrument Panel
 
 * Note:
   * The selected note.  If there are actions associated to the note, the number of actions will be displayed in parentheses. For example, C5 (2) indicates that there are two actions associated to the note C5. An astrix indicates than there are actions that may be copied to other notes due to pitch filters. An exclamation mark indicates there are actions that are missing an object or action, so they will not be copied.
-* Search
-  * Search for a note by note name or midi pitch number. 
 * Add Action
   * Adds an action for the selected note.    
 * Action Boxes
@@ -99,7 +97,7 @@ Midi Instrument Panel
 
 ![Transpose Box](images/transpose_box.png)
 
-* Transpose: The transpose buttons transpose the instrument. Transpose buttons are disabled if the transposition would result in notes outside of the 0-127 midi pitch range.
+* Transpose: The transpose buttons transpose the instrument. Transpose buttons are disabled if the transposition would result in notes outside the 0-127 midi pitch range.
   * \- octave: shift all actions down an octave
   * \- step: shift all actions down a step
   * \+ step: shift all actions up a step
@@ -108,8 +106,8 @@ Midi Instrument Panel
   * Do not transpose: Does not transpose the pitch filters.
   * Transpose if possible except all-inclusive: Transposes all pitch filters except pitch filters that include every midi pitch (pitch >= 0 or pitch <= 127). Pitch filters that would be transposed to a pitch outside the 0-127 midi pitch range are not transposed.  
   * Transpose if possible: Transposes pitch filters. Pitch filters that would be transposed to a pitch outside the 0-127 midi pitch range are not transposed.  
-  * Transpose all except all-inclusive: Transposes all pitch filters except pitch filters that include every midi pitch (pitch >= 0 or pitch <= 127). Transpose buttons are disabled if any pitch filters would be transposed to a range outside of the 0-127 midi pitch range. 
-  * Transpose all: Transposes all pitch filters. Transpose buttons are disabled if any pitch filters would be transposed to a range outside of the 0-127 midi pitch range.
+  * Transpose all except all-inclusive: Transposes all pitch filters except pitch filters that include every midi pitch (pitch >= 0 or pitch <= 127). Transpose buttons are disabled if any pitch filters would be transposed to a range outside the 0-127 midi pitch range. 
+  * Transpose all: Transposes all pitch filters. Transpose buttons are disabled if any pitch filters would be transposed to a range outside the 0-127 midi pitch range.
 
 
 #### Animate Box
@@ -140,7 +138,7 @@ Filters
 
 ### Filters
 
-![Filter](images/FilterExample.PNG)
+![Filter](images/FilterExample.png)
 
 Filters can be used to filter notes when copying actions. 
 Filters are defined within a filter group. Actions are copied to notes that match any of the filter groups. For a note to match a filter group, it must match all filters within the group.
@@ -185,9 +183,7 @@ The action defined in the NLA Midi panel can be copied to multiple objects, with
 
 #### Copy to Instrument
 * Note
-  * The note to copy the action to. (If the search field is blank, this field is automatically updated when the note selected in the NLA midi panel is changed.) This property is not used when Copy along path is selected.
-* Search
-  * Search for a note by note name or midi pitch number.
+  * The note to copy the action to. (This field is automatically updated when the note selected in the NLA midi panel is changed.) This property is not used when Copy along path is selected.
 * Copy to Instrument
   * If selected, copies the action defined in the NLA Midi panel to the selected instrument. If not selected, generates action strips for the selected note.
 * Instrument
@@ -210,8 +206,6 @@ This is useful for animating something like a piano without having to animate ea
     Generally, for paths that are not straight, the more points on the path, the more accurate the result.
   * Starting Note
     * The note that the first object along the path will be animated to, if the note is not filtered out. If the note is filtered out, the first object will be animated to the first note that is not filtered out and has a pitch greater than this note.
-  * Search
-    * Search for a note by note name or midi pitch number.  
   * Filter by scale
     * Options for filtering notes by a major scale.
     * No filter
@@ -251,6 +245,63 @@ Midi Settings
 
 </details>
 
+
+<details>
+<summary>
+Graph Editor Keyframe Generation
+</summary>
+
+### Graph Editor Keyframe Generation
+
+![Graph Editor Midi Panel](images/graph_editor_midi_panel.png)
+
+Keyframes can be generated based on pitch in the graph editor. Select an F-Curve in the graph editor, choose a low and high pitch, choose a min and max keyframe value, and generate keyframes with values based on the pitch.  
+
+* Midi File:
+  * Displays the selected midi file.
+* Track:
+  * Choose a track from the midi file. (Tracks with no notes will not be shown.)
+* Notes in Track:
+  * Drop-down that displays the notes in the selected track. This property does not affect keyframe generation.
+* Selected F-Curve
+  * Displays the data path of the selected F-Curve in the graph editor. This is the F-Curve keyframes will be generated on.
+* Min note:
+  * The lowest note (inclusive) that will be used for keyframe generation.
+* Max note:
+  * The highest note (inclusive) that will be used for keyframe generation. If this is lower than the min note, keyframes will be generated starting at the min note down to this note.
+* Filter by Scale:
+  * If filtering by scale, keyframes will only be generated for notes in or not in the scale (depending on the selected filter type). In addition, only filtered pitches will be used for keyframe calculation.
+* Scale:
+  * The major scale to filter by.
+* Only notes in Selected Track:
+  * If selected, only notes in the selected track will be used for keyframe calculation.  
+* Min: 
+  * The keyframe value that corresponds to the min note.
+* Max: 
+  * The keyframe value that corresponds to the max note. If this is less than min, then values will be calculated starting at min down to this value.
+* Unit Type:
+  * The unit type of the min and max values. Blender does not use scene units as keyframe values (for example rotation keyframe values are in radians.) The selected unit type is converted to keyframe units. (For example, if the scene units are degrees, setting the unit type to Angle will change the min and max inputs to degrees. The values will be converted to keyframe units, in this case radians.)  
+* Generate at Note End:
+  * Generate keyframes at the end of the note instead of the beginning.
+* On Keyframe Overlap
+  * Options for handling overlaps with existing keyframes.
+  * Replace
+    * Replace the existing keyframe.
+  * Skip
+    * Skip the generated keyframe (keep the existing keyframe).
+  * Previous frame
+    * Place the generated keyframe on the frame before the existing keyframe. If that frame also has an existing keyframe, the generated keyframe will be skipped.
+  * Next frame
+    * Place the generated keyframe on the frame after the existing keyframe. If that frame also has an existing keyframe, the generated keyframe will be skipped.
+* First Frame:
+  * The frame that the midi file starts on.
+* Frame Offset:
+  * Offset in frames to use when generating keyframes (can be negative).
+* Generate Keyframes:
+  * Generates keyframes on the select F-Curve in the graph editor based on the select min and max notes and values. (Add a keyframe to a property to create an F-Curve for it if one does not already exist.)
+  
+</details>
+
 <details>
 <summary>
 Grease Pencil
@@ -258,7 +309,7 @@ Grease Pencil
 
 ### Grease Pencil
 
-![Grease Pencil Midi Panel](images/GreasePencilMidiPanelExample.PNG)
+![Grease Pencil Midi Panel](images/GreasePencilMidiPanelExample.png)
 
 This add-on also allows for copying selected grease pencil frames to sync with notes in a midi file. 
 The grease pencil midi panel is available in the Grease Pencil Dope Sheet when "Only Show Selected" is selected in the Dope Sheet bar.

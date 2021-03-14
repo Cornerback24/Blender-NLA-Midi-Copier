@@ -7,40 +7,28 @@ if "bpy" in locals():
     importlib.reload(DopeSheetMidiCopierModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PanelUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(MidiPanelModule)
 else:
     from . import midi_data
     # noinspection PyUnresolvedReferences
     from . import DopeSheetMidiCopierModule
     # noinspection PyUnresolvedReferences
     from . import PanelUtils
+    # noinspection PyUnresolvedReferences
+    from . import MidiPanelModule
 
 import bpy
 from .DopeSheetMidiCopierModule import DopeSheetMidiCopier
 from . import midi_data
 from bpy.props import EnumProperty
+from .midi_data import MidiDataType
+from .MidiPanelModule import MidiFileSelectorBase
 
 
-class DopeSheetMidiFileSelector(bpy.types.Operator):
+class DopeSheetMidiFileSelector(MidiFileSelectorBase, bpy.types.Operator):
+    data_type = MidiDataType.DOPESHEET
     bl_idname = "ops.dope_sheet_midi_file_selector"
-    bl_label = "Select Midi File"
-    # noinspection PyArgumentList,PyUnresolvedReferences
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        context.scene.dope_sheet_midi_data_property["midi_file"] = self.filepath
-        try:
-            midi_data.dope_sheet_midi_data.update_midi_file(self.filepath, True, context)
-        except Exception as e:
-            self.report({"WARNING"}, "Could not load midi file: " + str(e))
-            context.scene.dope_sheet_midi_data_property["midi_file"] = ""
-            midi_data.dope_sheet_midi_data.update_midi_file(None, False, context)
-
-        return {'FINISHED'}
-
-    # noinspection PyUnusedLocal
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
 
 
 class DopeSheetMidiPanel(bpy.types.Panel):
@@ -59,14 +47,9 @@ class DopeSheetMidiPanel(bpy.types.Panel):
 
     def draw(self, context):
         col = self.layout.column(align=True)
-        col.operator(DopeSheetMidiFileSelector.bl_idname, text="Choose midi file", icon='FILE_FOLDER')
-
         midi_data_property = context.scene.dope_sheet_midi_data_property
 
-        if midi_data_property.midi_file:
-            col.prop(midi_data_property, "midi_file")
-            col.prop(midi_data_property, "track_list")
-            col.prop(midi_data_property, "notes_list")
+        PanelUtils.draw_midi_file_selections(col, midi_data_property, DopeSheetMidiFileSelector.bl_idname)
 
         dope_sheet_note_action_property = midi_data_property.note_action_property
 

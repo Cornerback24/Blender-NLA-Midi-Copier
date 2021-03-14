@@ -1,53 +1,10 @@
+from enum import Enum
+from typing import Optional
+
 from .midi_analysis.MidiData import MidiData
 from . import PitchUtils
 from . import PropertyUtils
 import math
-
-
-# noinspection PyUnusedLocal
-def get_tracks_list(self, context):
-    return midi_data.get_tracks_list(self, context)
-
-
-def get_track_id(context):
-    return midi_data.get_track_id(context)
-
-
-def get_note_id(context) -> str:
-    return midi_data.get_note_id(context)
-
-
-def get_instruments(midi_data_property, context):
-    return midi_data.get_instruments(midi_data_property, context)
-
-
-def get_instrument_notes(instrument_property, context):
-    return midi_data.get_instrument_notes(instrument_property, instrument_property.note_search_string.strip(),
-                                          LoadedMidiData.store_notes_list_one)
-
-
-def get_selected_instrument_notes(midi_data_property, context):
-    """
-    :return: the notes for the selected instrument in the Copy panel, or all notes if copy to instrument is not selected
-    """
-    if midi_data_property.bulk_copy_property.copy_to_instrument:
-        return midi_data.get_instrument_notes(midi_data.selected_instrument_for_copy_to_id(context),
-                                              midi_data_property.copy_to_instrument_note_search_string.strip(),
-                                              LoadedMidiData.store_notes_list_two)
-    else:
-        return midi_data.get_all_notes_list(midi_data_property.copy_to_instrument_note_search_string.strip(),
-                                            LoadedMidiData.store_copy_panel_notes_list)
-
-
-def selected_instrument(context):
-    return midi_data.selected_instrument(context)
-
-
-def get_bulk_copy_starting_note(bulk_copy_property, context):
-    # enum property for the starting note for bulk copy
-    return midi_data.get_all_notes_list(bulk_copy_property.bulk_copy_starting_note_search_string,
-                                        LoadedMidiData.store_bulk_copy_notes_list)
-
 
 # key is display name, value is (NoteActionProperty field name, Action id_root, enum number)
 ID_PROPERTIES_DICTIONARY = {"Armature": ("armature", "ARMATURE", 0),
@@ -189,8 +146,7 @@ class LoadedMidiData:
         self.instrument_notes_list = []  # list of notes for the selected instrument
         self.instrument_notes_list2 = []  # list of notes for the selected instruments, used for copy to instrument action
         self.instrument_note_actions_list = []  # list of actions for the selected note of the selected instrument
-        self.bulk_copy_starting_notes_list = []  # list of notes than can be selected as the starting note for bulk copy
-        self.copy_panel_notes_list = []  # list of notes for the Note field in the Copy panel when Copy to Instrument is note selected
+        self.all_notes_list = []  # list of all notes (midi pitches 0 to 127)
         self.notes_list_dict = {}  # key is track id String, value is list of note properties (where enum property id is note id)
         self.current_midi_filename = None  # name of the loaded midi file
         self.middle_c_id = None  # note id being used for middle c
@@ -200,14 +156,16 @@ class LoadedMidiData:
         self.ms_per_tick = None  # ms per tick, used if not using file tempo
         self.use_file_tempo = True  # whether to use the file tempo or the tempo property
 
-    def update_midi_file(self, midi_filename: str, force_update: bool, context, set_tempo_properties: bool = True):
+    def update_midi_file(self, midi_filename: Optional[str], force_update: bool, context,
+                         called_on_script_reload: bool = False):
         """
         Updates the current midi file
         :param force_update: if true will reload the midi file even if it has the same name
         :param midi_filename: path to the midi file
         :param context: the contet
-        :param set_tempo_properties: if True, update the properties that store the file's tempo information to be
-        displayed in the midi settings panel
+        :param called_on_script_reload: If False, update properties such as the file's tempo information to be
+        displayed in the midi settings panel. Updating properites is not allowed in the context if this is called
+        because of a script reload.
         """
         if midi_filename is None:
             self.midi_data = None
@@ -216,7 +174,7 @@ class LoadedMidiData:
             return
         self.current_midi_filename = midi_filename
         self.midi_data = MidiData(midi_filename)
-        if set_tempo_properties:
+        if not called_on_script_reload:
             if self.midi_data.isTicksPerBeat:
                 # need to access properties with dictionary style because they are read-only
                 self.get_midi_data_property(context).tempo_settings["file_beats_per_minute"] = \
@@ -231,6 +189,10 @@ class LoadedMidiData:
                     "file_ticks_per_beat"] = self.midi_data.ticksPerSecond
 
         self.__create_track_list(context)
+        if not called_on_script_reload:
+            # call update track list function to update selected note
+            if len(self.track_list) > 0:
+                self.get_midi_data_property(context).track_list = self.track_list[0][0]
         self.update_tempo(context)
 
     def update_tempo(self, context):
@@ -254,7 +216,8 @@ class LoadedMidiData:
                 note_pitches_ordered = sorted(notes_pitches_set)
                 self.notes_list_dict[track_name] = [(PitchUtils.note_id_from_pitch(pitch),
                                                      PitchUtils.note_display_from_pitch(pitch, self.middle_c_id),
-                                                     PitchUtils.note_description_from_pitch(pitch, self.middle_c_id))
+                                                     PitchUtils.note_description_from_pitch(pitch, self.middle_c_id),
+                                                     pitch)
                                                     for pitch in note_pitches_ordered]
                 tracks.append(track_name)
                 self.tracks_dict[track_name] = track
@@ -269,15 +232,14 @@ class LoadedMidiData:
         if self.midi_data is None:
             # if midi_data is None here, it is probably because scripts were reloaded in blender
             # (on_load is not called in that case, so need to read in the midi file here)
-            self.update_midi_file(self.get_midi_data_property(context).midi_file, False, context, False)
+            self.update_midi_file(self.get_midi_data_property(context).midi_file, False, context, True)
             self.__create_track_list(context)
         elif self.middle_c_on_last_tracks_update != self.get_middle_c_id(context):
             # middle c changed, update display
             self.__create_track_list(context)
         return self.track_list
 
-    # noinspection PyUnusedLocal
-    def get_notes_list(self, property_self, context):
+    def get_notes_list(self, context):
         """
         :return: list of notes for the current selected track
         """
@@ -318,10 +280,9 @@ class LoadedMidiData:
 
         return self.instruments_list
 
-    def get_instrument_notes(self, instrument_property, search_string, store_and_return_list):
+    def get_instrument_notes(self, instrument_property, store_and_return_list):
         """
         :param instrument_property the property for the instrument to get the notes from
-        :param search_string string to filter notes
         :param store_and_return_list lambda that stores the notes to a field in this LoadedMidiData instance
         and returns the stored list
         :return: list of notes for the instrument's selected_note_id EnumProperty (where enum property id is note pitch)
@@ -349,26 +310,21 @@ class LoadedMidiData:
                     append_to_description = append_to_description + "\n! Some actions are missing an object or action"
             note_description = PitchUtils.note_description_from_pitch(pitch, self.middle_c_id)
             new_notes_list.append((str(pitch), note_display + append_to_note,
-                                   note_description + append_to_description))
+                                   note_description + append_to_description, pitch))
 
-        new_notes_list = LoadedMidiData.notes_list_filtered(new_notes_list, search_string)
         return store_and_return_list(self, new_notes_list)
 
-    def get_all_notes_list(self, search_string, store_and_return_list):
+    def get_all_notes_list(self):
         """
-        :param search_string to filter notes
-        :param store_and_return_list lambda that stores the notes to a field in this LoadedMidiData instance
-        and returns the stored list
-        :return: a list of notes to select (all pitches, filtered by search_string)
+        :return: a list of notes to select (all pitches 0  to 127)
         """
-        new_notes_list = []
+        self.all_notes_list = []
         for pitch in range(128):
             note_display = PitchUtils.note_display_from_pitch(pitch, self.middle_c_id)
             note_description = PitchUtils.note_description_from_pitch(pitch, self.middle_c_id)
-            new_notes_list.append((str(pitch), note_display, note_description))
+            self.all_notes_list.append((str(pitch), note_display, note_description, pitch))
 
-        new_notes_list = LoadedMidiData.notes_list_filtered(new_notes_list, search_string)
-        return store_and_return_list(self, new_notes_list)
+        return self.all_notes_list
 
     def store_notes_list_one(self, notes_list):
         self.instrument_notes_list = notes_list
@@ -377,26 +333,6 @@ class LoadedMidiData:
     def store_notes_list_two(self, notes_list):
         self.instrument_notes_list2 = notes_list
         return self.instrument_notes_list2
-
-    def store_bulk_copy_notes_list(self, notes_list):
-        self.bulk_copy_starting_notes_list = notes_list
-        return self.bulk_copy_starting_notes_list
-
-    def store_copy_panel_notes_list(self, notes_list):
-        self.copy_panel_notes_list = notes_list
-        return self.copy_panel_notes_list
-
-    @staticmethod
-    def notes_list_filtered(notes_list_enums, filter_string):
-        filter_string_is_digit = filter_string.isdigit()
-        # if digit, then check string equals note pitch, else check note display contains string
-        note_filter_lambda = \
-            (lambda note: filter_string == note[0]) if filter_string_is_digit else \
-                (lambda note: filter_string.lower() in note[1].lower())
-
-        filtered_notes = [note for note in notes_list_enums if note_filter_lambda(note)]
-        # to avoid issues with empty enum list, return all if no match instead of none
-        return filtered_notes if len(filtered_notes) > 0 else notes_list_enums
 
     @staticmethod
     def __instrument_filters_may_not_match_pitch(actions, pitch: int) -> bool:
@@ -440,14 +376,12 @@ class LoadedMidiData:
                 return True
         return False
 
-    def get_all_notes(self, context, for_pitch_filter=False):
+    def get_all_notes_for_pitch_filter(self, context):
         """
         :param context the context
-        :param for_pitch_filter true if the enum property is for a pitch filter
         :return: list of all notes (pitches 0 - 127) as enum properties (where enum property id is note id)
         """
         if self.get_middle_c_id(context) != self.middle_c_on_last_all_notes_update:
-            self.all_notes = []
             self.all_notes_for_pitch_filter = []
             self.middle_c_on_last_all_notes_update = self.get_middle_c_id(context)
             for pitch in range(128):
@@ -459,7 +393,7 @@ class LoadedMidiData:
             self.all_notes_for_pitch_filter.append(("selected", "Selected",
                                                     "The selected pitch in the Midi panel, or the pitch corresponding "
                                                     "to the instrument note if this filter is part of an instrument"))
-        return self.all_notes_for_pitch_filter if for_pitch_filter else self.all_notes
+        return self.all_notes_for_pitch_filter
 
     def get_middle_c_id(self, context):
         if self.middle_c_id is None:
@@ -522,5 +456,27 @@ class LoadedMidiData:
         return max(math.floor((ms_length / 1000) * frames_per_second), 1)
 
 
-midi_data = LoadedMidiData(lambda context: context.scene.midi_data_property)
+nla_midi_data = LoadedMidiData(lambda context: context.scene.midi_data_property)
 dope_sheet_midi_data = LoadedMidiData(lambda context: context.scene.dope_sheet_midi_data_property)
+graph_editor_midi_data = LoadedMidiData(lambda context: context.scene.graph_editor_midi_data_property)
+
+
+# Effectively an Enum. Doesn't extend Enum because if scripts are reloaded,
+# existing values would not match the reloaded class.
+class MidiDataType:
+    NLA = 1
+    DOPESHEET = 2
+    GRAPH_EDITOR = 3
+
+
+def get_midi_data(midi_data_type: MidiDataType) -> LoadedMidiData:
+    if midi_data_type == MidiDataType.NLA:
+        return nla_midi_data
+    elif midi_data_type == MidiDataType.DOPESHEET:
+        return dope_sheet_midi_data
+    elif midi_data_type == MidiDataType.GRAPH_EDITOR:
+        return graph_editor_midi_data
+
+
+def get_midi_data_property(midi_data_type: MidiDataType, context):
+    return get_midi_data(midi_data_type).get_midi_data_property(context)
