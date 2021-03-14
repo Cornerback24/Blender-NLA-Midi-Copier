@@ -11,11 +11,14 @@ def pitch_dictionary(lowest_octave: int):
     return dictionary
 
 
-NOTE_ID_TO_PITCH = {v: k for k, v in Note.PITCH_DICTIONARY.items()}
-
 C3_MIDDLE_PITCH_TO_DISPLAY = pitch_dictionary(-2)
 C4_MIDDLE_PITCH_TO_DISPLAY = pitch_dictionary(-1)
 C5_MIDDLE_PITCH_TO_DISPLAY = pitch_dictionary(0)
+
+PITCHES_IN_MAJOR_SCALE = {0, 2, 4, 5, 7, 9, 11}  # pitches in a major scale (where 0 is tonic)
+
+SCALE_TO_PITCH_MAP = {"C": 0, "C#": 1, "D": 2, "D#": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "G#": 8, "A": 9, "A#": 10,
+                      "B": 11}
 
 
 def note_display_from_pitch(pitch: int, middle_c_note: str) -> str:
@@ -31,12 +34,8 @@ def note_description_from_pitch(pitch: int, middle_c_note: str) -> str:
     return f"{note_display_from_pitch(pitch, middle_c_note)} (Midi note {pitch})"
 
 
-def note_display_from_id(note_id_str: str, middle_c_note: str) -> str:
-    return note_display_from_pitch(NOTE_ID_TO_PITCH[note_id_str], middle_c_note)
-
-
 def note_pitch_from_id(note_id_str: str) -> int:
-    return NOTE_ID_TO_PITCH[note_id_str]
+    return int(note_id_str)
 
 
 def note_id_is_selected_note(note_id_str: str) -> bool:
@@ -44,7 +43,7 @@ def note_id_is_selected_note(note_id_str: str) -> bool:
 
 
 def note_id_from_pitch(pitch: int) -> str:
-    return Note.PITCH_DICTIONARY[pitch]
+    return str(pitch)
 
 
 def can_be_transposed(pitch: int, steps_to_transpose: int) -> bool:
@@ -56,3 +55,7 @@ def can_be_transposed(pitch: int, steps_to_transpose: int) -> bool:
 def pitch_filter_is_all_inclusive(pitch: int, comparison_operator: str) -> bool:
     return pitch == 0 and comparison_operator == "greater_than_or_equal_to" or \
            pitch == 127 and comparison_operator == "less_than_or_equal_to"
+
+
+def note_in_scale(note_pitch, scale_tonic_pitch):
+    return ((note_pitch - scale_tonic_pitch) % 12) in PITCHES_IN_MAJOR_SCALE

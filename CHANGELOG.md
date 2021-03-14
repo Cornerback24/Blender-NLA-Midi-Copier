@@ -1,3 +1,8 @@
+- 0.10.0 2021-3-14
+  * Add pitch-based keyframe generation in the graph editor
+  * Add search boxes to note fields so notes can be selected by typing a note name or midi note number
+  * Update the midi file selection dialog to filter by *.mid and *.midi files
+  * Update note properties to be stored by midi note number (except for middle c properties)
 - 0.9.3 2021-2-14
   * Add copy to selected and copy along path support for shape keys
 - 0.9.2 2020-12-31

@@ -145,6 +145,23 @@ def indented_row(parent_layout):
     return row
 
 
+def split_row(parent_layout, factor):
+    """
+    :param parent_layout: layout to place row in
+    :param factor: spilt factor
+    :return: (left row, right row, split row)
+    """
+    split = parent_layout.row().split(factor=factor)
+    return split.row(), split.row(), split
+
+
+def draw_note_with_search(parent_layout, parent_property, note_property: str, search_property: str, enabled=True):
+    left, right, note_row = split_row(parent_layout, .80)
+    note_row.enabled = enabled
+    left.prop(parent_property, note_property)
+    right.prop(parent_property, search_property, text="")
+
+
 def draw_tempo_settings(parent_layout, tempo_property):
     bpm_row = parent_layout.row()
     bpm_row.prop(tempo_property, "use_file_tempo")
@@ -160,3 +177,44 @@ def draw_tempo_settings(parent_layout, tempo_property):
         ticks_per_beat_row.prop(tempo_property, "ticks_per_beat")
     else:
         ticks_per_beat_row.prop(tempo_property, "file_ticks_per_beat")
+
+
+def draw_property_on_split_row(parent_layout, data, label, prop, second_prop=None, split_factor=.7):
+    """
+    UILayout.prop() draws [label: property]. It doesn't visually line up in a list if using a split row to draw
+    [label: property property]. This method can be used to draw both [label: property] and [label: property property]
+    with both visually aligning in the ui.
+
+    :param parent_layout: layout to place the row on
+    :param label: the label for the property
+    :param data: data for UILayout.prop()
+    :param prop: property for UILayout.prop()
+    :param second_prop: second property to place on the row (optional)
+    :param split_factor: factor for UILayout.split() if drawing two properties on the row
+    :return:
+    """
+    left, right, row = split_row(parent_layout, .2)
+    left.label(text=label)
+    if second_prop is not None:
+        left, right, row = split_row(right, split_factor)
+        left.prop(data, prop, text="")
+        right.prop(data, second_prop, text="")
+    else:
+        right.prop(data, prop, text="")
+
+
+def draw_midi_file_selections(parent_layout, midi_data_property, file_selector_operator, note_property_text="Note:"):
+    parent_layout.operator(file_selector_operator, text="Choose midi file", icon='FILE_FOLDER')
+
+    if midi_data_property.midi_file:
+        draw_property_on_split_row(parent_layout, midi_data_property, "Midi File:", "midi_file")
+        draw_property_on_split_row(parent_layout, midi_data_property, "Track:", "track_list")
+        draw_property_on_split_row(parent_layout, midi_data_property, note_property_text, "notes_list",
+                                   "note_search_string")
+
+
+def draw_scale_filter(parent_layout, data, filter_type_property: str, scale_property: str):
+    parent_layout.prop(data, filter_type_property)
+    scale_row = indented_row(parent_layout)
+    scale_row.enabled = not getattr(data, filter_type_property) == "No filter"
+    scale_row.prop(data, scale_property)

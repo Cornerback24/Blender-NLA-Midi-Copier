@@ -15,40 +15,12 @@ else:
 from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
     FloatProperty
 from bpy.types import PropertyGroup
+from .midi_data import MidiDataType
+from .MidiPropertiesModule import MidiPropertyBase, TempoPropertyBase, NoteActionPropertyBase, NoteFilterPropertyBase
 
 
-def get_midi_file_name(self):
-    if "midi_file" in self:
-        return self["midi_file"]
-    return ""
-
-
-def get_all_notes(self, context):
-    return midi_data.dope_sheet_midi_data.get_all_notes(context)
-
-
-def get_notes_list(self, context):
-    return midi_data.dope_sheet_midi_data.get_notes_list(self, context)
-
-
-def get_tracks_list(self, context):
-    return midi_data.dope_sheet_midi_data.get_tracks_list(self, context)
-
-
-class DopeSheetNoteFilterProperty(PropertyGroup):
-    filter_type: EnumProperty(items=NoteFilterImplementations.FILTER_ENUM_PROPERTY_ITEMS, name="Filter Type",
-                              description="Filter Type", default="note_pitch_filter")
-    comparison_operator: EnumProperty(items=MidiPropertiesModule.COMPARISON_ENUM_PROPERTY_ITEMS,
-                                      name="Comparison Operator",
-                                      description="Comparison Operator", default="equal_to")
-    note_pitch: EnumProperty(items=get_all_notes, name="Pitch", description="Pitch")
-    non_negative_int: IntProperty(name="Non Negative Int", description="Non-negative integer", min=0)
-    positive_int: IntProperty(name="Positive Int", description="Positive Integer", min=1, default=1)
-    positive_int_2: IntProperty(name="Positive Int", description="Positive Integer", min=1, default=1)
-    int_0_to_127: IntProperty(name="Integer", description="Integer between 0 and 127, inclusive", min=0, max=127)
-    non_negative_number: FloatProperty(name="Non negative number", description="Non negative number", min=0.0)
-    time_unit: EnumProperty(items=MidiPropertiesModule.TIME_UNITS, name="Time unit", description="Time unit",
-                            default="frames")
+class DopeSheetNoteFilterProperty(PropertyGroup, NoteFilterPropertyBase):
+    data_type = MidiDataType.DOPESHEET
 
 
 class DopeSheetNoteFilterGroup(PropertyGroup):
@@ -56,10 +28,9 @@ class DopeSheetNoteFilterGroup(PropertyGroup):
     expanded: BoolProperty(name="Expanded", default=True)
 
 
-class DopeSheetNoteActionProperty(PropertyGroup):
-    midi_frame_offset: \
-        IntProperty(name="Frame Offset",
-                    description="Frame offset when copying strips")
+class DopeSheetNoteActionProperty(PropertyGroup, NoteActionPropertyBase):
+    data_type = MidiDataType.DOPESHEET
+
     delete_source_keyframes: \
         BoolProperty(name="Delete Source Keyframes",
                      description="Delete the source keyframes after copying",
@@ -76,85 +47,14 @@ class DopeSheetNoteActionProperty(PropertyGroup):
                                  "lengths of the notes they are copied to",
                      default=False)
 
-    copy_to_note_end: \
-        BoolProperty(name="Copy to Note End",
-                     description="Copy to the end of the note instead of the beginning",
-                     default=False)
-
-    scale_factor: \
-        FloatProperty(name="Scale Factor",
-                      description="Scale factor for scaling to the note's length. "
-                                  "For example, a scale factor of 1 will scale to the note's length, "
-                                  "a scale factor of 2 will scale to twice the note's length, " +
-                                  "and a scale factor of 0.5 will scale to half the note's length",
-                      min=0.0000001, max=1000000, soft_min=0.0000001, soft_max=1000000, default=1)
-
-    add_filters: \
-        BoolProperty(name="Add filters",
-                     description="Add filters to exclude notes",
-                     default=False)
-
-    filters_expanded: BoolProperty(name="Expanded", default=True)
-
     note_filter_groups: CollectionProperty(type=DopeSheetNoteFilterGroup, name="Note Filter Groups")
 
 
-def update_middle_c(self, context):
-    midi_data.dope_sheet_midi_data.middle_c_id = self.middle_c_note
+class DopeSheetTempoPropertyGroup(PropertyGroup, TempoPropertyBase):
+    data_type = MidiDataType.DOPESHEET
 
 
-def get_midi_file_beats_per_minute(self):
-    if "file_beats_per_minute" in self:
-        return self["file_beats_per_minute"]
-    return 0
-
-
-def get_midi_file_ticks_per_beat(self):
-    if "file_ticks_per_beat" in self:
-        return self["file_ticks_per_beat"]
-    return 0
-
-
-def on_tempo_property_update(tempo_property, context):
-    midi_data.dope_sheet_midi_data.update_tempo(context)
-
-
-class DopeSheetTempoPropertyGroup(PropertyGroup):
-    use_file_tempo: BoolProperty(name="File Tempo", default=True,
-                                 description="Use the tempo defined by the midi file", update=on_tempo_property_update)
-    beats_per_minute: FloatProperty(name="Bpm", default=120, description="Beats per minute",
-                                    update=on_tempo_property_update, min=0.01)
-    # defining get= (and not set=) disables editing in the UI
-    file_beats_per_minute: FloatProperty(name="Bpm", default=120, description="Beats per minute",
-                                         get=get_midi_file_beats_per_minute, update=on_tempo_property_update)
-    use_file_ticks_per_beat: BoolProperty(name="File Ticks per Beat", default=True,
-                                          description="Use the ticks per beat defined by the midi file. "
-                                                      "(Selecting this and changing only the beats per minute should be"
-                                                      " sufficient for most tempo changes.)",
-                                          update=on_tempo_property_update)
-    ticks_per_beat: IntProperty(name="Ticks per beat", default=96, description="Ticks per beat", min=1,
-                                update=on_tempo_property_update)
-    # defining get= (and not set=) disables editing in the UI
-    file_ticks_per_beat: IntProperty(name="Ticks per beat", default=96, description="Ticks per beat",
-                                     get=get_midi_file_ticks_per_beat, update=on_tempo_property_update)
-
-
-class DopeSheetMidiPropertyGroup(PropertyGroup):
-    midi_file: StringProperty(name="Midi File", description="Select Midi File", get=get_midi_file_name)
-    notes_list: EnumProperty(items=get_notes_list,
-                             name="Note",
-                             description="Note")
-    track_list: EnumProperty(items=get_tracks_list,
-                             name="Track",
-                             description="Selected Midi Track")
-
+class DopeSheetMidiPropertyGroup(MidiPropertyBase, PropertyGroup):
+    data_type = MidiDataType.DOPESHEET
     note_action_property: PointerProperty(type=DopeSheetNoteActionProperty)
-    midi_frame_start: \
-        IntProperty(name="First Frame",
-                    description="The frame corresponding to the beginning of the midi file",
-                    default=1)
-
-    middle_c_note: EnumProperty(items=MidiPropertiesModule.middle_c_options,
-                                name="Middle C", description="The note corresponding to middle C (midi note 60)",
-                                default="C4", update=update_middle_c)
     tempo_settings: PointerProperty(type=DopeSheetTempoPropertyGroup)

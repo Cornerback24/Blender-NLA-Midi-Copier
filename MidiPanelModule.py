@@ -42,22 +42,27 @@ from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToIn
     TransposeInstrument
 from . import midi_data
 from bpy.props import EnumProperty
+from .midi_data import MidiDataType
 
 
-class MidiFileSelector(bpy.types.Operator):
-    bl_idname = "ops.midi_file_selector"
+class MidiFileSelectorBase:
     bl_label = "Select Midi File"
+    bl_description = "Select a midi file"
     # noinspection PyArgumentList,PyUnresolvedReferences
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.mid;*.midi", options={'HIDDEN'})
 
     def execute(self, context):
-        context.scene.midi_data_property["midi_file"] = self.filepath
+        loaded_midi_data = midi_data.get_midi_data(self.data_type)
+        midi_data_property = midi_data.get_midi_data_property(self.data_type, context)
+        midi_data_property["midi_file"] = self.filepath
         try:
-            midi_data.midi_data.update_midi_file(self.filepath, True, context)
+            loaded_midi_data.update_midi_file(self.filepath, True, context)
         except Exception as e:
+            # noinspection PyArgumentList,PyUnresolvedReferences
             self.report({"WARNING"}, "Could not load midi file: " + str(e))
-            context.scene.midi_data_property["midi_file"] = ""
-            midi_data.midi_data.update_midi_file(None, False, context)
+            midi_data_property["midi_file"] = ""
+            loaded_midi_data.update_midi_file(None, False, context)
 
         return {'FINISHED'}
 
@@ -65,6 +70,11 @@ class MidiFileSelector(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
+
+class MidiFileSelector(MidiFileSelectorBase, bpy.types.Operator):
+    data_type = MidiDataType.NLA
+    bl_idname = "ops.midi_file_selector"
 
 
 class MidiPanel(bpy.types.Panel):
@@ -76,15 +86,10 @@ class MidiPanel(bpy.types.Panel):
 
     def draw(self, context):
         col = self.layout.column(align=True)
-        col.operator(MidiFileSelector.bl_idname, text="Choose midi file", icon='FILE_FOLDER')
-
         midi_data_property = context.scene.midi_data_property
         midi_file = midi_data_property.midi_file
-        if midi_data_property.midi_file:
-            col.prop(midi_data_property, "midi_file")
-            col.prop(midi_data_property, "track_list")
-            col.prop(midi_data_property, "notes_list")
 
+        PanelUtils.draw_midi_file_selections(col, midi_data_property, MidiFileSelector.bl_idname)
         note_action_property = midi_data_property.note_action_property
 
         MidiPanel.draw_note_action_common(self.layout, col, note_action_property, midi_data_property=midi_data_property)
@@ -93,20 +98,22 @@ class MidiPanel(bpy.types.Panel):
 
         col = self.layout.column(align=True)
         copy_to_notes_button_row = col.row()
-        enable_copy_to_notes_button = midi_file is not None and len(midi_file) > 0 and \
-                                      note_action_property.action is not None
-        copy_to_notes_button_row.enabled = enable_copy_to_notes_button
+        copy_to_notes_button_row.enabled = midi_file is not None and len(midi_file) > 0 and \
+                                           note_action_property.action is not None
         copy_to_notes_button_row.operator(NLAMidiCopier.bl_idname, icon='FILE_SOUND')
 
     @staticmethod
     def draw_note_action_common(parent_layout, col, note_action_property, midi_data_property=None, action_index=None):
         is_main_property = midi_data_property is not None  # false if this is part of a instrument
-        col.prop(note_action_property, "id_type")
+        # draw_property_on_split_row if main property to visually align with note property
+        MidiPanel.draw_property(col, note_action_property, "id_type", "Type:", is_main_property)
         if note_action_property.id_type is not None:
             object_row = col.row()
             object_row.enabled = not note_action_property.copy_to_selected_objects
-            object_row.prop(note_action_property, midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][0])
-            col.prop(note_action_property, "action")
+            MidiPanel.draw_property(object_row, note_action_property,
+                                    midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][0],
+                                    note_action_property.id_type + ":", is_main_property)
+            MidiPanel.draw_property(col, note_action_property, "action", "Action:", is_main_property)
 
         parent_layout.separator()
 
@@ -133,7 +140,7 @@ class MidiPanel(bpy.types.Panel):
 
         col.prop(note_action_property, "add_filters")
         if note_action_property.add_filters:
-            PanelUtils.draw_filter_box(col, note_action_property, not is_main_property, action_index, "midi_data")
+            PanelUtils.draw_filter_box(col, note_action_property, not is_main_property, action_index, "nla_midi_data")
 
         col = parent_layout.column(align=True)
         col.prop(note_action_property, "blend_mode")
@@ -141,6 +148,13 @@ class MidiPanel(bpy.types.Panel):
         if is_main_property:
             col.prop(midi_data_property, "midi_frame_start")
         col.prop(note_action_property, "midi_frame_offset")
+
+    @staticmethod
+    def draw_property(parent_layout, data, prop, label, draw_on_split_row):
+        if draw_on_split_row:
+            PanelUtils.draw_property_on_split_row(parent_layout, data, label, prop)
+        else:
+            parent_layout.prop(data, prop)
 
 
 class MidiInstrumentPanel(bpy.types.Panel):
@@ -154,7 +168,7 @@ class MidiInstrumentPanel(bpy.types.Panel):
         col = self.layout.column(align=True)
         col.prop(context.scene.midi_data_property, "selected_instrument_id")
 
-        selected_instrument = midi_data.midi_data.selected_instrument(context)
+        selected_instrument = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context)
         if selected_instrument is not None:
             self.draw_instrument_properties(selected_instrument)
             self.draw_instrument_notes(selected_instrument)
@@ -183,8 +197,7 @@ class MidiInstrumentPanel(bpy.types.Panel):
         notes_box = PanelUtils.draw_collapsible_box(self.layout, instrument.name + " Notes", instrument,
                                                     "notes_expanded")[0]
         if instrument.notes_expanded:
-            notes_box.prop(instrument, "selected_note_id")
-            notes_box.prop(instrument, "note_search_string")
+            PanelUtils.draw_note_with_search(notes_box, instrument, "selected_note_id", "note_search_string")
             notes_box.operator(AddActionToInstrument.bl_idname)
             instrument_note_property = PropertyUtils.instrument_selected_note_property(instrument)
             if instrument_note_property is not None:
@@ -282,10 +295,9 @@ class CopyToInstrumentPanel(bpy.types.Panel):
         midi_data_property = context.scene.midi_data_property
         bulk_copy_property = midi_data_property.bulk_copy_property
 
-        note_column = col.column(align=True)
-        note_column.enabled = not bulk_copy_property.copy_along_path
-        note_column.prop(midi_data_property, "copy_to_instrument_selected_note_id")
-        note_column.prop(midi_data_property, "copy_to_instrument_note_search_string")
+        PanelUtils.draw_note_with_search(col, midi_data_property, "copy_to_instrument_selected_note_id",
+                                         "copy_to_instrument_note_search_string",
+                                         not bulk_copy_property.copy_along_path)
 
         note_action_property = midi_data_property.note_action_property
 
@@ -301,13 +313,9 @@ class CopyToInstrumentPanel(bpy.types.Panel):
             if bulk_copy_property.copy_along_path_options_expanded:
                 box_col = box.column(align=True)
                 box_col.prop(bulk_copy_property, "bulk_copy_curve")
-                box_col.prop(bulk_copy_property, "bulk_copy_starting_note")
-                search_row = PanelUtils.indented_row(box_col)
-                search_row.prop(bulk_copy_property, "bulk_copy_starting_note_search_string")
-                box_col.prop(bulk_copy_property, "scale_filter_type")
-                scale_row = PanelUtils.indented_row(box_col)
-                scale_row.enabled = not bulk_copy_property.scale_filter_type == "No filter"
-                scale_row.prop(bulk_copy_property, "scale_filter_scale")
+                PanelUtils.draw_note_with_search(box_col, bulk_copy_property, "bulk_copy_starting_note",
+                                                 "bulk_copy_starting_note_search_string")
+                PanelUtils.draw_scale_filter(box_col, bulk_copy_property, "scale_filter_type", "scale_filter_scale")
                 box_col.prop(bulk_copy_property, "only_notes_in_selected_track")
 
         col.prop(bulk_copy_property, "copy_to_instrument")

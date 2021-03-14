@@ -21,6 +21,7 @@ else:
 import bpy
 from typing import List, Tuple, Optional
 from .midi_analysis.Note import Note
+from .midi_data import MidiDataType
 
 
 class ActionToCopy:
@@ -299,8 +300,9 @@ class NoteActionCopier:
         actions_to_copy = []
         for note in notes:
             action_length, action_scale_factor = self.copied_action_length_and_scale_factor(note, non_scaled_length)
-            first_frame = midi_data.midi_data.note_frame(note, self.frames_per_second, self.frame_offset,
-                                                         self.copy_to_note_end)
+            first_frame = midi_data.get_midi_data(MidiDataType.NLA).note_frame(note, self.frames_per_second,
+                                                                               self.frame_offset,
+                                                                               self.copy_to_note_end)
             to_copy = nla_tracks.action_to_copy(first_frame, round(first_frame + action_length), action_scale_factor)
             if to_copy is not None:
                 actions_to_copy.append(to_copy)
@@ -337,7 +339,7 @@ class NoteActionCopier:
         :param note: Note object
         :return: length of the Note in frames
         """
-        return midi_data.midi_data.note_length_frames(note, self.frames_per_second) \
+        return midi_data.get_midi_data(MidiDataType.NLA).note_length_frames(note, self.frames_per_second) \
             if self.scale_to_note_length else self.action_length
 
     def copy_notes_to_object(self, track_id, note_id: str):
@@ -346,8 +348,10 @@ class NoteActionCopier:
         track_name = self.note_action_track_name
         if track_name is None or len(track_name) == 0:
             track_name = self.instrument_track_name if self.instrument_track_name else \
-                note_id + " - " + track_id
-        notes = midi_data.MidiDataUtil.get_notes(track_id, midi_data.midi_data)
+                PitchUtils.note_display_from_pitch(PitchUtils.note_pitch_from_id(note_id),
+                                                   midi_data.get_midi_data(MidiDataType.NLA).get_middle_c_id(
+                                                       self.context)) + " - " + track_id
+        notes = midi_data.MidiDataUtil.get_notes(track_id, midi_data.get_midi_data(MidiDataType.NLA))
         notes = NoteFilterImplementations.filter_notes(notes, self.filter_groups_property,
                                                        PitchUtils.note_pitch_from_id(note_id),
                                                        self.add_filters, self.context)
@@ -395,7 +399,7 @@ class NLAMidiCopier(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        note_action_property = midi_data.midi_data.selected_note_action_property(context)
+        note_action_property = midi_data.get_midi_data(MidiDataType.NLA).selected_note_action_property(context)
 
         id_type = note_action_property.id_type
 
@@ -412,16 +416,19 @@ class NLAMidiCopier(bpy.types.Operator):
                 objects_to_copy = {x.active_material for x in selected_objects if x.active_material is not None}
             elif midi_data.ID_PROPERTIES_DICTIONARY[id_type][1] == "KEY":
                 objects_to_copy = {getattr(x.data, 'shape_keys', None) for x in selected_objects if
-                                    getattr(x.data, 'shape_keys', None) is not None}
+                                   getattr(x.data, 'shape_keys', None) is not None}
             else:
                 object_type = midi_data.ID_PROPERTIES_DICTIONARY[id_type][1]
                 # multiple objects may use the same data so use a set to eliminate duplicates
                 objects_to_copy = {x.data for x in selected_objects if x.type == object_type}
 
-            note_action_copier.copy_notes_to_objects(midi_data.get_track_id(context),
-                                                     midi_data.get_note_id(context), objects_to_copy)
+            loaded_midi_data = midi_data.get_midi_data(MidiDataType.NLA)
+            note_action_copier.copy_notes_to_objects(loaded_midi_data.get_track_id(context),
+                                                     loaded_midi_data.get_note_id(context), objects_to_copy)
         elif note_action_copier.animated_object is not None:
-            note_action_copier.copy_notes_to_object(midi_data.get_track_id(context), midi_data.get_note_id(context))
+            loaded_midi_data = midi_data.get_midi_data(MidiDataType.NLA)
+            note_action_copier.copy_notes_to_object(loaded_midi_data.get_track_id(context),
+                                                    loaded_midi_data.get_note_id(context))
 
         # preserve state of which objects were selected
         for x in selected_objects:
@@ -443,7 +450,7 @@ class NLAMidiInstrumentCopier(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        instrument = midi_data.selected_instrument(context)
+        instrument = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context)
         self.animate_instrument(context, instrument)
 
     @staticmethod
@@ -490,9 +497,6 @@ class NLABulkMidiCopier(bpy.types.Operator):
     bl_label = "Copy Action to Notes"
     bl_description = "Copy the selected Action to the selected note"
     bl_options = {"REGISTER", "UNDO"}
-    scale_to_pitch_map = {"C": 0, "C#": 1, "D": 2, "D#": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "G#": 8, "A": 9, "A#": 10,
-                          "B": 11}
-    in_major_scale = {0, 2, 4, 5, 7, 9, 11}  # pitches in a major scale (where 0 is tonic)
     tooltip: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -531,7 +535,7 @@ class NLABulkMidiCopier(bpy.types.Operator):
         bulk_copy_property = context.scene.midi_data_property.bulk_copy_property
         objs = ObjectUtils.objects_sorted_by_path(context.selected_objects,
                                                   bulk_copy_property.bulk_copy_curve)
-        midi_data_property = midi_data.midi_data.get_midi_data_property(context)
+        midi_data_property = midi_data.get_midi_data(MidiDataType.NLA).get_midi_data_property(context)
         note_action_property = midi_data_property.note_action_property
         action_id_root = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][1]
         note_action_object_field = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][0]
@@ -551,7 +555,8 @@ class NLABulkMidiCopier(bpy.types.Operator):
             # object data with duplicates removed
             animated_objects = list(dict.fromkeys([x.data for x in objs if x.type == action_id_root]))
 
-        notes_to_copy = NLABulkMidiCopier.notes_to_copy(midi_data_property.bulk_copy_property, midi_data.midi_data)
+        notes_to_copy = NLABulkMidiCopier.notes_to_copy(midi_data_property.bulk_copy_property,
+                                                        midi_data.get_midi_data(MidiDataType.NLA))
 
         for i in range(min(len(notes_to_copy), len(animated_objects))):
             animated_object = animated_objects[i]
@@ -581,11 +586,11 @@ class NLABulkMidiCopier(bpy.types.Operator):
             notes_in_active_track = {x[0] for x in loaded_midi_data.notes_list}
         scale_pitch = None
         if filter_by_scale:
-            scale_pitch = NLABulkMidiCopier.scale_to_pitch_map[bulk_copy_property.scale_filter_scale]
+            scale_pitch = PitchUtils.SCALE_TO_PITCH_MAP[bulk_copy_property.scale_filter_scale]
 
         while note_pitch <= 127:
             note_id: str = PitchUtils.note_id_from_pitch(note_pitch)
-            passes_scale_filter = (((note_pitch - scale_pitch) % 12) in NLABulkMidiCopier.in_major_scale) == in_scale \
+            passes_scale_filter = PitchUtils.note_in_scale(note_pitch, scale_pitch) == in_scale \
                 if filter_by_scale else True
             passes_track_filter = note_id in notes_in_active_track if filter_by_active_track else True
             if passes_scale_filter and passes_track_filter:
@@ -598,13 +603,13 @@ class NLABulkMidiCopier(bpy.types.Operator):
     def animate_or_copy_to_instrument(copy_to_instrument: bool, note_id: str, note_action_property, context):
         """
         :param copy_to_instrument: If true, copies the note action property to the instrument defined by
-        midi_data.midi_data.selected_instrument_for_copy_to_id, otherwise copies the action using the given note
+        loaded_midi_data.selected_instrument_for_copy_to_id(), otherwise copies the action using the given note
         :param note_id: note to copy to
         :param note_action_property: the note action property
         :param context: the context
         """
         if copy_to_instrument:
-            instrument = midi_data.midi_data.selected_instrument_for_copy_to_id(context)
+            instrument = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument_for_copy_to_id(context)
             if instrument is None:
                 return
             copied_note_action_property = PropertyUtils.get_note_action_property(instrument,
@@ -614,4 +619,4 @@ class NLABulkMidiCopier(bpy.types.Operator):
                                                     midi_data.ID_PROPERTIES_DICTIONARY)
         else:
             NoteActionCopier(note_action_property, context, None) \
-                .copy_notes_to_object(midi_data.get_track_id(context), note_id)
+                .copy_notes_to_object(midi_data.get_midi_data(MidiDataType.NLA).get_track_id(context), note_id)
