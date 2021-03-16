@@ -1,3 +1,5 @@
+- 0.10.1 2021-3-15
+  * Fix loading add-on in Blender 2.90
 - 0.10.0 2021-3-14
   * Add pitch-based keyframe generation in the graph editor
   * Add search boxes to note fields so notes can be selected by typing a note name or midi note number
