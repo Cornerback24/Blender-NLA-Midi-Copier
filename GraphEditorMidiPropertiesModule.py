@@ -15,12 +15,12 @@ else:
     from . import NoteFilterImplementations
     from . import PropertyUtils
 
+from bpy.app import version as blender_version
 from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
     FloatProperty
 from bpy.types import PropertyGroup
 from .midi_data import MidiDataType
 from .MidiPropertiesModule import MidiPropertyBase, TempoPropertyBase, NoteActionPropertyBase, NoteFilterPropertyBase
-import bpy
 
 
 class GraphEditorNoteFilterProperty(PropertyGroup, NoteFilterPropertyBase):
@@ -49,7 +49,7 @@ UNIT_TYPES = \
         "VELOCITY": ("Velocity", "Velocity", 8, "min_value_velocity", "max_value_velocity"),
         "VOLUME": ("Volume", "Volume", 9, "min_value_volume", "max_value_volume")
     }
-if bpy.app.version < (2, 92, 0):  # previous versions do not have this option for float property
+if blender_version < (2, 92, 0):  # previous versions do not have this option for float property
     del UNIT_TYPES['TEMPERATURE']
 
 unit_type_enums = [(key, value[0], value[1], value[2]) for key, value in UNIT_TYPES.items()]
@@ -97,7 +97,7 @@ class GraphEditorKeyframeGenerationProperty(PropertyGroup):
     max_value_mass: max_float_property(unit='MASS')
     min_value_power: min_float_property(unit='POWER')
     max_value_power: max_float_property(unit='POWER')
-    if bpy.app.version >= (2, 92, 0):  # previous versions do not have this option for float property
+    if blender_version >= (2, 92, 0):  # previous versions do not have this option for float property
         min_value_temperature: min_float_property(subtype='TEMPERATURE')
         max_value_temperature: max_float_property(subtype='TEMPERATURE')
     min_value_velocity: min_float_property(unit='VELOCITY')

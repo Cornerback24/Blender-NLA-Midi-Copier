@@ -1,3 +1,5 @@
+- 0.10.1 2021-3-20
+  * Fix reloading script
 - 0.10.1 2021-3-15
   * Fix loading add-on in Blender 2.90
 - 0.10.0 2021-3-14
