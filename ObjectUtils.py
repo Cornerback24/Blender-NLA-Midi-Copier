@@ -111,3 +111,43 @@ def objects_sorted_by_path(objects, path):
     sorted_objects.extend(objects_after_path)
 
     return sorted_objects
+
+
+def data_from_object(obj, action_id_root):
+    if action_id_root == "OBJECT":
+        return obj
+    elif action_id_root == "MATERIAL":
+        # (In case the action's id_root is probably NODETREE, but the note_action_property id_type is Material.
+        # The action will be copied to the material's nodetree animation data.)
+        return obj.active_material if obj.active_material is not None else None
+    elif action_id_root == "KEY":
+        return getattr(obj.data, 'shape_keys', None)
+    else:
+        return obj.data if obj.type == action_id_root else None
+
+
+def data_from_objects(objects, action_id_root):
+    """
+    :param objects: collection of blender objects
+    :param action_id_root: type of action
+    :return: list of data to animate (such as list of objects or list of meshes)
+    """
+    if action_id_root == "OBJECT":
+        return objects
+    else:
+        # object data with duplicates removed
+        return [x for x in list(dict.fromkeys([data_from_object(obj, action_id_root) for obj in objects])) if
+                x is not None]
+
+
+def data_dict_from_objects(objects, action_id_root):
+    """
+    :param objects: collection of blender objects
+    :param action_id_root: type of action
+    :return: {data: object}
+    """
+    if action_id_root == "OBJECT":
+        return {obj: obj for obj in objects}
+    else:
+        return {x[0]: x[1] for x in [(data_from_object(obj, action_id_root), obj) for obj in objects] if
+                x[0] is not None}

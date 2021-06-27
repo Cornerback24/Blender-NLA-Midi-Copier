@@ -106,13 +106,25 @@ def ms_to_frames(ms: float, context) -> int:
     return math.floor(ms / 1000 * frames_per_second)
 
 
-def note_updated_function(note_attribute, note_filter_attribute):
-    def note_updated(data):
-        note = getattr(data, note_attribute)
+def note_updated_function(note_attribute, note_filter_attribute, get_notes_list):
+    def note_updated(data, context):
+        note: str = getattr(data, note_attribute)
+        current_note_filter = getattr(data, note_filter_attribute)
         if note is not None:
-            setattr(data, note_filter_attribute, note)
+            # Set to midi note number if current filter is blank or number. If current filter is non-numeric (note name)
+            # then set to note name
+            if current_note_filter.isdigit() or not current_note_filter:
+                setattr(data, note_filter_attribute, note)
+            else:
+                notes_list = get_notes_list(data, context)
+                for note_enum in notes_list:
+                    if note == note_enum[0]:
+                        # remove extra information, such as instrument action count
+                        setattr(data, note_filter_attribute, note_enum[1].split()[0])
+                        return
+                setattr(data, note_filter_attribute, note)
 
-    return lambda data, context: note_updated(data)
+    return lambda data, context: note_updated(data, context)
 
 
 def find_matching_note(notes_list_enums, note_string):
@@ -132,6 +144,8 @@ def find_matching_note(notes_list_enums, note_string):
 
 def updated_note_from_filter(notes_list, search_string: str, current_note: str):
     matching_note = find_matching_note(notes_list, search_string)
+    # don't update if the note already matches the filter to prevent infinite loop (where note update triggers filter
+    # update which triggers note update and so on)
     if matching_note is not None and not matching_note[0] == current_note:
         return matching_note[0]
 
@@ -161,7 +175,7 @@ def note_property(name: str, description: str, get_notes_list, note_attribute: s
     :return:
     """
     return EnumProperty(items=get_notes_list, name=name, description=description, default=default_pitch,
-                        update=note_updated_function(note_attribute, note_search_attribute))
+                        update=note_updated_function(note_attribute, note_search_attribute, get_notes_list))
 
 
 def note_search_property(note_attribute, note_search_attribute, get_notes_list):

@@ -72,8 +72,11 @@ OVERLAP_OPTIONS = [("REPLACE", "Replace", "Replace existing keyframe if on the s
                    ("PREVIOUS_FRAME", "Previous frame",
                     "If an existing keyframe is on the same frame, place the generated keyframe on "
                     "the frame before the existing keyframe. If the frame before also has a "
-                    "keyframe, the generated keyframe will be skipped.", 2),
-                   ("NEXT_FRAME", "Next frame", "Add", 3)]
+                    "keyframe, the generated keyframe will be skipped", 2),
+                   ("NEXT_FRAME", "Next frame",
+                    "If an existing keyframe is on the same frame, place the generated keyframe on "
+                    "the frame after the existing keyframe. If the frame after also has a "
+                    "keyframe, the generated keyframe will be skipped", 3)]
 
 
 class GraphEditorKeyframeGenerationProperty(PropertyGroup):

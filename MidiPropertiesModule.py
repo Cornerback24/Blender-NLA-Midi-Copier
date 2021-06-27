@@ -75,9 +75,6 @@ def on_id_type_updated(note_action_property, context):
         # copy to selected objects only works if the id_type corresponds to an object type
         note_action_property.copy_to_selected_objects = False
     # copy along path only works if the id_type corresponds to an object type
-    if context.scene.midi_data_property.bulk_copy_property.copy_along_path and \
-            not midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type):
-        context.scene.midi_data_property.bulk_copy_property.copy_along_path = False
 
 
 def on_action_updated(note_action_property, context):
@@ -304,7 +301,8 @@ def update_notes_list(midi_property_group, context):
     if get_notes_for_copy_panel(midi_property_group, context):
         midi_property_group.copy_to_instrument_selected_note_id = str(PitchUtils.note_pitch_from_id(
             midi_property_group.notes_list))
-    PropertyUtils.note_updated_function("notes_list", "note_search_string")(midi_property_group, context)
+    PropertyUtils.note_updated_function("notes_list", "note_search_string", get_notes_list)(midi_property_group,
+                                                                                            context)
 
 
 def object_is_curve(bulk_copy_property_group, bpy_object):
@@ -317,14 +315,22 @@ scale_filter_options = [("No filter", "No filter", "Do not filter by scale", 0),
 scale_options = [("A", "A", "A", 9), ("A#", "A#", "A#", 10), ("B", "B", "B", 11), ("C", "C", "C", 0),
                  ("C#", "C#", "C#", 1), ("D", "D", "D", 2), ("D#", "D#", "D#", 3), ("E", "E", "E", 4),
                  ("F", "F", "F", 5), ("F#", "F#", "F#", 6), ("G", "G", "G", 7), ("G#", "G#", "G#", 8), ]
+copy_tools = [("copy_to_instrument", "Copy to instrument", "Copy to instrument", 0),
+              ("copy_along_path", "Copy along path", "Animate selected objects, ordered by a path.\n"
+                                                     "Each object is animated to a different note, ascending by pitch "
+                                                     "along the path.", 1),
+              ("copy_by_object_name", "Copy by object name", "Copy notes to objects based on the object's name. "
+                                                             "Notes are copied to objects with names beginning or ending"
+                                                             " with the note (for example A3 notes would be copied"
+                                                             " to an object named CubeA3 or A3Cube)", 2)]
+copy_by_name_type = [("copy_by_note", "Note name", "Copy by note name", 0),
+                     # TODO improve descriptions, move object name information from copy_tools to this description
+                     ("copy_by_track_and_note", "Track name and note name", "Copy by track and note name", 1)]
 
 
 class BulkCopyPropertyGroup(PropertyGroup):
-    copy_along_path: BoolProperty(name="Copy along path",
-                                  description="Animate selected objects, ordered by a path.\n"
-                                              "Each object is animated to a different note, ascending by pitch along "
-                                              "the path")
-    copy_along_path_options_expanded: BoolProperty(name="Expanded", default=True)
+    quick_copy_tool: EnumProperty(name="Quick copy tool", description="Quick copy tool", items=copy_tools,
+                                  default=2)
     copy_to_instrument: BoolProperty(name="Copy to Instrument", default=False,
                                      description="Copies actions to an instrument if selected, otherwise copies "
                                                  "actions directly to NLA strips")
@@ -343,6 +349,8 @@ class BulkCopyPropertyGroup(PropertyGroup):
                                                description="Only copy to notes in the selected Track "
                                                            "in the NLA Midi Panel",
                                                default=False)
+    copy_by_name_type: EnumProperty(name="Copy by", description="Copy by name", items=copy_by_name_type,
+                                    default="copy_by_note")
 
 
 def get_midi_file_beats_per_minute(tempo_property):

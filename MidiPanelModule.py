@@ -282,87 +282,103 @@ class MidiInstrumentPanel(bpy.types.Panel):
             MidiPanel.draw_note_action_common(box, box.column(align=True), action, action_index=action_index)
 
 
-class CopyToInstrumentPanel(bpy.types.Panel):
+class QuickCopyPanel(bpy.types.Panel):
     bl_space_type = "NLA_EDITOR"
     bl_region_type = "UI"
     bl_category = "Midi"
-    bl_label = "Copy Along Path and Copy to Instrument"
-    bl_idname = "ANIMATION_PT_midi_copy_to_instrument_panel"
+    bl_label = "Quick Copy Tools"
+    bl_idname = "ANIMATION_PT_nla_midi_quick_copy_panel"
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw(self, context):
         col = self.layout.column(align=True)
         midi_data_property = context.scene.midi_data_property
         bulk_copy_property = midi_data_property.bulk_copy_property
+        quick_copy_tool = bulk_copy_property.quick_copy_tool
 
-        PanelUtils.draw_note_with_search(col, midi_data_property, "copy_to_instrument_selected_note_id",
-                                         "copy_to_instrument_note_search_string",
-                                         not bulk_copy_property.copy_along_path)
+        col.prop(bulk_copy_property, "quick_copy_tool")
+        col.separator()
+        col = self.layout.column(align=True)
 
-        note_action_property = midi_data_property.note_action_property
+        if quick_copy_tool == "copy_to_instrument":
+            PanelUtils.draw_note_with_search(col, midi_data_property, "copy_to_instrument_selected_note_id",
+                                             "copy_to_instrument_note_search_string")
+            self.draw_copy_to_instrument_option(col, bulk_copy_property, midi_data_property, True)
+        elif quick_copy_tool == "copy_along_path":
+            col.prop(bulk_copy_property, "bulk_copy_curve")
+            PanelUtils.draw_note_with_search(col, bulk_copy_property, "bulk_copy_starting_note",
+                                             "bulk_copy_starting_note_search_string")
+            PanelUtils.draw_scale_filter(col, bulk_copy_property, "scale_filter_type", "scale_filter_scale")
+            col.prop(bulk_copy_property, "only_notes_in_selected_track")
 
-        copy_along_path_row = col.row()
-        copy_along_path_row.prop(bulk_copy_property, "copy_along_path")
-        # copy along path only works if the id_type corresponds to an object type
-        copy_along_path_enabled = midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type)
-        copy_along_path_row.enabled = copy_along_path_enabled
-
-        if bulk_copy_property.copy_along_path:
-            box = PanelUtils.draw_collapsible_box(col, "Path options", bulk_copy_property,
-                                                  "copy_along_path_options_expanded")[0]
-            if bulk_copy_property.copy_along_path_options_expanded:
-                box_col = box.column(align=True)
-                box_col.prop(bulk_copy_property, "bulk_copy_curve")
-                PanelUtils.draw_note_with_search(box_col, bulk_copy_property, "bulk_copy_starting_note",
-                                                 "bulk_copy_starting_note_search_string")
-                PanelUtils.draw_scale_filter(box_col, bulk_copy_property, "scale_filter_type", "scale_filter_scale")
-                box_col.prop(bulk_copy_property, "only_notes_in_selected_track")
-
-        col.prop(bulk_copy_property, "copy_to_instrument")
-        instrument_row = PanelUtils.indented_row(col)
-        instrument_row.enabled = bulk_copy_property.copy_to_instrument
-        instrument_row.prop(midi_data_property, "copy_to_instrument_selected_instrument")
+            self.draw_copy_to_instrument_option(col, bulk_copy_property, midi_data_property)
+        elif quick_copy_tool == "copy_by_object_name":
+            # col.prop(bulk_copy_property, "copy_by_name_type") # TODO match by note and track
+            self.draw_copy_to_instrument_option(col, bulk_copy_property, midi_data_property)
 
         copy_button_row = col.row()
         copy_button_enabled, disabled_tooltip = self.copy_button_enabled(midi_data_property, bulk_copy_property)
         copy_button_row.enabled = copy_button_enabled
-        animate_button_text = "Copy to Instrument" if bulk_copy_property.copy_to_instrument else "Copy Action to Notes"
+        animate_button_text = "Copy to Instrument" if \
+            (bulk_copy_property.copy_to_instrument or quick_copy_tool == "copy_to_instrument") \
+            else "Copy Action to Notes"
         animate_operator = copy_button_row.operator(NLABulkMidiCopier.bl_idname, text=animate_button_text)
 
-        tooltip = "Copy the action to the selected instrument" if bulk_copy_property.copy_to_instrument else \
-            "Copy the selected Action to the selected note"
+        copy_to_instrument = quick_copy_tool == "copy_to_instrument" or bulk_copy_property.copy_to_instrument
+        if quick_copy_tool == "copy_to_instrument":
+            tooltip = "Copy action to the selected instrument"
+        else:
+            tooltip = "Copy actions to the selected instrument" if copy_to_instrument else \
+                "Copy actions to selected objects"
         if disabled_tooltip:
             tooltip = tooltip + "." + disabled_tooltip
         animate_operator.tooltip = tooltip
 
     @staticmethod
+    def draw_copy_to_instrument_option(parent_layout, bulk_copy_property, midi_data_property,
+                                       instrument_only: bool = False):
+        if instrument_only:
+            instrument_row = parent_layout.row()
+        else:
+            parent_layout.prop(bulk_copy_property, "copy_to_instrument")
+            instrument_row = PanelUtils.indented_row(parent_layout)
+            instrument_row.enabled = bulk_copy_property.copy_to_instrument
+        instrument_row.prop(midi_data_property, "copy_to_instrument_selected_instrument")
+
+    @staticmethod
     def copy_button_enabled(midi_data_property, bulk_copy_property) -> Tuple[bool, str]:
         disabled_tooltip: str = ""  # reason why the copy button is disabled
-        copy_button_enabled = True
-        if bulk_copy_property.copy_to_instrument:
+        note_action_property = midi_data_property.note_action_property
+
+        quick_copy_tool = bulk_copy_property.quick_copy_tool
+        if quick_copy_tool == "copy_along_path":
+            if bulk_copy_property.bulk_copy_curve is None:
+                disabled_tooltip += "\n  ! No path selected"
+
+            # copy along path only works if the id_type corresponds to an object type
+            if not midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type):
+                disabled_tooltip += "\n  ! Copy along path does not with work type " + note_action_property.id_type
+        elif quick_copy_tool == "copy_by_object_name":
+            # copy by object name only works if the id_type corresponds to an object type
+            if not midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type):
+                disabled_tooltip += "\n  ! Copy by object name does not with work type " + note_action_property.id_type
+        elif quick_copy_tool == "copy_to_instrument":
+            if note_action_property.copy_to_selected_objects:
+                disabled_tooltip += "\n  ! Copy to selected objects (in NLA Midi Panel) not valid for instruments"
+
+        copy_to_instrument = quick_copy_tool == "copy_to_instrument" or bulk_copy_property.copy_to_instrument
+        if copy_to_instrument:
             if midi_data_property.copy_to_instrument_selected_instrument is None or \
                     midi_data_property.copy_to_instrument_selected_instrument == midi_data.NO_INSTRUMENT_SELECTED:
-                copy_button_enabled = False
                 disabled_tooltip += "\n  ! No instrument selected"
-
-            if midi_data_property.note_action_property.copy_to_selected_objects and \
-                    not bulk_copy_property.copy_along_path:
-                copy_button_enabled = False
-                disabled_tooltip += "\n  ! Copy to selected objects (in NLA Midi Panel) not valid for instruments"
         else:
             midi_file = midi_data_property.midi_file
             if midi_file is None or len(midi_file) == 0:
-                copy_button_enabled = False
                 disabled_tooltip += "\n  ! No midi file selected"
-            if midi_data_property.note_action_property.action is None:
-                copy_button_enabled = False
+            if note_action_property.action is None:
                 disabled_tooltip += "\n  ! No action selected (in NLA Midi Panel)"
 
-        if bulk_copy_property.copy_along_path and bulk_copy_property.bulk_copy_curve is None:
-            copy_button_enabled = False
-            disabled_tooltip += "\n  ! No path selected"
-
-        return copy_button_enabled, disabled_tooltip
+        return len(disabled_tooltip) == 0, disabled_tooltip
 
 
 class MidiSettingsPanel(bpy.types.Panel):

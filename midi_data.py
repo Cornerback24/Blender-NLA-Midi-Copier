@@ -273,8 +273,6 @@ class LoadedMidiData:
             # explicitly define the number so that if a rename changes the position in the returned list,
             # the selected instrument is preserved
             self.instruments_list.append((str(i), instrument.name, instrument.name, i + 1))
-        # instruments_list = [(x.name, x.name, x.name) for x in midi_data_property.instruments]
-        # instruments_list.sort()
         self.instruments_list.sort(key=lambda x: x[1].lower())
         self.instruments_list.insert(0, (NO_INSTRUMENT_SELECTED, "", "No Instrument Selected", 0))
 

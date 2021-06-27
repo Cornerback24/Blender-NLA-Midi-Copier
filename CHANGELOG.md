@@ -1,4 +1,8 @@
-- 0.10.1 2021-3-20
+- 0.11.0 2021-6-27
+  * Change the name of the Copy Along Path and Copy to Instrument panel to Quick Copy Tools
+  * Add tool to copy to notes based on object name
+  * Update note search box to show note name instead if the note is changed and the search box was already showing a not name (instead of a note number)  
+- 0.10.2 2021-3-20
   * Fix reloading script
 - 0.10.1 2021-3-15
   * Fix loading add-on in Blender 2.90

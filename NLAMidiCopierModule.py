@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 if "bpy" in locals():
     import importlib
 
@@ -19,7 +21,7 @@ else:
     from . import NoteFilterImplementations
 
 import bpy
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Any
 from .midi_analysis.Note import Note
 from .midi_data import MidiDataType
 
@@ -409,19 +411,8 @@ class NLAMidiCopier(bpy.types.Operator):
         note_action_copier = NoteActionCopier(note_action_property, context, None)
 
         if note_action_property.copy_to_selected_objects and midi_data.can_resolve_data_from_selected_objects(id_type):
-            if midi_data.ID_PROPERTIES_DICTIONARY[id_type][1] == "OBJECT":
-                objects_to_copy = selected_objects
-            elif midi_data.ID_PROPERTIES_DICTIONARY[id_type][1] == "MATERIAL":
-                # multiple objects may have the same active material so use a set to eliminate duplicates
-                objects_to_copy = {x.active_material for x in selected_objects if x.active_material is not None}
-            elif midi_data.ID_PROPERTIES_DICTIONARY[id_type][1] == "KEY":
-                objects_to_copy = {getattr(x.data, 'shape_keys', None) for x in selected_objects if
-                                   getattr(x.data, 'shape_keys', None) is not None}
-            else:
-                object_type = midi_data.ID_PROPERTIES_DICTIONARY[id_type][1]
-                # multiple objects may use the same data so use a set to eliminate duplicates
-                objects_to_copy = {x.data for x in selected_objects if x.type == object_type}
-
+            action_id_root = midi_data.ID_PROPERTIES_DICTIONARY[id_type][1]
+            objects_to_copy = ObjectUtils.data_from_objects(selected_objects, action_id_root)
             loaded_midi_data = midi_data.get_midi_data(MidiDataType.NLA)
             note_action_copier.copy_notes_to_objects(loaded_midi_data.get_track_id(context),
                                                      loaded_midi_data.get_note_id(context), objects_to_copy)
@@ -512,18 +503,19 @@ class NLABulkMidiCopier(bpy.types.Operator):
         return properties.tooltip
 
     def action_common(self, context):
-        copy_along_path: bool = context.scene.midi_data_property.bulk_copy_property.copy_along_path
-        if copy_along_path:
+        quick_copy_tool = context.scene.midi_data_property.bulk_copy_property.quick_copy_tool
+        if quick_copy_tool == "copy_along_path":
             NLABulkMidiCopier.notes_along_path(context)
+        elif quick_copy_tool == "copy_by_object_name":
+            NLABulkMidiCopier.notes_by_object_name(context)
         else:
-            NLABulkMidiCopier.single_note(context)
+            NLABulkMidiCopier.single_note_to_instrument(context)
 
     @staticmethod
-    def single_note(context):
+    def single_note_to_instrument(context):
         midi_panel_note_action_property = context.scene.midi_data_property.note_action_property
-        bulk_copy_property = context.scene.midi_data_property.bulk_copy_property
         note_pitch: int = int(context.scene.midi_data_property.copy_to_instrument_selected_note_id)
-        NLABulkMidiCopier.animate_or_copy_to_instrument(bulk_copy_property.copy_to_instrument,
+        NLABulkMidiCopier.animate_or_copy_to_instrument(True,
                                                         PitchUtils.note_id_from_pitch(note_pitch),
                                                         midi_panel_note_action_property, context)
 
@@ -538,34 +530,68 @@ class NLABulkMidiCopier(bpy.types.Operator):
         midi_data_property = midi_data.get_midi_data(MidiDataType.NLA).get_midi_data_property(context)
         note_action_property = midi_data_property.note_action_property
         action_id_root = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][1]
-        note_action_object_field = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][0]
 
-        original_object_value = getattr(note_action_property, note_action_object_field)
-        if action_id_root == "OBJECT":
-            animated_objects = objs
-        elif action_id_root == "MATERIAL":
-            # active materials with duplicates removed
-            # (In case the action's id_root is probably NODETREE, but the note_action_property id_type is Material.
-            # The action will be copied to the material's nodetree animation data.)
-            animated_objects = list(dict.fromkeys([x.active_material for x in objs if x.active_material is not None]))
-        elif action_id_root == "KEY":
-            animated_objects = list(dict.fromkeys(
-                [getattr(x.data, 'shape_keys', None) for x in objs if getattr(x.data, 'shape_keys', None) is not None]))
-        else:
-            # object data with duplicates removed
-            animated_objects = list(dict.fromkeys([x.data for x in objs if x.type == action_id_root]))
+        animated_objects = ObjectUtils.data_from_objects(objs, action_id_root)
 
         notes_to_copy = NLABulkMidiCopier.notes_to_copy(midi_data_property.bulk_copy_property,
                                                         midi_data.get_midi_data(MidiDataType.NLA))
 
-        for i in range(min(len(notes_to_copy), len(animated_objects))):
-            animated_object = animated_objects[i]
-            note_to_copy = notes_to_copy[i]
+        NLABulkMidiCopier.animate_objects(notes_to_copy, animated_objects, note_action_property,
+                                          bulk_copy_property.copy_to_instrument,
+                                          context)
+
+    @staticmethod
+    def animate_objects(notes_to_copy: List[str], objects_to_animate, note_action_property, copy_to_instrument: bool,
+                        context):
+        NLABulkMidiCopier.animate_note_object_paris(zip(notes_to_copy, objects_to_animate),
+                                                    note_action_property, copy_to_instrument, context)
+
+    @staticmethod
+    def animate_note_object_paris(note_object_pairs, note_action_property, copy_to_instrument: bool, context):
+        note_action_object_field: str = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][0]
+        original_object_value = getattr(note_action_property, note_action_object_field)
+
+        note_action_object_field = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][0]
+
+        for note_to_copy, animated_object in note_object_pairs:
             setattr(note_action_property, note_action_object_field, animated_object)
-            NLABulkMidiCopier.animate_or_copy_to_instrument(bulk_copy_property.copy_to_instrument, note_to_copy,
+            NLABulkMidiCopier.animate_or_copy_to_instrument(copy_to_instrument, note_to_copy,
                                                             note_action_property, context)
 
+        # set the note action property object back to what is was when the copy button was pressed
         setattr(note_action_property, note_action_object_field, original_object_value)
+
+    @staticmethod
+    def notes_by_object_name(context):
+        loaded_midi_data = midi_data.get_midi_data(MidiDataType.NLA)
+        midi_data_property = loaded_midi_data.get_midi_data_property(context)
+        note_action_property = midi_data_property.note_action_property
+        action_id_root = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][1]
+        animated_objects_dict = ObjectUtils.data_dict_from_objects(context.selected_objects, action_id_root)
+        data_name_pairs = [(x[0], x[1].name) for x in animated_objects_dict.items()]
+        note_object_pairs = []
+        match_by_track_name = midi_data_property.bulk_copy_property.copy_by_name_type == "copy_by_track_and_note"
+
+        if match_by_track_name:
+            for track_name, notes_enum_list in loaded_midi_data.notes_list_dict.items():
+                for note_enum in notes_enum_list:
+                    for data_name_pair in data_name_pairs:
+                        pass  # TODO match by note and track
+        else:
+            notes_enum_list = loaded_midi_data.notes_list
+            for note_enum in notes_enum_list:
+                for data_name_pair in data_name_pairs:
+                    if NLABulkMidiCopier.note_matches_object_name(note_enum, data_name_pair[1]):
+                        note_object_pairs.append((note_enum[0], data_name_pair[0]))
+        NLABulkMidiCopier.animate_note_object_paris(note_object_pairs, note_action_property,
+                                                    midi_data_property.bulk_copy_property.copy_to_instrument,
+                                                    context)
+
+    @staticmethod
+    def note_matches_object_name(note_enum, object_name: str):
+        object_name_lower: str = object_name.strip().lower()
+        note_name: str = note_enum[1].lower()
+        return object_name_lower.startswith(note_name) or object_name_lower.endswith(note_name)
 
     @staticmethod
     def notes_to_copy(bulk_copy_property, loaded_midi_data) -> List[str]:

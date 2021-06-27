@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 10, 2),
+        "version": (0, 11, 0),
         "blender": (2, 80, 0),
         "location": "View NLA Editor > Tool Shelf",
         "description": "Copy actions to action strips based on midi file input",
@@ -75,7 +75,7 @@ from .DopeSheetMidiCopierModule import DopeSheetMidiCopier
 from .GraphEditorKeyframeGeneratorModule import GraphEditorMidiKeyframeGenerator
 from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToInstrument, RemoveActionFromInstrument, \
     TransposeInstrument
-from .MidiPanelModule import MidiPanel, MidiInstrumentPanel, CopyToInstrumentPanel, MidiSettingsPanel, MidiFileSelector
+from .MidiPanelModule import MidiPanel, MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel, MidiFileSelector
 from .GraphEditorMidiPanelModule import GraphEditorMidiPanel, GraphEditorMidiFileSelector, GraphEditorMidiSettingsPanel
 from .DopeSheetMidiPanelModule import DopeSheetMidiPanel, DopeSheetMidiSettingsPanel, DopeSheetMidiFileSelector
 from .MidiPropertiesModule import MidiPropertyGroup, NoteActionProperty, InstrumentNoteProperty, InstrumentProperty, \
@@ -95,7 +95,7 @@ classes = [
     AddActionToInstrument, RemoveActionFromInstrument, TransposeInstrument,
     AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter,
     TempoPropertyGroup,
-    MidiPropertyGroup, MidiPanel, MidiFileSelector, MidiInstrumentPanel, CopyToInstrumentPanel, MidiSettingsPanel]
+    MidiPropertyGroup, MidiPanel, MidiFileSelector, MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel]
 dope_sheet_classes = [DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup,
                       DopeSheetNoteActionProperty, DopeSheetTempoPropertyGroup,
                       DopeSheetMidiFileSelector, DopeSheetMidiCopier, DopeSheetMidiPropertyGroup, DopeSheetMidiPanel,
