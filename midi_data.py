@@ -4,7 +4,6 @@ from typing import Optional
 from .midi_analysis.MidiData import MidiData
 from . import PitchUtils
 from . import PropertyUtils
-import math
 
 # key is display name, value is (NoteActionProperty field name, Action id_root, enum number)
 ID_PROPERTIES_DICTIONARY = {"Armature": ("armature", "ARMATURE", 0),
@@ -28,7 +27,7 @@ ID_PROPERTIES_DICTIONARY = {"Armature": ("armature", "ARMATURE", 0),
                             "MetaBall": ("meta", "META", 10),
                             "Mesh": ("mesh", "MESH", 11),
                             "Movie Clip": ("movieclip", "MOVIECLIP", 12),
-                            # "Node Tree": ("nodetree", "NODETREE"),
+                            "Node Tree": ("nodetree", "NODETREE", 26),
                             "Object": ("object", "OBJECT", 13),
                             "Paintcurve": ("paintcurve", "PAINTCURVE", 21),
                             "Palette": ("palette", "PALETTE", 22),
@@ -84,12 +83,15 @@ node_tree_types = "MATERIAL, TEXTURE, WORLD, SCENE, LIGHT"
 
 NO_INSTRUMENT_SELECTED = "[No Instrument Selected]"
 
-BLEND_MODES = [("None", "None (skip overlaps)", "No blending. Overlapping strips are not copied", 0),
-               ("REPLACE", "Replace", "Replace", 1),
-               ("COMBINE", "Combine", "Combine", 2),
-               ("ADD", "Add", "Add", 3),
-               ("SUBTRACT", "Subtract", "Subtract", 4),
-               ("MULTIPLY", "Multiply", "Multiply", 5)]
+# "None" is deprecated, replaced with Skip overlap option
+BLEND_MODES_DEPRECATED = [("None", "None (skip overlaps)", "No blending. Overlapping strips are not copied", 0),
+                          ("REPLACE", "Replace", "Replace", 1),
+                          ("COMBINE", "Combine", "Combine", 2),
+                          ("ADD", "Add", "Add", 3),
+                          ("SUBTRACT", "Subtract", "Subtract", 4),
+                          ("MULTIPLY", "Multiply", "Multiply", 5)]
+
+BLEND_MODES = [x for x in BLEND_MODES_DEPRECATED if x[0] != "None"]
 
 
 class MidiDataUtil:
@@ -430,29 +432,6 @@ class LoadedMidiData:
             return self.get_midi_data_property(context).instruments[int(instrument_id)]
         return None
 
-    def note_frame(self, note, frames_per_second: float, frame_offset: int, note_end: bool) -> int:
-        """
-        :param note: the note to calculate frame for
-        :param frames_per_second: frames per second
-        :param frame_offset: frame offset to add
-        :param note_end: if true, calculate time for the end of the note instead of the beginning
-        :return: the frame number
-        """
-        time_ms = (note.endTime if self.use_file_tempo else note.endTimeTicks * self.ms_per_tick) if note_end \
-            else (note.startTime if self.use_file_tempo else note.startTimeTicks * self.ms_per_tick)
-        return int((time_ms / 1000) * frames_per_second + frame_offset)
-
-    def note_length_frames(self, note, frames_per_second):
-        """
-        :param note: the note to get the length of
-        :param frames_per_second: project's frames per second
-        :return: the length of the note in frames rounded to the nearest frame
-        """
-        ms_length = note.length() if self.use_file_tempo else \
-            (note.endTimeTicks - note.startTimeTicks) * self.ms_per_tick
-        # minimum one frame
-        return max(math.floor((ms_length / 1000) * frames_per_second), 1)
-
 
 nla_midi_data = LoadedMidiData(lambda context: context.scene.midi_data_property)
 dope_sheet_midi_data = LoadedMidiData(lambda context: context.scene.dope_sheet_midi_data_property)
@@ -465,6 +444,10 @@ class MidiDataType:
     NLA = 1
     DOPESHEET = 2
     GRAPH_EDITOR = 3
+
+    @staticmethod
+    def values():
+        return [MidiDataType.NLA, MidiDataType.DOPESHEET, MidiDataType.GRAPH_EDITOR]
 
 
 def get_midi_data(midi_data_type: MidiDataType) -> LoadedMidiData:

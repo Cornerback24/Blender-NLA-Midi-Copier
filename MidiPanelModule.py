@@ -17,6 +17,8 @@ if "bpy" in locals():
     importlib.reload(NoteFilterImplementations)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PitchUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(OperatorUtils)
 else:
     # noinspection PyUnresolvedReferences
     from . import midi_data
@@ -34,6 +36,8 @@ else:
     from . import NoteFilterImplementations
     # noinspection PyUnresolvedReferences
     from . import PitchUtils
+    # noinspection PyUnresolvedReferences
+    from . import OperatorUtils
 
 import bpy
 from typing import Callable, Tuple
@@ -53,17 +57,7 @@ class MidiFileSelectorBase:
     filter_glob: bpy.props.StringProperty(default="*.mid;*.midi", options={'HIDDEN'})
 
     def execute(self, context):
-        loaded_midi_data = midi_data.get_midi_data(self.data_type)
-        midi_data_property = midi_data.get_midi_data_property(self.data_type, context)
-        midi_data_property["midi_file"] = self.filepath
-        try:
-            loaded_midi_data.update_midi_file(self.filepath, True, context)
-        except Exception as e:
-            # noinspection PyArgumentList,PyUnresolvedReferences
-            self.report({"WARNING"}, "Could not load midi file: " + str(e))
-            midi_data_property["midi_file"] = ""
-            loaded_midi_data.update_midi_file(None, False, context)
-
+        OperatorUtils.load_midi_file(self, context, self.data_type, self.filepath)
         return {'FINISHED'}
 
     # noinspection PyUnusedLocal
@@ -89,7 +83,7 @@ class MidiPanel(bpy.types.Panel):
         midi_data_property = context.scene.midi_data_property
         midi_file = midi_data_property.midi_file
 
-        PanelUtils.draw_midi_file_selections(col, midi_data_property, MidiFileSelector.bl_idname)
+        PanelUtils.draw_midi_file_selections(col, midi_data_property, MidiFileSelector.bl_idname, context)
         note_action_property = midi_data_property.note_action_property
 
         MidiPanel.draw_note_action_common(self.layout, col, note_action_property, midi_data_property=midi_data_property)
@@ -97,10 +91,10 @@ class MidiPanel(bpy.types.Panel):
         self.layout.separator()
 
         col = self.layout.column(align=True)
-        copy_to_notes_button_row = col.row()
-        copy_to_notes_button_row.enabled = midi_file is not None and len(midi_file) > 0 and \
-                                           note_action_property.action is not None
-        copy_to_notes_button_row.operator(NLAMidiCopier.bl_idname, icon='FILE_SOUND')
+        tooltip_creator = PanelUtils.OperatorTooltipCreator(NLAMidiCopier)
+        if midi_file is None or len(midi_file) == 0:
+            tooltip_creator.add_disable_description("No midi file selected")
+        tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
 
     @staticmethod
     def draw_note_action_common(parent_layout, col, note_action_property, midi_data_property=None, action_index=None):
@@ -122,16 +116,7 @@ class MidiPanel(bpy.types.Panel):
             row = col.row()
             row.enabled = midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type)
             row.prop(note_action_property, "copy_to_selected_objects")
-        row = col.row()
-        can_duplicate_on_overlap = midi_data.id_type_is_object(note_action_property.id_type)
-        row.enabled = can_duplicate_on_overlap
-        row.prop(note_action_property, "duplicate_object_on_overlap")
-        if note_action_property.action and note_action_property.duplicate_object_on_overlap:
-            row = col.row()
-            row.enabled = can_duplicate_on_overlap
-            row.prop(note_action_property, "action_length")
 
-        col = parent_layout.column(align=True)
         col.prop(note_action_property, "sync_length_with_notes")
         if note_action_property.sync_length_with_notes:
             col.prop(note_action_property, "scale_factor")
@@ -140,10 +125,16 @@ class MidiPanel(bpy.types.Panel):
 
         col.prop(note_action_property, "add_filters")
         if note_action_property.add_filters:
-            PanelUtils.draw_filter_box(col, note_action_property, not is_main_property, action_index, "nla_midi_data")
+            PanelUtils.draw_filter_box(col, note_action_property, not is_main_property, action_index, MidiDataType.NLA)
 
         col = parent_layout.column(align=True)
-        col.prop(note_action_property, "blend_mode")
+        col.prop(note_action_property, "on_overlap")
+        if note_action_property.on_overlap == "DUPLICATE_OBJECT":
+            action_length_row = PanelUtils.indented_row(col)
+            action_length_row.prop(note_action_property, "action_length")
+        elif note_action_property.on_overlap == "BLEND":
+            blend_row = PanelUtils.indented_row(col)
+            blend_row.prop(note_action_property, "blend_mode")
         col.prop(note_action_property, "nla_track_name")
         if is_main_property:
             col.prop(midi_data_property, "midi_frame_start")
@@ -316,23 +307,18 @@ class QuickCopyPanel(bpy.types.Panel):
             # col.prop(bulk_copy_property, "copy_by_name_type") # TODO match by note and track
             self.draw_copy_to_instrument_option(col, bulk_copy_property, midi_data_property)
 
-        copy_button_row = col.row()
-        copy_button_enabled, disabled_tooltip = self.copy_button_enabled(midi_data_property, bulk_copy_property)
-        copy_button_row.enabled = copy_button_enabled
+        copy_to_instrument = quick_copy_tool == "copy_to_instrument" or bulk_copy_property.copy_to_instrument
+        if quick_copy_tool == "copy_to_instrument":
+            base_tooltip = "Copy action to the selected instrument"
+        else:
+            base_tooltip = "Copy actions to the selected instrument" if copy_to_instrument else \
+                "Copy actions to selected objects"
         animate_button_text = "Copy to Instrument" if \
             (bulk_copy_property.copy_to_instrument or quick_copy_tool == "copy_to_instrument") \
             else "Copy Action to Notes"
-        animate_operator = copy_button_row.operator(NLABulkMidiCopier.bl_idname, text=animate_button_text)
-
-        copy_to_instrument = quick_copy_tool == "copy_to_instrument" or bulk_copy_property.copy_to_instrument
-        if quick_copy_tool == "copy_to_instrument":
-            tooltip = "Copy action to the selected instrument"
-        else:
-            tooltip = "Copy actions to the selected instrument" if copy_to_instrument else \
-                "Copy actions to selected objects"
-        if disabled_tooltip:
-            tooltip = tooltip + "." + disabled_tooltip
-        animate_operator.tooltip = tooltip
+        tooltip_creator = self.copy_button_tooltip_creator(midi_data_property, bulk_copy_property, copy_to_instrument,
+                                                           base_tooltip, animate_button_text)
+        tooltip_creator.draw_operator_row(col)
 
     @staticmethod
     def draw_copy_to_instrument_option(parent_layout, bulk_copy_property, midi_data_property,
@@ -346,39 +332,44 @@ class QuickCopyPanel(bpy.types.Panel):
         instrument_row.prop(midi_data_property, "copy_to_instrument_selected_instrument")
 
     @staticmethod
-    def copy_button_enabled(midi_data_property, bulk_copy_property) -> Tuple[bool, str]:
-        disabled_tooltip: str = ""  # reason why the copy button is disabled
+    def copy_button_tooltip_creator(midi_data_property, bulk_copy_property, copy_to_instrument: bool,
+                                    base_tooltip: str, button_text: str) -> PanelUtils.OperatorTooltipCreator:
+        tooltip_creator = PanelUtils.OperatorTooltipCreator(NLABulkMidiCopier, base_tooltip=base_tooltip,
+                                                            button_text=button_text)
+
         note_action_property = midi_data_property.note_action_property
 
         quick_copy_tool = bulk_copy_property.quick_copy_tool
         if quick_copy_tool == "copy_along_path":
             if bulk_copy_property.bulk_copy_curve is None:
-                disabled_tooltip += "\n  ! No path selected"
+                tooltip_creator.add_disable_description("No path selected")
 
             # copy along path only works if the id_type corresponds to an object type
             if not midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type):
-                disabled_tooltip += "\n  ! Copy along path does not with work type " + note_action_property.id_type
+                tooltip_creator.add_disable_description(
+                    "Copy along path does not with work type " + note_action_property.id_type)
         elif quick_copy_tool == "copy_by_object_name":
             # copy by object name only works if the id_type corresponds to an object type
             if not midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type):
-                disabled_tooltip += "\n  ! Copy by object name does not with work type " + note_action_property.id_type
+                tooltip_creator.add_disable_description(
+                    "Copy by object name does not with work type " + note_action_property.id_type)
         elif quick_copy_tool == "copy_to_instrument":
             if note_action_property.copy_to_selected_objects:
-                disabled_tooltip += "\n  ! Copy to selected objects (in NLA Midi Panel) not valid for instruments"
+                tooltip_creator.add_disable_description(
+                    "Copy to selected objects (in NLA Midi Panel) not valid for instruments")
 
-        copy_to_instrument = quick_copy_tool == "copy_to_instrument" or bulk_copy_property.copy_to_instrument
         if copy_to_instrument:
             if midi_data_property.copy_to_instrument_selected_instrument is None or \
                     midi_data_property.copy_to_instrument_selected_instrument == midi_data.NO_INSTRUMENT_SELECTED:
-                disabled_tooltip += "\n  ! No instrument selected"
+                tooltip_creator.add_disable_description("No instrument selected")
         else:
             midi_file = midi_data_property.midi_file
             if midi_file is None or len(midi_file) == 0:
-                disabled_tooltip += "\n  ! No midi file selected"
+                tooltip_creator.add_disable_description("No midi file selected")
             if note_action_property.action is None:
-                disabled_tooltip += "\n  ! No action selected (in NLA Midi Panel)"
+                tooltip_creator.add_disable_description("No action selected (in NLA Midi Panel)")
 
-        return len(disabled_tooltip) == 0, disabled_tooltip
+        return tooltip_creator
 
 
 class MidiSettingsPanel(bpy.types.Panel):

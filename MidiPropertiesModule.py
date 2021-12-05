@@ -9,11 +9,14 @@ if "bpy" in locals():
     importlib.reload(PitchUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PropertyUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(CompatibilityModule)
 else:
     from . import midi_data
     from . import NoteFilterImplementations
     from . import PitchUtils
     from . import PropertyUtils
+    from . import CompatibilityModule
 
 import bpy
 from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
@@ -72,9 +75,13 @@ def on_id_type_updated(note_action_property, context):
     note_action_property.action = None
     if note_action_property.copy_to_selected_objects and \
             not midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type):
-        # copy to selected objects only works if the id_type corresponds to an object type
+        # copy to selected objects only works if selected data can be resolved from the id_type
         note_action_property.copy_to_selected_objects = False
-    # copy along path only works if the id_type corresponds to an object type
+    # duplicate objects only works if id_type corresponds to an object type
+    if note_action_property.on_overlap == '' or \
+            (note_action_property.on_overlap == "DUPLICATE_OBJECTS" and not midi_data.id_type_is_object(
+                note_action_property.id_type)):
+        note_action_property.on_overlap = "BLEND"
 
 
 def on_action_updated(note_action_property, context):
@@ -142,6 +149,25 @@ class NoteActionPropertyBase:
                      default=False)
 
 
+OVERLAP_OPTIONS = [("SKIP", "Skip", "Skip keyframe if an existing keyframe is on the same frame", 0),
+                   ("BLEND", "Blend",
+                    "Place the action on a new track above the existing action", 1),
+                   ("DUPLICATE_OBJECT", "Duplicate Object",
+                    "Copy the action to a duplicated object", 2)]
+
+OVERLAP_OPTIONS_WITHOUT_DUPLICATE = [x for x in OVERLAP_OPTIONS if x[0] != "DUPLICATE_OBJECT"]
+
+
+def get_overlap_options(note_action_property, context):
+    return OVERLAP_OPTIONS if midi_data.id_type_is_object(
+        note_action_property.id_type) else OVERLAP_OPTIONS_WITHOUT_DUPLICATE
+
+
+def get_blend_modes(note_action_property, context):
+    return midi_data.BLEND_MODES if CompatibilityModule.compatibility_updates_complete \
+        else midi_data.BLEND_MODES_DEPRECATED
+
+
 class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
     data_type = MidiDataType.NLA
     id_type: EnumProperty(
@@ -158,14 +184,18 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
                        description="Name of the NLA Track that action strips will be placed on.\n " +
                                    "A track name will be automatically generated if this is blank")
 
+    # deprecated, on_overlap used instead
     duplicate_object_on_overlap: \
         BoolProperty(name="Duplicate Object on Overlap",
                      description="Copy the action to a duplicated object if it overlaps another action",
                      default=False)
 
+    on_overlap: EnumProperty(items=get_overlap_options, name="Overlap",
+                             description="How to handle overlapping actions", default=1)  # default to Blend
+
     blend_mode: \
-        EnumProperty(items=midi_data.BLEND_MODES, name="Blending", description="Blending for overlapping strips",
-                     default="REPLACE")
+        EnumProperty(items=get_blend_modes, name="Blending", description="Blending for overlapping strips",
+                     default=1)  # default to Replace
 
     sync_length_with_notes: \
         BoolProperty(name="Sync Length with Notes",
@@ -204,8 +234,8 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
     key: PointerProperty(type=bpy.types.Key, name="Key", description="The key to animate")
     lattice: PointerProperty(type=bpy.types.Lattice, name="Lattice", description="The lattice to animate")
     light: PointerProperty(type=bpy.types.Light, name="Light", description="The light to animate")
-    light_probe: PointerProperty(type=bpy.types.LightProbe, name="Light  Probe",
-                                 description="The light_probe to animate")
+    light_probe: PointerProperty(type=bpy.types.LightProbe, name="Light Probe",
+                                 description="The light probe to animate")
     mask: PointerProperty(type=bpy.types.Mask, name="Mask", description="The mask to animate")
     material: PointerProperty(type=bpy.types.Material, name="Material", description="The material to animate")
     meta: PointerProperty(type=bpy.types.MetaBall, name="MetaBall", description="The meta to animate")
@@ -319,10 +349,11 @@ copy_tools = [("copy_to_instrument", "Copy to instrument", "Copy to instrument",
               ("copy_along_path", "Copy along path", "Animate selected objects, ordered by a path.\n"
                                                      "Each object is animated to a different note, ascending by pitch "
                                                      "along the path.", 1),
-              ("copy_by_object_name", "Copy by object name", "Copy notes to objects based on the object's name. "
-                                                             "Notes are copied to objects with names beginning or ending"
-                                                             " with the note (for example A3 notes would be copied"
-                                                             " to an object named CubeA3 or A3Cube)", 2)]
+              ("copy_by_object_name", "Copy by object name",
+               "Copy notes to selected objects based on the object's name. "
+               "Notes are copied to objects with names beginning or ending"
+               " with the note (for example A3 notes would be copied"
+               " to an object named CubeA3 or A3Cube)", 2)]
 copy_by_name_type = [("copy_by_note", "Note name", "Copy by note name", 0),
                      # TODO improve descriptions, move object name information from copy_tools to this description
                      ("copy_by_track_and_note", "Track name and note name", "Copy by track and note name", 1)]
@@ -396,6 +427,7 @@ class TempoPropertyGroup(PropertyGroup, TempoPropertyBase):
 class MidiPropertyBase:
     # defining get= (and not set=) disables editing in the UI
     midi_file: StringProperty(name="Midi File", description="Select Midi File", get=get_midi_file_name)
+    # the selected note
     notes_list: PropertyUtils.note_property("Note", "Note", get_notes_list,
                                             "notes_list", "note_search_string")
     note_search_string: PropertyUtils.note_search_property("notes_list", "note_search_string",
@@ -444,3 +476,13 @@ class MidiPropertyGroup(MidiPropertyBase, PropertyGroup):
     bulk_copy_property: PointerProperty(type=BulkCopyPropertyGroup)
 
     tempo_settings: PointerProperty(type=TempoPropertyGroup)
+
+
+class MidiCopierVersion(PropertyGroup):
+    """
+    Stores the version of the midi copier used when in the blend file. Allows for backwards compatibility when
+    changing properties.
+    """
+    major: IntProperty()
+    minor: IntProperty()
+    revision: IntProperty()

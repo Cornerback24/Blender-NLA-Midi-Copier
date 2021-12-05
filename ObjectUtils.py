@@ -1,5 +1,7 @@
 import math
-from typing import Tuple
+import bpy
+import uuid
+from typing import Tuple, List, Callable, Any, Optional
 
 
 def point_3d(v):
@@ -151,3 +153,28 @@ def data_dict_from_objects(objects, action_id_root):
     else:
         return {x[0]: x[1] for x in [(data_from_object(obj, action_id_root), obj) for obj in objects] if
                 x[0] is not None}
+
+
+def duplicate_object(object_to_duplicate, context, linked=False):
+    """
+    Duplicates an object. No objects should be selected when is called.
+    The duplicate object will not be selected when this returns.
+    :param object_to_duplicate: object to duplicate
+    :param context: context
+    :param linked: linked duplicate if True
+    :return: the duplicated object
+    """
+    object_to_duplicate.select_set(True)
+    bpy.ops.object.duplicate(linked=linked)
+    duplicated_object = context.selected_objects[0]
+    duplicated_object.select_set(False)
+    object_to_duplicate.select_set(False)
+    return duplicated_object
+
+
+def get_or_create_animation_data(animated_object_or_data):
+    animation_data = animated_object_or_data.animation_data
+    # ensure object has animation data
+    if animation_data is None:
+        animation_data = animated_object_or_data.animation_data_create()
+    return animation_data

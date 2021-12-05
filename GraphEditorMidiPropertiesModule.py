@@ -67,6 +67,10 @@ def max_float_property(subtype='NONE', unit='NONE'):
                          default=1, subtype=subtype, unit=unit)
 
 
+NOTE_PROPERTIES = [("Pitch", "Pitch", "Pitch", 0),
+                   ("Length", "Length (frames)", "Note Length in Frames", 1),
+                   ("Velocity", "Velocity", "Velocity", 2)]
+
 OVERLAP_OPTIONS = [("REPLACE", "Replace", "Replace existing keyframe if on the same frame", 0),
                    ("SKIP", "Skip", "Skip keyframe if an existing keyframe is on the same frame", 1),
                    ("PREVIOUS_FRAME", "Previous frame",
@@ -78,8 +82,24 @@ OVERLAP_OPTIONS = [("REPLACE", "Replace", "Replace existing keyframe if on the s
                     "the frame after the existing keyframe. If the frame after also has a "
                     "keyframe, the generated keyframe will be skipped", 3)]
 
+ON_NOTE_OVERLAP = [("include", "Include", "Generate keyframes for notes that overlap other notes", 0),
+                   ("skip", "Skip",
+                    "Skip notes if the first frame would be before the last frame of the previous note", 1)]
+
 
 class GraphEditorKeyframeGenerationProperty(PropertyGroup):
+    note_property: EnumProperty(items=NOTE_PROPERTIES, name="Note Property", default="Pitch")
+    non_negative_min: FloatProperty(name="Map to min",
+                                    description="Value from midi file to map to minimum keyframe value", min=0.0)
+    non_negative_max: FloatProperty(name="Map to max",
+                                    description="Value from midi file to map to maximum keyframe value", min=0.0,
+                                    default=1.0)
+    int_0_to_127_min: IntProperty(name="Map to min",
+                                  description="Value from midi file to map to minimum keyframe value",
+                                  min=0, max=127)
+    int_0_to_127_max: IntProperty(name="Map to max",
+                                  description="Value from midi file to map to maximum keyframe value", min=0, max=127,
+                                  default=127)
     pitch_min: PropertyUtils.note_property("Min note", "Lowest Note", get_all_notes, "pitch_min",
                                            "pitch_min_search_string")
     pitch_min_search_string: PropertyUtils.note_search_property("pitch_min", "pitch_min_search_string", get_all_notes)
@@ -108,12 +128,13 @@ class GraphEditorKeyframeGenerationProperty(PropertyGroup):
     min_value_volume: min_float_property(unit='VOLUME')
     max_value_volume: max_float_property(unit='VOLUME')
     unit_type: EnumProperty(items=unit_type_enums, name="Unit Type", default="NONE")
-    on_keyframe_overlap: EnumProperty(items=OVERLAP_OPTIONS, name="On Keyframe Overlap",
+    on_keyframe_overlap: EnumProperty(items=OVERLAP_OPTIONS, name="Keyframe Overlap",
                                       description="Keyframe overlap handling mode")
     generate_at_note_end: \
         BoolProperty(name="Generate at Note End",
                      description="Generate keyframes at the end of the note instead of the beginning",
                      default=False)
+    on_note_overlap: EnumProperty(name="Note overlap", items=ON_NOTE_OVERLAP)
     scale_filter_type: EnumProperty(items=MidiPropertiesModule.scale_filter_options, name="Filter by Scale",
                                     description="Filter by Scale")
     scale_filter_scale: EnumProperty(items=MidiPropertiesModule.scale_options, name="Scale", description="Major Scale")

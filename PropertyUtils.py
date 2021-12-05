@@ -52,6 +52,7 @@ def copy_note_action_property(copy_from, copy_to, id_properties_dictionary):
     copy_to.midi_frame_offset = copy_from.midi_frame_offset
     copy_to.nla_track_name = copy_from.nla_track_name
     copy_to.duplicate_object_on_overlap = copy_from.duplicate_object_on_overlap
+    copy_to.on_overlap = copy_from.on_overlap
     copy_to.blend_mode = copy_from.blend_mode
     copy_to.sync_length_with_notes = copy_from.sync_length_with_notes
     copy_to.copy_to_note_end = copy_from.copy_to_note_end

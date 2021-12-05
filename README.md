@@ -2,11 +2,11 @@
 
 Blender add-on for creating midi-driven animations from the Nonlinear Animation view. Adds a panel to the Nonlinear
 Animation view that allows for copying an action to each instance of a note in a midi file. For example, actions strips
-for a selected action could be generated to line up with all the C4 notes played by a piano. To access the panel,
-expand the right-side panel in the Nonlinear Action View and select the Midi tab.
+for a selected action could be generated to line up with all the C4 notes played by a piano. To access the panel, expand
+the right-side panel in the Nonlinear Action View and select the Midi tab.
 
-This add-on is written for Blender 2.93.    
-Add-on Version 0.11.0. [Changelog here](CHANGELOG.md).
+This add-on is written for Blender 3.0.    
+Add-on Version 0.12.0. [Changelog here](CHANGELOG.md).
 
 
 <details>
@@ -40,18 +40,6 @@ Midi Panel
       control. This option is only valid for Type Object, Type Material, or any type that can be object data (such as
       Mesh and Curve). If the type is Material, the action wll be copied to the active materials of the selected
       objects.
-* Duplicate Object on Overlap:
-    * If this option is selected, then overlapping action strips will be placed on new objects that are duplicates of
-      the original object being animated. This option is only valid for Type Object or any type that can be object
-      data (such as Mesh and Curve). If the type is not Object, then all objects using the data will be duplicated. For
-      example if the action is defined on a Curve, all objects using the Curve will be duplicated.
-* Action Length (Frames):
-    * The length of the action. Used to determine if the action overlaps another action when duplicating objects.
-      Defaults to the true length of the action. As an example, if this is set to 50 frames, and two notes are only 30
-      frames apart, then the action for the second note will be considered to overlap the action. The second note's
-      action will be copied to a duplicate object if Duplicate Object on Overlap is selected. If this value is set to
-      less than the true length of the action, it will be replaced by the true length of the action. This control is not
-      available if no action is selected.
 * Sync Length with Notes
     * If selected, the length of the copied action will be scaled to match the length of the note it is copied to
       multiplied by the scale factor.
@@ -60,12 +48,30 @@ Midi Panel
       the length of the note multiplied by this scale factor. (Scale factor of 1 will match the note length exactly.)
 * Copy to Note End
     * Copies the action to the end of the note instead of the beginning.
-* Add filters.
+* Add filters:
     * Adds filters. If selected, any defined filters will be applied when copying actions. No filters will be applied if
       this option is not selected. See the Filters section for more information about filters.
+* Overlap
+    * Options for how to handle overlapping action strips.
+    * Skip
+        * Skip overlapping actions.
+    * Blend
+        * Place overlapping actions on a new track above the existing action.
+    * Duplicate Object
+        * Place overlapping action strips on new objects that are duplicates of the original object being animated. This
+          option is only valid for Type Object or any type that can be object data (such as Mesh and Curve). If the type
+          is not Object, then all objects using the data will be duplicated. For example if the action is defined on a
+          Curve, all objects using the Curve will be duplicated.
 * Blending
     * Sets blending type for action strips placed on additional nla tracks if the first nla track does not have room for
-      the action. If this is set to None, actions will be skipped if there is no room on the first nla track.
+      the action. Only used when Overlap is set to Blend.
+* Action Length (Frames):
+    * The length of the action. Used to determine if the action overlaps another action when duplicating objects.
+      Defaults to the true length of the action. As an example, if this is set to 50 frames, and two notes are only 30
+      frames apart, then the action for the second note will be considered to overlap the action. The second note's
+      action will be copied to a duplicate object if Duplicate Object on Overlap is selected. If this value is set to
+      less than the true length of the action, it will be replaced by the true length of the action. Only used when
+      Overlap is set to Duplicate Object.
 * Nla Track:
     * The name of the NLA track to place action strips on. If a track with this name exists, actions will be placed on
       it, otherwise a new track with this name will be created. A name wil be automatically generated if this field is
@@ -235,8 +241,8 @@ without copying along a path).
 ### Copy by object name
 
 The Copy by object name tool copies actions to objects based on the name of the object. It matches notes to selected
-objects with names that either start or end with the note.
-For example, if one of the selected objects is A3_Cube, the action will be copied to that object for all A3 notes.
+objects with names that either start or end with the note. For example, if one of the selected objects is A3_Cube, the
+action will be copied to that object for all A3 notes.
 
 * Copy to Instrument
     * If selected, copies the action selected instrument instead of generating action strips for the note.
@@ -345,15 +351,37 @@ high pitch, choose a min and max keyframe value, and generate keyframes with val
 * Track:
     * Choose a track from the midi file. (Tracks with no notes will not be shown.)
 * Notes in Track:
-    * Drop-down that displays the notes in the selected track. This property does not affect keyframe generation.
+    * Drop-down that displays the notes in the selected track. This property does not affect keyframe generation if Note
+      Property is set to Pitch. If the Note Property is not Pitch, then keyframes will only be copied to the selected
+      Note (unless there are pitch filters).
 * Selected F-Curve
     * Displays the data path of the selected F-Curve in the graph editor. This is the F-Curve keyframes will be
       generated on.
+* Note Property:
+    * The note property to use for keyframe generation.
+    * Pitch
+        * Generate keyframes based on note pitch
+    * Length (frames)
+        * Generate keyframes based on note length in frames
+    * Velocity
+        * Generate keyframes based on note velocity
+* Load min and max keyframe values:
+    * Sets the Min and Max notes or Map to min and Map to max values to the minimum and maximum values found in the
+      selected midi track. (This is the button next to note property.)
 * Min note:
-    * The lowest note (inclusive) that will be used for keyframe generation.
+    * The lowest note (inclusive) that will be used for keyframe generation. Only used if Note Property is set to Pitch.
 * Max note:
     * The highest note (inclusive) that will be used for keyframe generation. If this is lower than the min note,
-      keyframes will be generated starting at the min note down to this note.
+      keyframes will be generated starting at the min note down to this note. Only used if Note Property is set to
+      Pitch.
+* Map to min:
+    * Note property value to map to the Min value. For example if note Property is Length (frames) and Map to min is set
+      to 2, then keyframes for a note with a length of 2 frames will be generated with the Min value. Only used if Note
+      Property is not set to Pitch.
+* Map to max:
+    * Note property value to map to the Max value. For example if note Property is Length (frames) and Map to max is set
+      to 10, then keyframes for a note with a length of 10 frames will be generated with the Max value. Only used if
+      Note Property is not set to Pitch.
 * Filter by Scale:
     * If filtering by scale, keyframes will only be generated for notes in or not in the scale (depending on the
       selected filter type). In addition, only filtered pitches will be used for keyframe calculation.
@@ -373,7 +401,10 @@ high pitch, choose a min and max keyframe value, and generate keyframes with val
       be converted to keyframe units, in this case radians.)
 * Generate at Note End:
     * Generate keyframes at the end of the note instead of the beginning.
-* On Keyframe Overlap
+* Add filters:
+    * Adds filters. If selected, any defined filters will be applied when generating keyframes. No filters will be
+      applied if this option is not selected. See the Filters section for more information about filters.
+* Keyframe Overlap:
     * Options for handling overlaps with existing keyframes.
     * Replace
         * Replace the existing keyframe.
@@ -385,6 +416,12 @@ high pitch, choose a min and max keyframe value, and generate keyframes with val
     * Next frame
         * Place the generated keyframe on the frame after the existing keyframe. If that frame also has an existing
           keyframe, the generated keyframe will be skipped.
+* Note Overlap:
+    * Options for handling overlapping notes:
+        * Include
+            * Include overlapping notes
+        * Skip
+            * Skip overlapping notes
 * First Frame:
     * The frame that the midi file starts on.
 * Frame Offset:
@@ -407,8 +444,7 @@ Grease Pencil
 This add-on also allows for copying selected grease pencil frames to sync with notes in a midi file. The grease pencil
 midi panel is available in the Grease Pencil Dope Sheet when "Only Show Selected" is selected in the Dope Sheet bar. The
 grease pencil panel midi is independent of the Nonlinear Animation midi panel (the selected midi file, frame offsets,
-and midi settings are not tied to the Nonlinear Animation midi panel). Instruments are not supported for grease pencil
-keyframes.
+and midi settings are not tied to the Nonlinear Animation midi panel).
 
 For the most part, controls are the same as in the Nonlinear Animation midi panel.
 

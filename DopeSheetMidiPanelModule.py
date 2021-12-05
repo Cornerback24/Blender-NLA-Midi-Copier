@@ -49,7 +49,7 @@ class DopeSheetMidiPanel(bpy.types.Panel):
         col = self.layout.column(align=True)
         midi_data_property = context.scene.dope_sheet_midi_data_property
 
-        PanelUtils.draw_midi_file_selections(col, midi_data_property, DopeSheetMidiFileSelector.bl_idname)
+        PanelUtils.draw_midi_file_selections(col, midi_data_property, DopeSheetMidiFileSelector.bl_idname, context)
 
         dope_sheet_note_action_property = midi_data_property.note_action_property
 
@@ -63,7 +63,8 @@ class DopeSheetMidiPanel(bpy.types.Panel):
         col.prop(dope_sheet_note_action_property, "add_filters")
 
         if dope_sheet_note_action_property.add_filters:
-            PanelUtils.draw_filter_box(col, dope_sheet_note_action_property, False, None, "dope_sheet_midi_data")
+            PanelUtils.draw_filter_box(col, dope_sheet_note_action_property, False, None,
+                                       MidiDataType.DOPESHEET)
 
         col.prop(midi_data_property, "midi_frame_start")
         col.prop(dope_sheet_note_action_property, "midi_frame_offset")
@@ -74,7 +75,11 @@ class DopeSheetMidiPanel(bpy.types.Panel):
         self.layout.separator()
         col = self.layout.column(align=True)
 
-        col.operator(DopeSheetMidiCopier.bl_idname)
+        tooltip_creator = PanelUtils.OperatorTooltipCreator(DopeSheetMidiCopier)
+        midi_file = midi_data_property.midi_file
+        if midi_file is None or len(midi_file) == 0:
+            tooltip_creator.add_disable_description("No midi file selected")
+        tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
 
 
 class DopeSheetMidiSettingsPanel(bpy.types.Panel):

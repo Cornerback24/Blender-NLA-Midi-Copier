@@ -2,11 +2,11 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 11, 0),
+        "version": (0, 12, 0),
         "blender": (2, 80, 0),
         "location": "View NLA Editor > Tool Shelf",
         "description": "Copy actions to action strips based on midi file input",
-        "wiki_url": "https://github.com/Cornerback24/Blender-NLA-Midi-Copier#blender-nla-midi-copier",
+        "doc_url": "https://github.com/Cornerback24/Blender-NLA-Midi-Copier#blender-nla-midi-copier",
         "tracker_url": "https://github.com/Cornerback24/Blender-NLA-Midi-Copier/issues",
         "support": "COMMUNITY",
         "category": "Animation"
@@ -39,6 +39,10 @@ if "bpy" in locals():
     importlib.reload(NoteFilterModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(midi_data)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(CompatibilityModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PanelUtils)
 else:
     # noinspection PyUnresolvedReferences
     from . import NLAMidiCopierModule
@@ -65,6 +69,10 @@ else:
     # noinspection PyUnresolvedReferences
     from . import midi_data
     # noinspection PyUnresolvedReferences
+    from . import CompatibilityModule
+    # noinspection PyUnresolvedReferences
+    from . import PanelUtils
+    # noinspection PyUnresolvedReferences
     from bpy.app.handlers import persistent
 
 import bpy
@@ -72,14 +80,15 @@ from bpy.props import PointerProperty
 from bpy.types import NlaStrip
 from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier
 from .DopeSheetMidiCopierModule import DopeSheetMidiCopier
-from .GraphEditorKeyframeGeneratorModule import GraphEditorMidiKeyframeGenerator
+from .GraphEditorKeyframeGeneratorModule import GraphEditorMidiKeyframeGenerator, LoadMinMaxFromMidiTrack
 from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToInstrument, RemoveActionFromInstrument, \
     TransposeInstrument
+from .OperatorUtils import CopyMidiFileData
 from .MidiPanelModule import MidiPanel, MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel, MidiFileSelector
 from .GraphEditorMidiPanelModule import GraphEditorMidiPanel, GraphEditorMidiFileSelector, GraphEditorMidiSettingsPanel
 from .DopeSheetMidiPanelModule import DopeSheetMidiPanel, DopeSheetMidiSettingsPanel, DopeSheetMidiFileSelector
 from .MidiPropertiesModule import MidiPropertyGroup, NoteActionProperty, InstrumentNoteProperty, InstrumentProperty, \
-    NoteFilterGroup, NoteFilterProperty, BulkCopyPropertyGroup, TempoPropertyGroup
+    NoteFilterGroup, NoteFilterProperty, BulkCopyPropertyGroup, TempoPropertyGroup, MidiCopierVersion
 from .DopeSheetMidiPropertiesModule import DopeSheetMidiPropertyGroup, DopeSheetNoteActionProperty, \
     DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup, DopeSheetTempoPropertyGroup
 from .GraphEditorMidiPropertiesModule import GraphEditorTempoPropertyGroup, GraphEditorNoteActionProperty, \
@@ -94,7 +103,7 @@ classes = [
     NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier,
     AddActionToInstrument, RemoveActionFromInstrument, TransposeInstrument,
     AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter,
-    TempoPropertyGroup,
+    CopyMidiFileData, TempoPropertyGroup, MidiCopierVersion,
     MidiPropertyGroup, MidiPanel, MidiFileSelector, MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel]
 dope_sheet_classes = [DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup,
                       DopeSheetNoteActionProperty, DopeSheetTempoPropertyGroup,
@@ -104,8 +113,8 @@ graph_editor_classes = [GraphEditorNoteFilterProperty, GraphEditorNoteFilterGrou
                         GraphEditorKeyframeGenerationProperty,
                         GraphEditorNoteActionProperty, GraphEditorTempoPropertyGroup,
                         GraphEditorMidiFileSelector, GraphEditorMidiKeyframeGenerator, GraphEditorMidiPropertyGroup,
-                        GraphEditorMidiPanel,
-                        GraphEditorMidiSettingsPanel]
+                        LoadMinMaxFromMidiTrack,
+                        GraphEditorMidiPanel, GraphEditorMidiSettingsPanel]
 classes = classes + dope_sheet_classes + graph_editor_classes
 
 
@@ -120,6 +129,7 @@ def load_midi_file(midi_data_property, midi_data_type: MidiDataType, context):
 
 @persistent
 def on_load(scene):
+    CompatibilityModule.compatibility_updates_complete = False
     context = bpy.context
     load_midi_file(context.scene.midi_data_property, MidiDataType.NLA, context)
     load_midi_file(context.scene.dope_sheet_midi_data_property, MidiDataType.DOPESHEET, context)
@@ -128,6 +138,17 @@ def on_load(scene):
     # For now only one GraphEditorKeyframeGenerationProperty in the collection. Add it here to ensure it exists
     if len(context.scene.graph_editor_midi_data_property.note_action_property.keyframe_generators) == 0:
         context.scene.graph_editor_midi_data_property.note_action_property.keyframe_generators.add()
+    updates_from_previous_version(context)
+    CompatibilityModule.compatibility_updates_complete = True
+
+
+def updates_from_previous_version(context):
+    version_property = context.scene.midi_copier_version
+    current_version = bl_info["version"]
+    CompatibilityModule.run_compatibility_updates(current_version)
+    version_property.major = current_version[0]
+    version_property.minor = current_version[1]
+    version_property.revision = current_version[2]
 
 
 # noinspection PyArgumentList
@@ -137,6 +158,7 @@ def register():
     bpy.types.Scene.midi_data_property = PointerProperty(type=MidiPropertyGroup)
     bpy.types.Scene.dope_sheet_midi_data_property = PointerProperty(type=DopeSheetMidiPropertyGroup)
     bpy.types.Scene.graph_editor_midi_data_property = PointerProperty(type=GraphEditorMidiPropertyGroup)
+    bpy.types.Scene.midi_copier_version = PointerProperty(type=MidiCopierVersion)
     bpy.app.handlers.load_post.append(on_load)
 
 

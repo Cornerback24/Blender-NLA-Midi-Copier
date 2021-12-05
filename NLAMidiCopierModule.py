@@ -13,27 +13,34 @@ if "bpy" in locals():
     importlib.reload(PropertyUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(NoteFilterImplementations)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(NoteCollectionModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(OperatorUtils)
 else:
     from . import midi_data
     from . import PitchUtils
     from . import ObjectUtils
     from . import PropertyUtils
     from . import NoteFilterImplementations
+    from . import NoteCollectionModule
+    from . import OperatorUtils
 
 import bpy
+import re
 from typing import List, Tuple, Optional, Any
 from .midi_analysis.Note import Note
 from .midi_data import MidiDataType
+from .NoteCollectionModule import NoteCollectionOverlapStrategy, NoteCollectionMetaData, NoteCollection, \
+    ExistingNoteOverlaps, NoteCollectionFilter
 
 
 class ActionToCopy:
-    def __init__(self, action, nla_track, first_frame: int, last_frame: int, scale_factor: float, blend_type: str,
-                 strips_to_shift):
+    def __init__(self, action, nla_track, first_frame: int, last_frame: int, blend_type: str, strips_to_shift):
         self.action = action
         self.nla_track = nla_track
         self.first_frame = first_frame
         self.last_frame = last_frame
-        self.scale_factor = scale_factor
         self.blend_type = blend_type
         self.strips_to_shift = strips_to_shift
 
@@ -42,7 +49,7 @@ class ActionToCopy:
         shift_amount_frames = 0
         if len(self.strips_to_shift) > 0:
             true_action_length = self.action.frame_range[1] - self.action.frame_range[0]
-            shift_amount_frames = self.first_frame + true_action_length - self.strips_to_shift[0].frame_start + 1
+            shift_amount_frames = true_action_length
             for strip in reversed(self.strips_to_shift):
                 strip.frame_end = strip.frame_end + shift_amount_frames
                 strip.frame_start = strip.frame_start + shift_amount_frames
@@ -65,66 +72,28 @@ class NlaTrackInfo:
     def __init__(self, nla_track, blend_type: Optional[str]):
         self.blend_type = blend_type
         self.nla_track = nla_track
-        self.current_nla_strip_index = 0
         self.nla_strips = nla_track.strips
-        self.nla_strip_count = len(nla_track.strips)
-        self.last_action_added: Optional[ActionToCopy] = None
 
-    def existing_action_overlap(self, first_frame: int, last_frame: int):
+    def actions_to_shift_when_copy(self, action_first_frame: int):
         """
-        :param first_frame: the first frame of the action
-        :param last_frame:  the last frame of the action
-        :return: True if the action overlaps an action that exists on the track
-        (does not include actions that will be copied). This method needs to be called in ascending order by first frame
-        of actions being checked (does not check for actions that are known to be before the last action that was
-        checked in order to be more efficient).
-        """
-        while self.current_nla_strip_index < self.nla_strip_count and \
-                self.nla_strips[self.current_nla_strip_index].frame_start < last_frame:
-            if self.nla_strips[self.current_nla_strip_index].frame_end > first_frame:
-                return True
-            self.current_nla_strip_index = self.current_nla_strip_index + 1
-        return False
-
-    def overlaps_last_added_action(self, action_first_frame: int, action_last_frame: int) -> bool:
-        """
-        :param action_first_frame: the first frame of the action
-        :param action_last_frame: the last frame of the action
-        :return: True if the action overlaps the most recent action that was added to be copied
-        """
-        if self.last_action_added is None:
-            overlaps_last_action = False
-        else:
-            overlaps_last_action = action_first_frame < self.last_action_added.last_frame and action_last_frame > \
-                                   self.last_action_added.first_frame
-        return overlaps_last_action
-
-    def actions_to_shift_when_copy(self, action_last_frame: int):
-        """
-        :param action_last_frame: copied actions's last frame
+        :param action_first_frame: copied action's first frame
         :return: list of actions that would need to be shifted to the right in order to make room for the copied action
         """
-        if self.current_nla_strip_index >= self.nla_strip_count:
-            return []
-        else:
-            if self.nla_strips[self.current_nla_strip_index].frame_start <= action_last_frame:
-                return self.nla_strips[self.current_nla_strip_index:]
-            else:
-                return []
+        index = 0
+        nla_strip_count = len(self.nla_track.strips)
+        while index < nla_strip_count:
+            if self.nla_strips[index].frame_start > action_first_frame:
+                return self.nla_strips[index:]
+            index += 1
+        return []
 
-    def has_room_for_action(self, action_first_frame: int, action_last_frame: int) -> bool:
-        return not self.existing_action_overlap(action_first_frame, action_last_frame) \
-               and not self.overlaps_last_added_action(action_first_frame, action_last_frame)
-
-    def add_action(self, action, first_frame: int, last_frame: int, scale_factor: float,
-                   actions_to_shift) -> ActionToCopy:
-        self.last_action_added = ActionToCopy(action, self.nla_track, first_frame, last_frame, scale_factor,
-                                              self.blend_type, actions_to_shift)
-        return self.last_action_added
+    def create_action_to_copy(self, action, first_frame: int, last_frame: int, actions_to_shift) -> ActionToCopy:
+        return ActionToCopy(action, self.nla_track, first_frame, last_frame, self.blend_type, actions_to_shift)
 
 
 class NlaTracksManager:
-    def __init__(self, action, track_name: str, animated_object, context, duplicate_on_overlap: bool, blend_mode: str):
+    def __init__(self, action, track_name: str, animated_object, context, duplicate_on_overlap: bool, blend_mode: str,
+                 skip_overlaps: bool):
         self.action = action
         self.track_name: str = track_name
         self.animated_object = animated_object
@@ -133,58 +102,43 @@ class NlaTracksManager:
         self.blend_mode: str = blend_mode
 
         self.nla_track_infos: List[NlaTrackInfo] = []
-        self.track_overlap_index: int = 0
-        self.skip_overlaps: bool = blend_mode == "None"
-        self.original_track: [NlaTrackInfo] = self.next_track()
+        self.skip_overlaps: bool = skip_overlaps
         self.objects_using_data = None
-        self.true_action_length = self.action.frame_range[1] - self.action.frame_range[0]
         pass
 
-    def action_to_copy(self, first_frame: int, last_frame: int, action_scale_factor: float) -> Optional[ActionToCopy]:
-        nla_track_info = self.track_for_action(first_frame, last_frame)
+    def copy_notes_to_tracks(self, note_collection: NoteCollection):
+        nla_layer_track_paris = []
+        if not self.duplicate_on_overlap and self.skip_overlaps:
+            # skip overlaps so only the first layer
+            for notes_layer in note_collection.notes_layers[:1]:
+                nla_layer_track_paris.append((notes_layer, self.next_track()))
+        else:
+            for notes_layer in note_collection.notes_layers:
+                # in the duplicate on overlap case, need to create new tracks before actions are placed on the original
+                # so that new actions are not duplicated
+                nla_layer_track_paris.append((notes_layer, self.next_track()))
+        actions_to_copy_lists = []
+        for notes_layer, nla_track_info in nla_layer_track_paris:
+            actions_to_copy = []
+            for analyzed_note in notes_layer.notes:
+                action_to_copy = self.action_to_copy(analyzed_note.action_start_frame, analyzed_note.action_end_frame,
+                                                     analyzed_note.is_scaled_down(), nla_track_info)
+                if action_to_copy is not None:
+                    actions_to_copy.append(action_to_copy)
+            actions_to_copy_lists.append(actions_to_copy)
+        for actions_to_copy in actions_to_copy_lists:
+            for action_to_copy in actions_to_copy:
+                action_to_copy.copy_action()
+
+    def action_to_copy(self, first_frame: int, last_frame: int, scaled_down: bool, nla_track_info: NlaTrackInfo) \
+            -> Optional[ActionToCopy]:
         if nla_track_info is not None:
             # If the action is scaled down, there may be a conflict when adding the action at first since it will not
             # be scaled down at that point and could extend past the next strip. In this case, temporarily shift
             # actions to the right to make space.
-            actions_to_shift = nla_track_info.actions_to_shift_when_copy(
-                first_frame + self.true_action_length) if action_scale_factor < 1 else []
-            return nla_track_info.add_action(self.action, first_frame, last_frame, action_scale_factor,
-                                             actions_to_shift)
+            actions_to_shift = nla_track_info.actions_to_shift_when_copy(first_frame) if scaled_down else []
+            return nla_track_info.create_action_to_copy(self.action, first_frame, last_frame, actions_to_shift)
         return None
-
-    def track_for_action(self, first_frame: int, last_frame: int) -> Optional[NlaTrackInfo]:
-        if self.duplicate_on_overlap:
-            # if the original track doesn't have room, don't duplicate the object
-            # (duplicated object would not have room either)
-            if self.original_track.existing_action_overlap(first_frame, last_frame):
-                return None
-            else:
-                nla_track_info = next((track_info for track_info in self.nla_track_infos if
-                                       track_info.has_room_for_action(first_frame, last_frame)), None)
-                return nla_track_info if nla_track_info is not None else self.next_track()
-        else:
-            if self.skip_overlaps:
-                return self.original_track if self.original_track.has_room_for_action(first_frame, last_frame) else None
-            else:
-                # Start from the top nla track and search down. Don't place a strip on a track below a track that
-                # doesn't have room (drop the strip on top of the stack).
-                nla_track_info = None
-                room_for_strip = True
-                track_index = len(self.nla_track_infos) - 1
-                while room_for_strip and track_index >= 0:
-                    track_info = self.nla_track_infos[track_index]
-                    track_index = track_index - 1
-                    if track_info.has_room_for_action(first_frame, last_frame):
-                        nla_track_info = track_info
-                    else:
-                        room_for_strip = False
-
-                if nla_track_info is None:
-                    # Create a new track or find the next existing track matching the name with space for the action
-                    nla_track_info = self.next_track()
-                    while not nla_track_info.has_room_for_action(first_frame, last_frame):
-                        nla_track_info = self.next_track()
-                return nla_track_info
 
     def next_track(self) -> Optional[NlaTrackInfo]:
         nla_tracks_empty = len(self.nla_track_infos) == 0
@@ -203,9 +157,8 @@ class NlaTracksManager:
                 duplicated_nla_track = self.get_or_create_nla_track(duplicated_object, self.track_name)
             nla_track_info = NlaTrackInfo(duplicated_nla_track, None)
         else:
-            new_track_name = self.track_name if nla_tracks_empty else f"{self.track_name} {len(self.nla_track_infos) + 1}"
-            blend_type = None if nla_tracks_empty else \
-                (None if self.blend_mode is None or self.blend_mode == "None" else self.blend_mode)
+            new_track_name = self.get_track_name(len(self.nla_track_infos) + 1)
+            blend_type = None if nla_tracks_empty else self.blend_mode  # no blending on first track
             nla_track_info = NlaTrackInfo(self.get_or_create_nla_track(self.animated_object, new_track_name),
                                           blend_type)
 
@@ -213,23 +166,47 @@ class NlaTracksManager:
 
         return nla_track_info
 
-    def get_or_create_nla_track(self, animated_object, track_name: str):
-        if self.action.id_root == "NODETREE":
-            animation_data = NoteActionCopier.get_animation_data(animated_object.node_tree)
+    def existing_tracks_list(self):
+        name_plus_number_regex = re.compile(re.escape(self.track_name) + " [0-9]+$")
+        existing_track_names = {}
+        if self.animated_object.animation_data is not None \
+                and self.animated_object.animation_data.nla_tracks is not None:
+            existing_track_names = {nla_track.name for nla_track in self.animated_object.animation_data.nla_tracks if
+                                    nla_track.name == self.track_name or name_plus_number_regex.match(nla_track.name)}
+
+        track_number = 0  # first track is track 1
+        existing_tracks = []
+        while len(existing_track_names) > 0:
+            track_number += 1
+            track_name = self.get_track_name(track_number)
+            if track_name in existing_track_names:
+                existing_track_names.remove(track_name)
+            existing_tracks.append(self.get_or_create_nla_track(self.animated_object, track_name, False))
+        return existing_tracks
+
+    def get_or_create_nla_track(self, animated_object, track_name: str, create_track_if_not_exists: bool = True):
+        if self.action.id_root == "NODETREE" and not isinstance(animated_object, bpy.types.NodeTree):
+            animation_data = ObjectUtils.get_or_create_animation_data(animated_object.node_tree)
         else:
-            animation_data = NoteActionCopier.get_animation_data(animated_object)
+            animation_data = ObjectUtils.get_or_create_animation_data(animated_object)
         for track in animation_data.nla_tracks:
             if track.name == track_name:
                 return track
-        nla_track = animation_data.nla_tracks.new()
-        nla_track.name = track_name
-        return nla_track
+        if not create_track_if_not_exists:
+            return None
+        else:
+            nla_track = animation_data.nla_tracks.new()
+            nla_track.name = track_name
+            return nla_track
+
+    def get_track_name(self, track_number: int):
+        return self.track_name if track_number == 1 else f"{self.track_name} {track_number}"
 
     def duplicated_object(self):
         # this method assumes no objects are selected when called
         # neither the original object nor the duplicated object will be selected when this method returns
         if self.action.id_root == "OBJECT":
-            return NlaTracksManager.duplicate_object(self.animated_object, self.context)
+            return ObjectUtils.duplicate_object(self.animated_object, self.context)
         else:
             if self.objects_using_data is None:
                 object_type = self.action.id_root
@@ -238,47 +215,27 @@ class NlaTracksManager:
             if len(self.objects_using_data) == 0:
                 return None  # no objects to duplicate
 
-            duplicated_object = NlaTracksManager.duplicate_object(self.objects_using_data[0], self.context)
+            duplicated_object = ObjectUtils.duplicate_object(self.objects_using_data[0], self.context)
             # create linked duplicates for any other objects using the data
             for x in self.objects_using_data[1:]:
-                duplicate = NlaTracksManager.duplicate_object(x, self.context)
-                duplicate.data = duplicated_object.data
+                ObjectUtils.duplicate_object(x, self.context, linked=True)
             return duplicated_object.data
-
-    @staticmethod
-    def duplicate_object(object_to_duplicate, context):
-        object_to_duplicate.select_set(True)
-        bpy.ops.object.duplicate()
-        duplicated_object = context.selected_objects[0]
-        duplicated_object.select_set(False)
-        object_to_duplicate.select_set(False)
-        return duplicated_object
 
 
 class NoteActionCopier:
 
     def __init__(self, note_action_property, context, instrument_track_name: Optional[str], additional_frame_offset=0):
-        midi_data_property = context.scene.midi_data_property
         self.context = context
-        self.frame_offset = midi_data_property.midi_frame_start + note_action_property.midi_frame_offset + \
-                            additional_frame_offset
-        self.frames_per_second = context.scene.render.fps
+        self.additional_frame_offset = additional_frame_offset
         self.context = context
+        self.note_action_property = note_action_property
         self.duplicate_on_overlap = midi_data.id_type_is_object(note_action_property.id_type) and \
-                                    note_action_property.duplicate_object_on_overlap
-        self.scale_to_note_length = note_action_property.sync_length_with_notes
-        self.scale_factor = note_action_property.scale_factor
-        self.copy_to_note_end: bool = note_action_property.copy_to_note_end
+                                    note_action_property.on_overlap == "DUPLICATE_OBJECT"
         self.action = note_action_property.action
         self.filter_groups_property = note_action_property.note_filter_groups
         self.add_filters = note_action_property.add_filters
-        # actual length of the action
-        self.true_action_length = None if self.action is None else \
-            self.action.frame_range[1] - self.action.frame_range[0]
-        # action length as set by the note action property
-        self.action_length = None if self.action is None else \
-            max(self.true_action_length, note_action_property.action_length)
         self.blend_mode: str = note_action_property.blend_mode
+        self.skip_overlaps: bool = note_action_property.on_overlap == "SKIP"
         self.note_action_track_name: str = note_action_property.nla_track_name
         self.instrument_track_name = instrument_track_name
 
@@ -286,63 +243,39 @@ class NoteActionCopier:
         animated_object_property = midi_data.ID_PROPERTIES_DICTIONARY[self.id_type][0]
         self.animated_object = getattr(note_action_property, animated_object_property)
 
-    def copy_notes(self, notes: List[Note], track_name: str):
+    def copy_notes(self, notes: List[Note], track_name: str, note_id: str):
         if not notes:
             return  # no notes to copy, do nothing
 
-        # The length of the action if no scaling is done. This value is only used if no scaling is done.
-        # If there is scaling, this value is may not represent the length of an action that is not scaled.
-        non_scaled_length: float = self.note_action_length(notes[0])
         nla_tracks = NlaTracksManager(action=self.action,
                                       track_name=track_name,
                                       animated_object=self.animated_object,
                                       context=self.context,
                                       duplicate_on_overlap=self.duplicate_on_overlap,
-                                      blend_mode=self.blend_mode)
-        actions_to_copy = []
-        for note in notes:
-            action_length, action_scale_factor = self.copied_action_length_and_scale_factor(note, non_scaled_length)
-            first_frame = midi_data.get_midi_data(MidiDataType.NLA).note_frame(note, self.frames_per_second,
-                                                                               self.frame_offset,
-                                                                               self.copy_to_note_end)
-            to_copy = nla_tracks.action_to_copy(first_frame, round(first_frame + action_length), action_scale_factor)
-            if to_copy is not None:
-                actions_to_copy.append(to_copy)
-        for action_to_copy in actions_to_copy:
-            action_to_copy.copy_action()
+                                      blend_mode=self.blend_mode,
+                                      skip_overlaps=self.skip_overlaps)
 
-    def copied_action_length_and_scale_factor(self, note: Note, non_scaled_length: float) -> Tuple[float, float]:
-        if self.scale_to_note_length:
-            copied_action_length = self.note_action_length(note)
-            return copied_action_length, self.note_scale_factor(copied_action_length)
-        else:
-            return non_scaled_length, 1
+        loaded_midi_data = midi_data.get_midi_data(MidiDataType.NLA)
+        action = self.note_action_property.action
+        non_scaled_action_length = None if action is None else action.frame_range[1] - action.frame_range[0]
 
-    def note_action_length(self, note) -> float:
-        """
-        :param note: Note object
-        :return: Length of the action to sync with the note, in frames. Includes extra length beyond the action for
-        user-defined object duplication action length.
-        """
-        # minimum one frame
-        return max(self.note_length_frames(note) * self.scale_factor, 1) \
-            if self.scale_to_note_length else (
-            self.action_length if self.duplicate_on_overlap else self.true_action_length)
+        note_overlap_strategy = NoteCollectionOverlapStrategy(not self.duplicate_on_overlap, self.duplicate_on_overlap,
+                                                              False)
+        note_collection_filter = NoteCollectionFilter(self.filter_groups_property,
+                                                      PitchUtils.note_pitch_from_id(note_id), True,
+                                                      self.add_filters, self.context)
+        note_collection_meta_data = NoteCollectionMetaData.from_note_action_property(
+            loaded_midi_data, self.context, self.note_action_property, non_scaled_action_length,
+            additional_frame_offset=self.additional_frame_offset,
+            override_action_length=self.note_action_property.action_length if self.duplicate_on_overlap else None)
+        existing_note_overlaps = ExistingNoteOverlaps(
+            nla_tracks.existing_tracks_list(), lambda nla_track: nla_track.strips,
+            lambda nla_strip: (nla_strip.frame_start, nla_strip.frame_end))
 
-    def note_scale_factor(self, copied_action_length) -> float:
-        """
-        :param copied_action_length: length of the action after being copied
-        :return: the scale factor to apply to the original action to set its length to copied_action_length
-        """
-        return copied_action_length / self.true_action_length
-
-    def note_length_frames(self, note):
-        """
-        :param note: Note object
-        :return: length of the Note in frames
-        """
-        return midi_data.get_midi_data(MidiDataType.NLA).note_length_frames(note, self.frames_per_second) \
-            if self.scale_to_note_length else self.action_length
+        note_collection = NoteCollection(notes, note_collection_meta_data, note_overlap_strategy,
+                                         note_collection_filter, existing_note_overlaps)
+        nla_tracks.copy_notes_to_tracks(note_collection)
+        return
 
     def copy_notes_to_object(self, track_id, note_id: str):
         if self.action is None or self.animated_object is None:
@@ -354,24 +287,13 @@ class NoteActionCopier:
                                                    midi_data.get_midi_data(MidiDataType.NLA).get_middle_c_id(
                                                        self.context)) + " - " + track_id
         notes = midi_data.MidiDataUtil.get_notes(track_id, midi_data.get_midi_data(MidiDataType.NLA))
-        notes = NoteFilterImplementations.filter_notes(notes, self.filter_groups_property,
-                                                       PitchUtils.note_pitch_from_id(note_id),
-                                                       self.add_filters, self.context)
 
-        self.copy_notes(notes, track_name)
+        self.copy_notes(notes, track_name, note_id)
 
     def copy_notes_to_objects(self, track_id: str, note_id: str, objects):
         for x in objects:
             self.animated_object = x
             self.copy_notes_to_object(track_id, note_id)
-
-    @staticmethod
-    def get_animation_data(animated_object):
-        animation_data = animated_object.animation_data
-        # ensure object has animation data
-        if animation_data is None:
-            animation_data = animated_object.animation_data_create()
-        return animation_data
 
     @staticmethod
     def get_selected_nla_strips_and_deselect(context):
@@ -386,7 +308,7 @@ class NoteActionCopier:
             strip.select = True
 
 
-class NLAMidiCopier(bpy.types.Operator):
+class NLAMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
     bl_idname = "ops.nla_midi_copier"
     bl_label = "Copy Action to Notes"
     bl_description = "Copy the selected Action to the selected note"
@@ -480,7 +402,7 @@ class NLAMidiAllInstrumentCopier(bpy.types.Operator):
             NLAMidiInstrumentCopier.animate_instrument(context, instrument)
 
 
-class NLABulkMidiCopier(bpy.types.Operator):
+class NLABulkMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
     """
     This operator handles both copying to an instrument and copying to notes from the bulk copy panel.
     """
@@ -488,7 +410,6 @@ class NLABulkMidiCopier(bpy.types.Operator):
     bl_label = "Copy Action to Notes"
     bl_description = "Copy the selected Action to the selected note"
     bl_options = {"REGISTER", "UNDO"}
-    tooltip: bpy.props.StringProperty()
 
     def execute(self, context):
         self.action_common(context)
@@ -497,10 +418,6 @@ class NLABulkMidiCopier(bpy.types.Operator):
     def invoke(self, context, event):
         self.action_common(context)
         return {'FINISHED'}
-
-    @classmethod
-    def description(cls, context, properties):
-        return properties.tooltip
 
     def action_common(self, context):
         quick_copy_tool = context.scene.midi_data_property.bulk_copy_property.quick_copy_tool

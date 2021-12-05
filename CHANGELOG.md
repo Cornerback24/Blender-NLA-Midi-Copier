@@ -1,3 +1,16 @@
+- 0.12.0 2021-12-4
+  * Add note length and note velocity based keyframe generation in the graph editor
+  * Add skip note overlap option to the graph editor
+  * Add note filters to the graph editor
+  * Add note start time filter
+  * Add tool to load midi file data from another view
+  * Add tool in the graph editor to load min and max values from the selected midi track
+  * Add Node Tree to Types (for geometry nodes)
+  * Update graph editor keyframe generation to copy to all selected fcurves
+  * Update Copy Action button tooltip when no midi file is selected
+  * Update Copy Keyframes button in Grease Pencil view to be disabled when no midi file is selected
+  * Replace Duplicate on Overlap checkbox with Overlap dropdown
+  * Replace None Blending option with Overlap dropdown
 - 0.11.0 2021-6-27
   * Change the name of the Copy Along Path and Copy to Instrument panel to Quick Copy Tools
   * Add tool to copy to notes based on object name

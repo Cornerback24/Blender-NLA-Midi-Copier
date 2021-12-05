@@ -22,7 +22,7 @@ class AddNoteFilter(bpy.types.Operator):
     is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument")
     action_index: bpy.props.IntProperty(name="ActionIndex")
     filter_group_index: bpy.props.IntProperty(name="FilterGroupIndex")
-    midi_data_accessor: bpy.props.StringProperty(name="MidiDataAccessor")
+    midi_data_type: bpy.props.IntProperty(name="MidiDataType")
 
     def execute(self, context):
         self.action_common(context)
@@ -33,7 +33,7 @@ class AddNoteFilter(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        note_action_property = PropertyUtils.selected_note_property(getattr(midi_data, self.midi_data_accessor),
+        note_action_property = PropertyUtils.selected_note_property(midi_data.get_midi_data(self.midi_data_type),
                                                                     self.properties.is_part_of_instrument,
                                                                     self.properties.action_index,
                                                                     context)
@@ -51,7 +51,7 @@ class RemoveNoteFilter(bpy.types.Operator):
     action_index: bpy.props.IntProperty(name="ActionIndex")
     filter_group_index: bpy.props.IntProperty(name="FilterGroupIndex")
     filter_index: bpy.props.IntProperty(name="FilterIndex")
-    midi_data_accessor: bpy.props.StringProperty(name="MidiDataAccessor")
+    midi_data_type: bpy.props.IntProperty(name="MidiDataType")
 
     def execute(self, context):
         self.action_common(context)
@@ -62,7 +62,7 @@ class RemoveNoteFilter(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        note_action_property = PropertyUtils.selected_note_property(getattr(midi_data, self.midi_data_accessor),
+        note_action_property = PropertyUtils.selected_note_property(midi_data.get_midi_data(self.midi_data_type),
                                                                     self.properties.is_part_of_instrument,
                                                                     self.properties.action_index,
                                                                     context)
@@ -81,7 +81,7 @@ class ReorderFilter(bpy.types.Operator):
     filter_group_index: bpy.props.IntProperty(name="FilterGroupIndex")
     filter_index: bpy.props.IntProperty(name="FilterIndex")
     reorder_factor: bpy.props.IntProperty(name="ReorderFactor")
-    midi_data_accessor: bpy.props.StringProperty(name="MidiDataAccessor")
+    midi_data_type: bpy.props.IntProperty(name="MidiDataType")
 
     def execute(self, context):
         self.action_common(context)
@@ -92,7 +92,7 @@ class ReorderFilter(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        note_action_property = PropertyUtils.selected_note_property(getattr(midi_data, self.midi_data_accessor),
+        note_action_property = PropertyUtils.selected_note_property(midi_data.get_midi_data(self.midi_data_type),
                                                                     self.properties.is_part_of_instrument,
                                                                     self.properties.action_index,
                                                                     context)
@@ -110,7 +110,7 @@ class AddNoteFilterGroup(bpy.types.Operator):
 
     is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument")
     action_index: bpy.props.IntProperty(name="Index")
-    midi_data_accessor: bpy.props.StringProperty(name="MidiDataAccessor")
+    midi_data_type: bpy.props.IntProperty(name="MidiDataType")
 
     def execute(self, context):
         self.action_common(context)
@@ -121,7 +121,7 @@ class AddNoteFilterGroup(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        note_action_property = PropertyUtils.selected_note_property(getattr(midi_data, self.midi_data_accessor),
+        note_action_property = PropertyUtils.selected_note_property(midi_data.get_midi_data(self.midi_data_type),
                                                                     self.properties.is_part_of_instrument,
                                                                     self.properties.action_index,
                                                                     context)
@@ -138,7 +138,7 @@ class RemoveFilterGroup(bpy.types.Operator):
     is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument")
     action_index: bpy.props.IntProperty(name="ActionIndex")
     filter_group_index: bpy.props.IntProperty(name="FilterGroupIndex")
-    midi_data_accessor: bpy.props.StringProperty(name="MidiDataAccessor")
+    midi_data_type: bpy.props.IntProperty(name="MidiDataType")
 
     def execute(self, context):
         self.action_common(context)
@@ -149,7 +149,7 @@ class RemoveFilterGroup(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        note_action_property = PropertyUtils.selected_note_property(getattr(midi_data, self.midi_data_accessor),
+        note_action_property = PropertyUtils.selected_note_property(midi_data.get_midi_data(self.midi_data_type),
                                                                     self.properties.is_part_of_instrument,
                                                                     self.properties.action_index,
                                                                     context)

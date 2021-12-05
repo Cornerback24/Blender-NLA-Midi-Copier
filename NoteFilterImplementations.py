@@ -14,6 +14,10 @@ from typing import List, Tuple, Callable
 
 from .midi_analysis.Note import Note
 from collections import OrderedDict
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .NoteCollectionModule import AnalyzedNote
 
 
 class NoteFilterBase(ABC):
@@ -27,7 +31,7 @@ class NoteFilterBase(ABC):
         self.note_filter = note_filter_property
 
     @abstractmethod
-    def filtered_notes(self, notes: List[Tuple[int, Note]], context) -> List[Tuple[int, Note]]:
+    def filtered_notes(self, notes: List[Tuple[int, 'AnalyzedNote']], context) -> List[Tuple[int, 'AnalyzedNote']]:
         """
         :return: filtered list of notes paired to original indices
         """
@@ -41,9 +45,14 @@ class NoteFilterBase(ABC):
     def compare_values(self, value1, value2):
         return PropertyUtils.compare(self.note_filter.comparison_operator, value1, value2)
 
-    def filter_by_callable(self, notes: List[Tuple[int, Note]], filter_callable: Callable[[Note], bool]) -> List[
-        Tuple[int, Note]]:
+    def filter_by_callable(self, notes: List[Tuple[int, 'AnalyzedNote']],
+                           filter_callable: Callable[['AnalyzedNote'], bool]) -> List[Tuple[int, 'AnalyzedNote']]:
         return [note_pair for note_pair in notes if filter_callable(note_pair[1])]
+        pass
+
+    def filter_by_note_callable(self, notes: List[Tuple[int, 'AnalyzedNote']],
+                                filter_callable: Callable[[Note], bool]) -> List[Tuple[int, 'AnalyzedNote']]:
+        return [note_pair for note_pair in notes if filter_callable(note_pair[1].note)]
         pass
 
     @staticmethod
@@ -90,10 +99,10 @@ class PitchFilter(NoteFilterBase):
         super().__init__(note_filter_property)
         self.pitch = None
 
-    def filtered_notes(self, notes: List[Tuple[int, Note]], context) -> List[Tuple[int, Note]]:
+    def filtered_notes(self, notes: List[Tuple[int, 'AnalyzedNote']], context) -> List[Tuple[int, 'AnalyzedNote']]:
         if self.pitch is None:
             self.pitch = PitchUtils.note_pitch_from_id(self.note_filter.note_pitch)
-        return self.filter_by_callable(notes, lambda note: self.compare_values(note.pitch, self.pitch))
+        return self.filter_by_note_callable(notes, lambda note: self.compare_values(note.pitch, self.pitch))
 
     @staticmethod
     def draw_ui(parent_layout, note_filter_property):
@@ -101,22 +110,44 @@ class PitchFilter(NoteFilterBase):
                                                  "note_pitch_search_string")
 
 
-class StartTime(NoteFilterBase):
+class RelativeStartTime(NoteFilterBase):
     ID = "note_start_time_relative_frames"
     NAME = "Relative Start Time"
     DESCRIPTION = "Filter notes by start time (relative to the start of the midi file)"
     NUMBER = 3
 
-    def filtered_notes(self, notes: List[Tuple[int, Note]], context) -> List[Tuple[int, Note]]:
+    def filtered_notes(self, notes: List[Tuple[int, 'AnalyzedNote']], context) -> List[Tuple[int, 'AnalyzedNote']]:
         start_time_frames = \
             PropertyUtils.time_in_frames(
                 getattr(self.note_filter, NoteFilterBase.time_value_property(
                     self.note_filter.time_unit, "non_negative_int", "non_negative_number")),
                 self.note_filter.time_unit,
                 context)
-        return self.filter_by_callable(notes,
-                                       lambda note: self.compare_values(
-                                           PropertyUtils.ms_to_frames(note.startTime, context), start_time_frames))
+        return self.filter_by_note_callable(notes,
+                                            lambda note: self.compare_values(
+                                                PropertyUtils.ms_to_frames(note.startTime, context), start_time_frames))
+
+    @staticmethod
+    def draw_ui(parent_layout, note_filter_property):
+        NoteFilterBase.draw_time_comparision(parent_layout, note_filter_property, "non_negative_int",
+                                             "non_negative_number", "time_unit")
+
+
+class StartTime(NoteFilterBase):
+    ID = "note_start_time_frames"
+    NAME = "Start Time"
+    DESCRIPTION = "Filter notes by start time"
+    NUMBER = 5
+
+    def filtered_notes(self, notes: List[Tuple[int, 'AnalyzedNote']], context) -> List[Tuple[int, 'AnalyzedNote']]:
+        start_time_frames = \
+            PropertyUtils.time_in_frames(
+                getattr(self.note_filter, NoteFilterBase.time_value_property(
+                    self.note_filter.time_unit, "non_negative_int", "non_negative_number")),
+                self.note_filter.time_unit,
+                context)
+        return self.filter_by_callable(notes, lambda note: self.compare_values(
+            note.note_start_frame, start_time_frames))
 
     @staticmethod
     def draw_ui(parent_layout, note_filter_property):
@@ -130,13 +161,13 @@ class NoteLength(NoteFilterBase):
     DESCRIPTION = "Filter notes by length"
     NUMBER = 1
 
-    def filtered_notes(self, notes: List[Tuple[int, Note]], context):
+    def filtered_notes(self, notes: List[Tuple[int, 'AnalyzedNote']], context):
         note_length_frames = PropertyUtils.time_in_frames(
             getattr(self.note_filter, NoteFilterBase.time_value_property(
                 self.note_filter.time_unit, "non_negative_int", "non_negative_number")),
             self.note_filter.time_unit, context)
         return self.filter_by_callable(notes, lambda note: self.compare_values(
-            PropertyUtils.ms_to_frames(note.length(), context), note_length_frames))
+            note.note_length_frames, note_length_frames))
 
     @staticmethod
     def draw_ui(parent_layout, note_filter_property):
@@ -150,9 +181,10 @@ class NoteVelocity(NoteFilterBase):
     DESCRIPTION = "Filter notes by velocity"
     NUMBER = 4
 
-    def filtered_notes(self, notes: List[Tuple[int, Note]], context):
-        return self.filter_by_callable(notes,
-                                       lambda note: self.compare_values(note.velocity, self.note_filter.int_0_to_127))
+    def filtered_notes(self, notes: List[Tuple[int, 'AnalyzedNote']], context):
+        return self.filter_by_note_callable(notes,
+                                            lambda note: self.compare_values(note.velocity,
+                                                                             self.note_filter.int_0_to_127))
 
     @staticmethod
     def draw_ui(parent_layout, note_filter_property):
@@ -167,7 +199,7 @@ class AlternationFilter(NoteFilterBase):
     NAME_DISPLAY_WEIGHT = 0.2
     NUMBER = 0
 
-    def filtered_notes(self, notes: List[Tuple[int, Note]], context) -> List[Tuple[int, Note]]:
+    def filtered_notes(self, notes: List[Tuple[int, 'AnalyzedNote']], context) -> List[Tuple[int, 'AnalyzedNote']]:
         alternation_factor = self.note_filter.positive_int
         first_note_index = self.note_filter.positive_int_2 - 1
         filtered_note_pairs = []
@@ -185,7 +217,7 @@ class AlternationFilter(NoteFilterBase):
         row2_2.prop(note_filter_property, "positive_int_2", text='')
 
 
-FILTER_REGISTRY = [AlternationFilter, NoteLength, PitchFilter, StartTime, NoteVelocity]
+FILTER_REGISTRY = [AlternationFilter, NoteLength, PitchFilter, RelativeStartTime, StartTime, NoteVelocity]
 # map id to filter class
 ID_TO_FILTER = {note_filter.ID: note_filter for note_filter in FILTER_REGISTRY}
 # notes filters for enum property
@@ -193,8 +225,9 @@ FILTER_ENUM_PROPERTY_ITEMS = [(note_filter.ID, note_filter.NAME, note_filter.DES
                               note_filter in FILTER_REGISTRY]
 
 
-def __notes_passing_filter(notes: List[Note], filter_group_property, default_pitch: int, context) -> \
-        List[Tuple[int, Note]]:
+def __notes_passing_filter(notes: List['AnalyzedNote'], filter_group_property, default_pitch: int,
+                           default_pitch_filter: bool, context) -> \
+        List[Tuple[int, 'AnalyzedNote']]:
     """
     :param notes: list of notes
     :param filter_group_property: filter group property
@@ -204,9 +237,9 @@ def __notes_passing_filter(notes: List[Note], filter_group_property, default_pit
     note_filters = [ID_TO_FILTER[note_filter_property.filter_type](note_filter_property) for
                     note_filter_property in filter_group_property.note_filters]
     # apply default pitch as pitch filter if no pitch filters are part of the filter groups
-    if not any(isinstance(note_filter, PitchFilter) for note_filter in note_filters):
+    if default_pitch_filter and not any(isinstance(note_filter, PitchFilter) for note_filter in note_filters):
         notes_paired_to_index = [note_index_pair for note_index_pair in notes_paired_to_index if
-                                 note_index_pair[1].pitch == default_pitch]
+                                 note_index_pair[1].note.pitch == default_pitch]
     for note_filter in note_filters:
         if isinstance(note_filter, PitchFilter) and PitchUtils.note_id_is_selected_note(
                 note_filter.note_filter.note_pitch):
@@ -215,24 +248,26 @@ def __notes_passing_filter(notes: List[Note], filter_group_property, default_pit
     return notes_paired_to_index
 
 
-def filter_notes(notes: List[Note], filter_groups_list, default_pitch: int, include_custom_filters, context) -> List[
-    Note]:
+def filter_notes(notes: List['AnalyzedNote'], filter_groups_list, default_pitch: int, include_custom_filters: bool,
+                 default_pitch_filter: bool, context) -> List['AnalyzedNote']:
     """
     :param notes: list of notes
     :param filter_groups_list: list of filter groups
     :param default_pitch: pitch to filter by if no other filters are defined
     :param include_custom_filters: if false will only filter by pitch
     :param context: the context
+    :param default_pitch_filter: filter by default pitch if no pitch filters
     :return: filtered list of notes
     """
     if include_custom_filters and len(filter_groups_list) > 0:
-        grouped_filtered_note_pairs = [__notes_passing_filter(notes, filter_group, default_pitch, context) for
-                                       filter_group in filter_groups_list]
+        grouped_filtered_note_pairs = [
+            __notes_passing_filter(notes, filter_group, default_pitch, default_pitch_filter, context) for
+            filter_group in filter_groups_list]
         all_passing_note_pairs = [note_pair for filtered_note_pairs in grouped_filtered_note_pairs for note_pair in
                                   filtered_note_pairs]
         all_passing_note_pairs.sort(key=lambda note_index_pair: note_index_pair[0])
         return list(OrderedDict(all_passing_note_pairs).values())
     else:
-        # no filters, filter by pitch
-        return [note for note in notes if note.pitch == default_pitch]
+        return [analyzed_note for analyzed_note in notes if
+                (analyzed_note.note.pitch == default_pitch or not default_pitch_filter)]
     pass

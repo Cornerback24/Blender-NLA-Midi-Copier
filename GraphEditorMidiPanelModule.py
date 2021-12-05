@@ -21,7 +21,7 @@ else:
 import bpy
 from .midi_data import MidiDataType
 from .MidiPanelModule import MidiFileSelectorBase
-from .GraphEditorKeyframeGeneratorModule import GraphEditorMidiKeyframeGenerator
+from .GraphEditorKeyframeGeneratorModule import GraphEditorMidiKeyframeGenerator, LoadMinMaxFromMidiTrack
 
 
 class GraphEditorMidiFileSelector(MidiFileSelectorBase, bpy.types.Operator):
@@ -39,36 +39,55 @@ class GraphEditorMidiPanel(bpy.types.Panel):
     def draw(self, context):
         midi_data_property = context.scene.graph_editor_midi_data_property
         midi_file = midi_data_property.midi_file
-
-        col = self.layout.column(align=True)
-        PanelUtils.draw_midi_file_selections(col, midi_data_property, GraphEditorMidiFileSelector.bl_idname,
-                                             note_property_text="Notes in Track:")
-
-        left, right, data_path_row = PanelUtils.split_row(col, .2)
-        right.enabled = False
-        left.label(text="Selected F-Curve:")
-        if context.active_editable_fcurve is not None:
-            right.prop(context.active_editable_fcurve, "data_path", text="")
-        else:
-            right.label(text="No F-Curve selected")
-
         graph_editor_note_action_property = midi_data_property.note_action_property
+        col = self.layout.column(align=True)
 
         if len(graph_editor_note_action_property.keyframe_generators) == 0:
             # This should only happen in the case that the add-on was updated from a previous version while
-            # the blend file was open
+            # the blend file was open (since the one GraphEditorKeyframeGenerationProperty is added in on_load)
             col.label(text="Reload the blend file to see options here.")
             return
 
-        col.separator()
-        col = self.layout.column(align=True)
         # only one keyframe generator for now
         keyframe_generator = graph_editor_note_action_property.keyframe_generators[0]
-        PanelUtils.draw_note_with_search(col, keyframe_generator, "pitch_min", "pitch_min_search_string")
-        PanelUtils.draw_note_with_search(col, keyframe_generator, "pitch_max", "pitch_max_search_string")
-        box = PanelUtils.indented_row(col).box()
-        PanelUtils.draw_scale_filter(box, keyframe_generator, "scale_filter_type", "scale_filter_scale")
-        box.prop(keyframe_generator, "only_notes_in_selected_track")
+
+        # only one keyframe generator for now
+        draw_notes_in_track_label = keyframe_generator.note_property == "Pitch"
+        PanelUtils.draw_midi_file_selections(
+            col, midi_data_property, GraphEditorMidiFileSelector.bl_idname, context,
+            note_property_text="Notes in Track:" if draw_notes_in_track_label else "Note:")
+
+        left, right, data_path_row = PanelUtils.split_row(col, .2)
+        right.enabled = False
+        fcurves = context.selected_editable_fcurves
+        if len(fcurves) == 1:
+            # label instead of text argument so that label is not greyed out
+            left.label(text="Selected F-Curve:")
+            right.prop(fcurves[0], "data_path", text="")
+        elif len(fcurves) > 1:
+            left.label(text="Selected F-Curves:")
+            selected_fcuves_column = right.column(align=True)
+            for fcurve in fcurves[0:4]:  # only draw first four
+                selected_fcuves_column.prop(fcurve, "data_path", text="")
+            if len(fcurves) > 4:
+                selected_fcuves_column.label(text="...")
+        else:
+            left.label(text="Selected F-Curve:")
+            right.label(text="No F-Curve selected")
+
+        col.separator()
+        col = self.layout.column(align=True)
+        left, right, row = PanelUtils.split_row(col, .2)
+        left.label(text="Note Property:")
+        right.prop(keyframe_generator, "note_property", text="")
+        operator_row = right.row()
+        operator_row.enabled = midi_file is not None and len(midi_file) > 0
+        operator_row.operator(LoadMinMaxFromMidiTrack.bl_idname, text="", icon='IMPORT')
+        if keyframe_generator.note_property == "Pitch":
+            self.draw_pitch(col, keyframe_generator)
+        else:
+            self.draw_min_and_max(col, keyframe_generator)
+
         min_max_row = col.row()
         min_max_row.prop(keyframe_generator,
                          GraphEditorMidiPropertiesModule.UNIT_TYPES[keyframe_generator.unit_type][3])
@@ -79,23 +98,42 @@ class GraphEditorMidiPanel(bpy.types.Panel):
         col.separator()
         col = self.layout.column(align=True)
         col.prop(keyframe_generator, "generate_at_note_end")
+        col.prop(graph_editor_note_action_property, "add_filters")
+        if graph_editor_note_action_property.add_filters:
+            PanelUtils.draw_filter_box(col, graph_editor_note_action_property, False, None,
+                                       MidiDataType.GRAPH_EDITOR)
         col.prop(keyframe_generator, "on_keyframe_overlap")
+        col.prop(keyframe_generator, "on_note_overlap")
         col.prop(midi_data_property, "midi_frame_start")
         col.prop(graph_editor_note_action_property, "midi_frame_offset")
         col.separator()
         col = self.layout.column(align=True)
 
-        generate_keyframes_button_row = col.row()
-        generate_keyframes_button_row.enabled = midi_file is not None and len(midi_file) > 0 and \
-                                                context.active_editable_fcurve is not None
-        disabled_tooltip = None
-        if midi_file is not None and context.active_editable_fcurve is None:
-            disabled_tooltip = GraphEditorMidiKeyframeGenerator.bl_description + \
-                               ".\n  ! Select an F-Curve in the Graph Editor"
-        generate_keyframes_operator = \
-            generate_keyframes_button_row.operator(GraphEditorMidiKeyframeGenerator.bl_idname, icon='FILE_SOUND')
-        if disabled_tooltip is not None:
-            generate_keyframes_operator.tooltip = disabled_tooltip
+        tooltip_creator = PanelUtils.OperatorTooltipCreator(GraphEditorMidiKeyframeGenerator)
+
+        if midi_file is None or len(midi_file) == 0:
+            tooltip_creator.add_disable_description("No midi file selected")
+        if midi_file is not None and len(midi_file) > 0 and len(fcurves) == 0:
+            tooltip_creator.add_disable_description("Select an F-Curve in the Graph Editor")
+
+        tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
+
+    def draw_min_and_max(self, col, keyframe_generator):
+        min_max_map_row = col.row()
+        note_property = keyframe_generator.note_property
+        min_max_map_row.prop(keyframe_generator,
+                             GraphEditorKeyframeGeneratorModule.note_property_definitions[note_property][1])
+        min_max_map_row.prop(keyframe_generator,
+                             GraphEditorKeyframeGeneratorModule.note_property_definitions[note_property][2])
+
+    def draw_pitch(self, col, keyframe_generator):
+        PanelUtils.draw_note_with_search(col, keyframe_generator, "pitch_min", "pitch_min_search_string",
+                                         text="Min note:")
+        PanelUtils.draw_note_with_search(col, keyframe_generator, "pitch_max", "pitch_max_search_string",
+                                         text="Max note:")
+        box = PanelUtils.indented_row(col).box()
+        PanelUtils.draw_scale_filter(box, keyframe_generator, "scale_filter_type", "scale_filter_scale")
+        box.prop(keyframe_generator, "only_notes_in_selected_track")
 
 
 class GraphEditorMidiSettingsPanel(bpy.types.Panel):
