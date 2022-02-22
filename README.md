@@ -6,7 +6,7 @@ for a selected action could be generated to line up with all the C4 notes played
 the right-side panel in the Nonlinear Action View and select the Midi tab.
 
 This add-on is written for Blender 3.0.    
-Add-on Version 0.12.0. [Changelog here](CHANGELOG.md).
+Add-on Version 0.12.1. [Changelog here](CHANGELOG.md).
 
 
 <details>
@@ -470,6 +470,6 @@ See the midi panel section for more information about the other controls.
     * Option 1: [Download as a zip file](https://github.com/Cornerback24/Blender-NLA-Midi-Copier/archive/master.zip). In
       Blender, go to Edit > Preferences > Add-ons, and click Install. Select the zip file and click Install Add-on from
       File.
-    * Option 2: Clone into the 2.83/scripts/addons directory in the Blender installation.
+    * Option 2: Clone into the \<version\>/scripts/addons directory in the Blender installation.
 * To enable the add-on, in Blender, go to Edit > Preferences > Add-ons, and select Animation in the drop-down. Select
   Community at the top if it isn't already selected. Check the box next to the add-on to enable it.

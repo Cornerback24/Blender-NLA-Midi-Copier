@@ -172,7 +172,8 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
     data_type = MidiDataType.NLA
     id_type: EnumProperty(
         items=sorted(
-            [(x, x, x, midi_data.ID_PROPERTIES_DICTIONARY[x][2]) for x in midi_data.ID_PROPERTIES_DICTIONARY.keys()],
+            [(x, x, x, midi_data.ID_PROPERTIES_DICTIONARY[x][2], midi_data.ID_PROPERTIES_DICTIONARY[x][3]) for x in
+             midi_data.ID_PROPERTIES_DICTIONARY.keys()],
             key=lambda x: x[0]),
         name="Type", description="Type of object to apply the action to", default="Object", update=on_id_type_updated)
 
@@ -245,6 +246,8 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
     object: PointerProperty(type=bpy.types.Object, name="Object", description="The object to animate")
     paintcurve: PointerProperty(type=bpy.types.PaintCurve, name="Paintcurve", description="The paintcurve to animate")
     palette: PointerProperty(type=bpy.types.Palette, name="Palette", description="The palette to animate")
+    particle_settings: PointerProperty(type=bpy.types.ParticleSettings, name="Particle Settings",
+                                       description="The particle settings to animate")
     scene: PointerProperty(type=bpy.types.Scene, name="Scene", description="The scene to animate")
     sound: PointerProperty(type=bpy.types.Sound, name="Sound", description="The sound to animate")
     speaker: PointerProperty(type=bpy.types.Speaker, name="Speaker", description="The speaker to animate")
@@ -329,6 +332,7 @@ def update_middle_c(midi_property_group, context):
 
 def update_notes_list(midi_property_group, context):
     if get_notes_for_copy_panel(midi_property_group, context):
+        # update the note for copying to an instrument in the quick copy tools panel to match
         midi_property_group.copy_to_instrument_selected_note_id = str(PitchUtils.note_pitch_from_id(
             midi_property_group.notes_list))
     PropertyUtils.note_updated_function("notes_list", "note_search_string", get_notes_list)(midi_property_group,

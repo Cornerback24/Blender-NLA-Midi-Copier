@@ -1,3 +1,7 @@
+- 0.12.1 2022-2-21
+  * Add Particle to action types
+  * Add icons to Type selection
+  * Fix two actions being undone when undo is used after selecting a midi file 
 - 0.12.0 2021-12-4
   * Add note length and note velocity based keyframe generation in the graph editor
   * Add skip note overlap option to the graph editor

@@ -52,6 +52,7 @@ from .midi_data import MidiDataType
 class MidiFileSelectorBase:
     bl_label = "Select Midi File"
     bl_description = "Select a midi file"
+    bl_options = {"REGISTER", "UNDO"}
     # noinspection PyArgumentList,PyUnresolvedReferences
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.mid;*.midi", options={'HIDDEN'})
