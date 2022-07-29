@@ -5,8 +5,8 @@ Animation view that allows for copying an action to each instance of a note in a
 for a selected action could be generated to line up with all the C4 notes played by a piano. To access the panel, expand
 the right-side panel in the Nonlinear Action View and select the Midi tab.
 
-This add-on is written for Blender 3.0.    
-Add-on Version 0.12.1. [Changelog here](CHANGELOG.md).
+This add-on is written for Blender 3.2 and is compatible back to Blender 2.80.
+Add-on Version 0.13.0. [Changelog here](CHANGELOG.md).
 
 
 <details>
@@ -240,10 +240,18 @@ without copying along a path).
 
 ### Copy by object name
 
-The Copy by object name tool copies actions to objects based on the name of the object. It matches notes to selected
-objects with names that either start or end with the note. For example, if one of the selected objects is A3_Cube, the
-action will be copied to that object for all A3 notes.
+The Copy by object name tool copies actions to objects based on the name of the object. It matches notes based on the 
+Copy by option.
 
+* Copy by
+  * Copy by note name
+    * Copy to objects with names that either start or end with the note. For example, if one of the selected objects is 
+      A3_Cube or Cube_A3, the action will be copied to that object for all A3 notes.
+  * Copy by track and note name
+    * Copy to objects with names that either start or end with the note and also contain the name of the track selected 
+      in the NLA midi panel.
+* Copy to selected objects only
+  * If selected, only copy actions to selected objects, otherwise copy to any matching objects in the scene. 
 * Copy to Instrument
     * If selected, copies the action selected instrument instead of generating action strips for the note.
 * Instrument

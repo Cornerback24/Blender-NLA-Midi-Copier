@@ -31,8 +31,8 @@ class CopyMidiFileData(bpy.types.Operator):
     bl_description = "Copy midi file data"
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
-    copy_from_data_type: bpy.props.IntProperty(name="From")
-    copy_to_data_type: bpy.props.IntProperty(name="To")
+    copy_from_data_type: bpy.props.IntProperty(name="From", options={'HIDDEN'})
+    copy_to_data_type: bpy.props.IntProperty(name="To", options={'HIDDEN'})
     tooltip: bpy.props.StringProperty(options={'HIDDEN'})
 
     @classmethod
@@ -48,8 +48,8 @@ class CopyMidiFileData(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        midi_data_property_from = midi_data.get_midi_data_property(self.properties.copy_from_data_type, context)
-        load_midi_file(self, context, self.properties.copy_to_data_type, midi_data_property_from.midi_file)
+        midi_data_property_from = midi_data.get_midi_data_property(self.copy_from_data_type, context)
+        load_midi_file(self, context, self.copy_to_data_type, midi_data_property_from.midi_file)
 
         midi_data_property_to = midi_data.get_midi_data_property(self.properties.copy_to_data_type, context)
         midi_data_property_to.midi_frame_start = midi_data_property_from.midi_frame_start
@@ -62,6 +62,15 @@ class CopyMidiFileData(bpy.types.Operator):
         tempo_settings_to.use_file_ticks_per_beat = tempo_settings_from.use_file_ticks_per_beat
         tempo_settings_to.ticks_per_beat = tempo_settings_from.ticks_per_beat
         tempo_settings_to.ticks_per_beat = tempo_settings_from.ticks_per_beat
+
+        midi_track_properties_from = midi_data_property_from.midi_track_properties
+        midi_track_properties_to = midi_data_property_to.midi_track_properties
+        midi_track_properties_to.clear()
+        for midi_track_property_from in midi_track_properties_from:
+            midi_track_property_to = midi_track_properties_to.add()
+            midi_track_property_to.midi_data_type = self.copy_to_data_type
+            midi_track_property_to.midi_track_name = midi_track_property_from.midi_track_name
+            midi_track_property_to.displayed_track_name = midi_track_property_from.displayed_track_name
 
 
 class DynamicTooltipOperator:

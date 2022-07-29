@@ -483,29 +483,29 @@ class NLABulkMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator
         loaded_midi_data = midi_data.get_midi_data(MidiDataType.NLA)
         midi_data_property = loaded_midi_data.get_midi_data_property(context)
         note_action_property = midi_data_property.note_action_property
+        bulk_copy_property = midi_data_property.bulk_copy_property
         action_id_root = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][1]
-        animated_objects_dict = ObjectUtils.data_dict_from_objects(context.selected_objects, action_id_root)
+        animated_objects_dict = ObjectUtils.data_dict_from_objects(
+            context.selected_objects if bulk_copy_property.selected_objects_only else context.scene.objects,
+            action_id_root)
         data_name_pairs = [(x[0], x[1].name) for x in animated_objects_dict.items()]
         note_object_pairs = []
-        match_by_track_name = midi_data_property.bulk_copy_property.copy_by_name_type == "copy_by_track_and_note"
+        match_by_track_name = bulk_copy_property.copy_by_name_type == "copy_by_track_and_note"
+        track_name = midi_data_property.track_list if match_by_track_name else None
 
-        if match_by_track_name:
-            for track_name, notes_enum_list in loaded_midi_data.notes_list_dict.items():
-                for note_enum in notes_enum_list:
-                    for data_name_pair in data_name_pairs:
-                        pass  # TODO match by note and track
-        else:
-            notes_enum_list = loaded_midi_data.notes_list
-            for note_enum in notes_enum_list:
-                for data_name_pair in data_name_pairs:
-                    if NLABulkMidiCopier.note_matches_object_name(note_enum, data_name_pair[1]):
-                        note_object_pairs.append((note_enum[0], data_name_pair[0]))
+        notes_enum_list = loaded_midi_data.notes_list
+        for note_enum in notes_enum_list:
+            for data_name_pair in data_name_pairs:
+                if NLABulkMidiCopier.note_matches_object_name(note_enum, data_name_pair[1], track_name):
+                    note_object_pairs.append((note_enum[0], data_name_pair[0]))
         NLABulkMidiCopier.animate_note_object_paris(note_object_pairs, note_action_property,
-                                                    midi_data_property.bulk_copy_property.copy_to_instrument,
+                                                    bulk_copy_property.copy_to_instrument,
                                                     context)
 
     @staticmethod
-    def note_matches_object_name(note_enum, object_name: str):
+    def note_matches_object_name(note_enum, object_name: str, track_name: str = None):
+        if track_name is not None and track_name not in object_name:
+            return False
         object_name_lower: str = object_name.strip().lower()
         note_name: str = note_enum[1].lower()
         return object_name_lower.startswith(note_name) or object_name_lower.endswith(note_name)

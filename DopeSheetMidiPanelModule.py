@@ -23,12 +23,6 @@ from .DopeSheetMidiCopierModule import DopeSheetMidiCopier
 from . import midi_data
 from bpy.props import EnumProperty
 from .midi_data import MidiDataType
-from .MidiPanelModule import MidiFileSelectorBase
-
-
-class DopeSheetMidiFileSelector(MidiFileSelectorBase, bpy.types.Operator):
-    data_type = MidiDataType.DOPESHEET
-    bl_idname = "ops.dope_sheet_midi_file_selector"
 
 
 class DopeSheetMidiPanel(bpy.types.Panel):
@@ -49,7 +43,7 @@ class DopeSheetMidiPanel(bpy.types.Panel):
         col = self.layout.column(align=True)
         midi_data_property = context.scene.dope_sheet_midi_data_property
 
-        PanelUtils.draw_midi_file_selections(col, midi_data_property, DopeSheetMidiFileSelector.bl_idname, context)
+        PanelUtils.draw_midi_file_selections(col, midi_data_property, MidiDataType.DOPESHEET, context)
 
         dope_sheet_note_action_property = midi_data_property.note_action_property
 
@@ -94,13 +88,11 @@ class DopeSheetMidiSettingsPanel(bpy.types.Panel):
         return context.area.type == "DOPESHEET_EDITOR" and context.area.spaces[0].mode == "GPENCIL"
 
     def draw(self, context):
-        col = self.layout.column(align=True)
-        col.prop(context.scene.dope_sheet_midi_data_property, "middle_c_note")
-        col.separator()
-        PanelUtils.draw_tempo_settings(col, context.scene.dope_sheet_midi_data_property.tempo_settings)
+        PanelUtils.draw_common_midi_settings(self.layout, context, MidiDataType.DOPESHEET)
 
         dopesheet = context.area.spaces[0].dopesheet
         if not dopesheet.show_only_selected:
+            col = self.layout.column(align=True)
             col.separator()
             col.label(text="Select \"Only Selected\"")
             col.label(text="in the Dope Sheet bar to show")

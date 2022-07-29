@@ -11,14 +11,18 @@ if "bpy" in locals():
     importlib.reload(PropertyUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(CompatibilityModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
 else:
     from . import midi_data
     from . import NoteFilterImplementations
     from . import PitchUtils
     from . import PropertyUtils
     from . import CompatibilityModule
+    from .i18n import i18n
 
 import bpy
+from bpy.app import version as blender_version
 from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
     FloatProperty
 from bpy.types import PropertyGroup
@@ -88,7 +92,7 @@ def on_action_updated(note_action_property, context):
     action = note_action_property.action
     # update the action length property to match the actual length of the action
     if action is not None:
-        note_action_property.action_length = action.frame_range[1] - action.frame_range[0]
+        note_action_property.action_length = int(action.frame_range[1]) - int(action.frame_range[0])
 
 
 COMPARISON_ENUM_PROPERTY_ITEMS = [("less_than", "<", "Less than", 0),
@@ -168,6 +172,11 @@ def get_blend_modes(note_action_property, context):
         else midi_data.BLEND_MODES_DEPRECATED
 
 
+def dynamic_enum_default(default: int):
+    # Blender versions before 2.90 don't support defaults on dynamic enums
+    return default if blender_version >= (2, 90, 0) else None
+
+
 class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
     data_type = MidiDataType.NLA
     id_type: EnumProperty(
@@ -175,7 +184,8 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
             [(x, x, x, midi_data.ID_PROPERTIES_DICTIONARY[x][2], midi_data.ID_PROPERTIES_DICTIONARY[x][3]) for x in
              midi_data.ID_PROPERTIES_DICTIONARY.keys()],
             key=lambda x: x[0]),
-        name="Type", description="Type of object to apply the action to", default="Object", update=on_id_type_updated)
+        name=i18n.get_key(i18n.TYPE), description=i18n.get_key(i18n.TYPE_DESCRIPTION), default="Object",
+        update=on_id_type_updated)
 
     action: PointerProperty(type=bpy.types.Action, name="Action", description="The action to create action strips from",
                             poll=action_poll, update=on_action_updated)
@@ -192,11 +202,12 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
                      default=False)
 
     on_overlap: EnumProperty(items=get_overlap_options, name="Overlap",
-                             description="How to handle overlapping actions", default=1)  # default to Blend
+                             description="How to handle overlapping actions",
+                             default=dynamic_enum_default(1))  # default to Blend
 
     blend_mode: \
         EnumProperty(items=get_blend_modes, name="Blending", description="Blending for overlapping strips",
-                     default=1)  # default to Replace
+                     default=dynamic_enum_default(1))  # default to Replace
 
     sync_length_with_notes: \
         BoolProperty(name="Sync Length with Notes",
@@ -207,8 +218,8 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
     note_filter_groups: CollectionProperty(type=NoteFilterGroup, name="Note Filter Groups")
 
     copy_to_selected_objects: \
-        BoolProperty(name="Copy Action to Selected Objects",
-                     description="Copy the action to all selected objects.",
+        BoolProperty(name=i18n.get_key(i18n.COPY_ACTION_TO_SELECTED_OBJECTS),
+                     description=i18n.get_key(i18n.COPY_TO_SELECTED_OBJECTS_DESCRIPTION),
                      default=False)
 
     action_length: \
@@ -253,7 +264,8 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
     speaker: PointerProperty(type=bpy.types.Speaker, name="Speaker", description="The speaker to animate")
     text: PointerProperty(type=bpy.types.Text, name="Text", description="The text to animate")
     texture: PointerProperty(type=bpy.types.Texture, name="Texture", description="The texture to animate")
-    volume: PointerProperty(type=bpy.types.Volume, name="Volume", description="The volume to animate")
+    if blender_version >= (2, 83, 0):
+        volume: PointerProperty(type=bpy.types.Volume, name="Volume", description="The volume to animate")
     world: PointerProperty(type=bpy.types.World, name="World", description="The world to animate")
 
 
@@ -326,8 +338,12 @@ def on_track_updated(midi_property_group, context):
         midi_property_group.notes_list = loaded_midi_data.get_notes_list(context)[0][0]
 
 
-def update_middle_c(midi_property_group, context):
+def on_middle_c_updated(midi_property_group, context):
     midi_data.get_midi_data(midi_property_group.data_type).middle_c_id = midi_property_group.middle_c_note
+
+
+def on_track_name_updated(track_property_group, context):
+    midi_data.get_midi_data(track_property_group.midi_data_type).update_track_names(context)
 
 
 def update_notes_list(midi_property_group, context):
@@ -354,21 +370,25 @@ copy_tools = [("copy_to_instrument", "Copy to instrument", "Copy to instrument",
                                                      "Each object is animated to a different note, ascending by pitch "
                                                      "along the path.", 1),
               ("copy_by_object_name", "Copy by object name",
-               "Copy notes to selected objects based on the object's name. "
-               "Notes are copied to objects with names beginning or ending"
-               " with the note (for example A3 notes would be copied"
-               " to an object named CubeA3 or A3Cube)", 2)]
-copy_by_name_type = [("copy_by_note", "Note name", "Copy by note name", 0),
-                     # TODO improve descriptions, move object name information from copy_tools to this description
-                     ("copy_by_track_and_note", "Track name and note name", "Copy by track and note name", 1)]
+               "Copy notes to selected objects based on the object's name. ", 2)]
+copy_by_name_type = [("copy_by_note", "Copy by note name",
+                      "Copy to objects with names beginning or ending"
+                      " with the note (for example A3 notes would be copied"
+                      " to an object named CubeA3 or A3Cube)", 0),
+                     ("copy_by_track_and_note", "Copy by track and note name",
+                      "Copy to objects with names beginning or ending"
+                      " with the note and containing selected track name", 1)]
 
 
 class BulkCopyPropertyGroup(PropertyGroup):
     quick_copy_tool: EnumProperty(name="Quick copy tool", description="Quick copy tool", items=copy_tools,
-                                  default=2)
+                                  default="copy_by_object_name")
     copy_to_instrument: BoolProperty(name="Copy to Instrument", default=False,
                                      description="Copies actions to an instrument if selected, otherwise copies "
                                                  "actions directly to NLA strips")
+    selected_objects_only: BoolProperty(name="Copy to selected objects only", default=True,
+                                        description="If selected, copies to selected objects only. "
+                                                    "Otherwise copies to any matching objects in the scene.")
     bulk_copy_curve: PointerProperty(type=bpy.types.Object, name="Path", poll=object_is_curve,
                                      description="The path of selected objects to animate")
     bulk_copy_starting_note: \
@@ -428,6 +448,14 @@ class TempoPropertyGroup(PropertyGroup, TempoPropertyBase):
     data_type = MidiDataType.NLA
 
 
+class MidiTrackProperty(PropertyGroup):
+    midi_data_type: IntProperty(name="MidiDataType")
+    midi_track_name: StringProperty(name="Midi Track", description="Name of the track from the midi file")
+    displayed_track_name: StringProperty(name="Displayed Name",
+                                         description="Displayed name of the midi track in selection dropdowns",
+                                         update=on_track_name_updated)
+
+
 class MidiPropertyBase:
     # defining get= (and not set=) disables editing in the UI
     midi_file: StringProperty(name="Midi File", description="Select Midi File", get=get_midi_file_name)
@@ -447,8 +475,10 @@ class MidiPropertyBase:
                     default=1)
     middle_c_note: EnumProperty(items=middle_c_options,
                                 name="Middle C", description="The note corresponding to middle C (midi note 60)",
-                                default="C4", update=update_middle_c)
+                                default="C4", update=on_middle_c_updated)
     tempo_settings: PointerProperty(type=TempoPropertyGroup)
+    midi_track_properties: CollectionProperty(type=MidiTrackProperty, name="Displayed Track Names")
+    midi_track_property_index: IntProperty()
 
 
 # Property definitions from a parent class work with multiple inheritance, with one of the classes being PropertyGroup.

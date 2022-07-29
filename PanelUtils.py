@@ -9,19 +9,58 @@ if "bpy" in locals():
     importlib.reload(OperatorUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(midi_data)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
 else:
-    # noinspection PyUnresolvedReferences
     from . import NoteFilterImplementations
-    # noinspection PyUnresolvedReferences
     from . import NoteFilterModule
-    # noinspection PyUnresolvedReferences
     from . import OperatorUtils
-    # noinspection PyUnresolvedReferences
     from . import midi_data
+    from .i18n import i18n
 
 import bpy
 from .NoteFilterModule import ReorderFilter, RemoveNoteFilter, RemoveFilterGroup, AddNoteFilter, AddNoteFilterGroup
 from .midi_data import MidiDataType
+
+
+class MidiFileSelector(bpy.types.Operator):
+    bl_idname = "ops.nla_midi_file_selector"
+    bl_label = "Select Midi File"
+    bl_description = "Select a midi file"
+    bl_options = {"REGISTER", "UNDO"}
+    # noinspection PyArgumentList,PyUnresolvedReferences
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.mid;*.midi", options={'HIDDEN'})
+    midi_data_type: bpy.props.IntProperty(name="MidiDataType")
+
+    def execute(self, context):
+        OperatorUtils.load_midi_file(self, context, self.midi_data_type, self.filepath)
+        return {'FINISHED'}
+
+    # noinspection PyUnusedLocal
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
+def draw_common_midi_settings(parent_layout, context, midi_data_type: int):
+    midi_data_property = midi_data.get_midi_data_property(midi_data_type, context)
+    col = parent_layout.column(align=True)
+    col.prop(midi_data_property, "middle_c_note")
+    col.separator()
+    draw_tempo_settings(col, midi_data_property.tempo_settings)
+
+    col.separator()
+    col.label(text="Midi Tracks:")
+    track_names_row = parent_layout.row()
+    col = track_names_row.column(align=True)
+    col.template_list("MIDI_TRACK_PROPERTIES_UL_list", "", midi_data_property,
+                      "midi_track_properties",
+                      midi_data_property, "midi_track_property_index")
+    if len(midi_data_property.midi_track_properties) > 0 and \
+            (0 <= midi_data_property.midi_track_property_index < len(midi_data_property.midi_track_properties)):
+        selected = midi_data_property.midi_track_properties[midi_data_property.midi_track_property_index]
+        col.prop(selected, "displayed_track_name")
 
 
 def draw_expand_handle(parent: bpy.types.UILayout, text: str, object_with_expand_property, expand_property_field: str):
@@ -208,7 +247,7 @@ COPY_MIDI_FILE_DICTIONARY = {MidiDataType.NLA: ("NLA", "Load midi file data from
                              MidiDataType.GRAPH_EDITOR: ("GRAPH", "Load midi file data from the Graph Editor")}
 
 
-def draw_midi_file_selections(parent_layout, midi_data_property, file_selector_operator, context,
+def draw_midi_file_selections(parent_layout, midi_data_property, midi_data_type: int, context,
                               note_property_text="Note:"):
     def draw_copy_to_operator(copy_to_parent_layout, data_type_from, data_type_to):
         if data_type_from != data_type_to:
@@ -223,7 +262,10 @@ def draw_midi_file_selections(parent_layout, midi_data_property, file_selector_o
                 copy_to_operator.tooltip = tooltip
 
     load_file_row = parent_layout.row()
-    load_file_row.operator(file_selector_operator, text="Choose midi file", icon='FILE_FOLDER')
+    file_selector_operator = load_file_row.operator(MidiFileSelector.bl_idname,
+                                                    text=i18n.get_key(i18n.CHOOSE_MIDI_FILE),
+                                                    icon='FILE_FOLDER')
+    file_selector_operator.midi_data_type = midi_data_type
 
     # draw options to copy midi file data from other views
     if midi_data_property.midi_file is None or len(midi_data_property.midi_file) == 0:

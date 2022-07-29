@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 12, 1),
+        "version": (0, 13, 0),
         "blender": (2, 80, 0),
         "location": "View NLA Editor > Tool Shelf",
         "description": "Copy actions to action strips based on midi file input",
@@ -43,6 +43,8 @@ if "bpy" in locals():
     importlib.reload(CompatibilityModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PanelUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(es_strings)
 else:
     # noinspection PyUnresolvedReferences
     from . import NLAMidiCopierModule
@@ -74,6 +76,8 @@ else:
     from . import PanelUtils
     # noinspection PyUnresolvedReferences
     from bpy.app.handlers import persistent
+    # noinspection PyUnresolvedReferences
+    from .i18n import es_strings
 
 import bpy
 from bpy.props import PointerProperty
@@ -84,11 +88,14 @@ from .GraphEditorKeyframeGeneratorModule import GraphEditorMidiKeyframeGenerator
 from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToInstrument, RemoveActionFromInstrument, \
     TransposeInstrument
 from .OperatorUtils import CopyMidiFileData
-from .MidiPanelModule import MidiPanel, MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel, MidiFileSelector
-from .GraphEditorMidiPanelModule import GraphEditorMidiPanel, GraphEditorMidiFileSelector, GraphEditorMidiSettingsPanel
-from .DopeSheetMidiPanelModule import DopeSheetMidiPanel, DopeSheetMidiSettingsPanel, DopeSheetMidiFileSelector
-from .MidiPropertiesModule import MidiPropertyGroup, NoteActionProperty, InstrumentNoteProperty, InstrumentProperty, \
-    NoteFilterGroup, NoteFilterProperty, BulkCopyPropertyGroup, TempoPropertyGroup, MidiCopierVersion
+from .PanelUtils import MidiFileSelector
+from .MidiPanelModule import MidiPanel, MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel, \
+    MIDI_TRACK_PROPERTIES_UL_list
+from .GraphEditorMidiPanelModule import GraphEditorMidiPanel, GraphEditorMidiSettingsPanel
+from .DopeSheetMidiPanelModule import DopeSheetMidiPanel, DopeSheetMidiSettingsPanel
+from .MidiPropertiesModule import MidiTrackProperty, MidiPropertyGroup, NoteActionProperty, InstrumentNoteProperty, \
+    InstrumentProperty, NoteFilterGroup, NoteFilterProperty, BulkCopyPropertyGroup, TempoPropertyGroup, \
+    MidiCopierVersion
 from .DopeSheetMidiPropertiesModule import DopeSheetMidiPropertyGroup, DopeSheetNoteActionProperty, \
     DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup, DopeSheetTempoPropertyGroup
 from .GraphEditorMidiPropertiesModule import GraphEditorTempoPropertyGroup, GraphEditorNoteActionProperty, \
@@ -96,6 +103,7 @@ from .GraphEditorMidiPropertiesModule import GraphEditorTempoPropertyGroup, Grap
     GraphEditorKeyframeGenerationProperty
 from .NoteFilterModule import AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter
 from .midi_data import MidiDataType
+from .i18n.es_strings import i18n_es
 
 classes = [
     NoteFilterProperty, NoteFilterGroup, BulkCopyPropertyGroup,
@@ -103,22 +111,30 @@ classes = [
     NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier,
     AddActionToInstrument, RemoveActionFromInstrument, TransposeInstrument,
     AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter,
-    CopyMidiFileData, TempoPropertyGroup, MidiCopierVersion,
-    MidiPropertyGroup, MidiPanel, MidiFileSelector, MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel]
+    CopyMidiFileData, TempoPropertyGroup, MidiCopierVersion, MidiTrackProperty,
+    MidiPropertyGroup, MIDI_TRACK_PROPERTIES_UL_list, MidiPanel, MidiFileSelector,
+    MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel]
 dope_sheet_classes = [DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup,
                       DopeSheetNoteActionProperty, DopeSheetTempoPropertyGroup,
-                      DopeSheetMidiFileSelector, DopeSheetMidiCopier, DopeSheetMidiPropertyGroup, DopeSheetMidiPanel,
+                      DopeSheetMidiCopier, DopeSheetMidiPropertyGroup, DopeSheetMidiPanel,
                       DopeSheetMidiSettingsPanel]
 graph_editor_classes = [GraphEditorNoteFilterProperty, GraphEditorNoteFilterGroup,
                         GraphEditorKeyframeGenerationProperty,
                         GraphEditorNoteActionProperty, GraphEditorTempoPropertyGroup,
-                        GraphEditorMidiFileSelector, GraphEditorMidiKeyframeGenerator, GraphEditorMidiPropertyGroup,
+                        GraphEditorMidiKeyframeGenerator, GraphEditorMidiPropertyGroup,
                         LoadMinMaxFromMidiTrack,
                         GraphEditorMidiPanel, GraphEditorMidiSettingsPanel]
 classes = classes + dope_sheet_classes + graph_editor_classes
 
 
-def load_midi_file(midi_data_property, midi_data_type: MidiDataType, context):
+def create_i18n_dict(i18n_data):
+    return {("*", key) if isinstance(key, str) else key: value for key, value in i18n_data.items()}
+
+
+translations = {'es': create_i18n_dict(i18n_es)}
+
+
+def load_midi_file(midi_data_property, midi_data_type: int, context):
     if midi_data_property.midi_file:
         try:
             midi_data.get_midi_data(midi_data_type).update_midi_file(midi_data_property.midi_file, False, context)
@@ -160,9 +176,11 @@ def register():
     bpy.types.Scene.graph_editor_midi_data_property = PointerProperty(type=GraphEditorMidiPropertyGroup)
     bpy.types.Scene.midi_copier_version = PointerProperty(type=MidiCopierVersion)
     bpy.app.handlers.load_post.append(on_load)
+    bpy.app.translations.register(__name__, translations)
 
 
 def unregister():
+    bpy.app.translations.unregister(__name__)
     for clazz in classes:
         bpy.utils.unregister_class(clazz)
     del bpy.types.Scene.midi_data_property

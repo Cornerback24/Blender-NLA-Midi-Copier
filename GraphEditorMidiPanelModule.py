@@ -20,13 +20,7 @@ else:
 
 import bpy
 from .midi_data import MidiDataType
-from .MidiPanelModule import MidiFileSelectorBase
 from .GraphEditorKeyframeGeneratorModule import GraphEditorMidiKeyframeGenerator, LoadMinMaxFromMidiTrack
-
-
-class GraphEditorMidiFileSelector(MidiFileSelectorBase, bpy.types.Operator):
-    data_type = MidiDataType.GRAPH_EDITOR
-    bl_idname = "ops.graph_editor_midi_file_selector"
 
 
 class GraphEditorMidiPanel(bpy.types.Panel):
@@ -54,7 +48,7 @@ class GraphEditorMidiPanel(bpy.types.Panel):
         # only one keyframe generator for now
         draw_notes_in_track_label = keyframe_generator.note_property == "Pitch"
         PanelUtils.draw_midi_file_selections(
-            col, midi_data_property, GraphEditorMidiFileSelector.bl_idname, context,
+            col, midi_data_property, MidiDataType.GRAPH_EDITOR, context,
             note_property_text="Notes in Track:" if draw_notes_in_track_label else "Note:")
 
         left, right, data_path_row = PanelUtils.split_row(col, .2)
@@ -144,7 +138,4 @@ class GraphEditorMidiSettingsPanel(bpy.types.Panel):
     bl_idname = "ANIMATION_PT_graph_editor_midi_settings_panel"
 
     def draw(self, context):
-        col = self.layout.column(align=True)
-        col.prop(context.scene.graph_editor_midi_data_property, "middle_c_note")
-        col.separator()
-        PanelUtils.draw_tempo_settings(col, context.scene.graph_editor_midi_data_property.tempo_settings)
+        PanelUtils.draw_common_midi_settings(self.layout, context, MidiDataType.GRAPH_EDITOR)

@@ -103,7 +103,7 @@ class DopeSheetMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperat
             for keyframe in source_keyframes:
                 copied_frame = g_pencil_frames.copy(keyframe)
                 copied_frame.frame_number = (analyzed_note.action_length_frames * (
-                        keyframe.frame_number - first_keyframe_frame_number)) / analyzed_note.non_scaled_action_length \
+                        keyframe.frame_number - first_keyframe_frame_number)) // analyzed_note.non_scaled_action_length \
                                             + analyzed_note.action_start_frame
 
         if context.scene.dope_sheet_midi_data_property.note_action_property.delete_source_keyframes:

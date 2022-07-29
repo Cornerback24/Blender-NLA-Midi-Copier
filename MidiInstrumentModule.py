@@ -156,8 +156,10 @@ class TransposeInstrument(bpy.types.Operator):
                 lambda pitch, comparison_operator:
                 not (PitchUtils.pitch_filter_is_all_inclusive(pitch, comparison_operator)) and
                 PitchUtils.can_be_transposed(pitch, self.properties.transpose_steps))
-        # change the selected note to the pitch the previous selected note was transposed to
-        instrument.selected_note_id = str(int(instrument.selected_note_id) + self.properties.transpose_steps)
+        # Change the selected note to the pitch the previous selected note was transposed to. If the change would be to
+        # a pitch less than 0 or greater than 127, set to 0 or 127
+        instrument.selected_note_id = str(
+            min(127, max(0, int(instrument.selected_note_id) + self.properties.transpose_steps)))
 
     def transpose_filters(self, instrument, should_transpose):
         """

@@ -133,11 +133,12 @@ class MidiDataUtil:
 
 
 class LoadedMidiData:
-    def __init__(self, get_midi_data_property):
+    def __init__(self, get_midi_data_property, midi_data_type: int):
         """
         :param get_midi_data_property: function to get this property from the context
         """
         self.midi_data = None  # the MidiData object representing the midi file
+        self.midi_data_type = midi_data_type
         # api documentation says that references to the values returned by callbacks need to be kept around to prevent issues
         self.track_list = []  # list of tracks in the midi file
         self.tracks_dict = {}  # map track name to midi track
@@ -166,7 +167,7 @@ class LoadedMidiData:
         :param midi_filename: path to the midi file
         :param context: the contet
         :param called_on_script_reload: If False, update properties such as the file's tempo information to be
-        displayed in the midi settings panel. Updating properites is not allowed in the context if this is called
+        displayed in the midi settings panel. Updating properties is not allowed in the context if this is called
         because of a script reload.
         """
         if midi_filename is None:
@@ -190,7 +191,8 @@ class LoadedMidiData:
                 self.get_midi_data_property(context).tempo_settings[
                     "file_ticks_per_beat"] = self.midi_data.ticksPerSecond
 
-        self.__create_track_list(context)
+        # reloading track names involves updating properties which is not allowed in context if called on script reload
+        self.__create_track_list(context, not called_on_script_reload)
         if not called_on_script_reload:
             # call update track list function to update selected note
             if len(self.track_list) > 0:
@@ -206,7 +208,11 @@ class LoadedMidiData:
         if ticks_per_beat > 0 and beats_per_minute > 0:
             self.ms_per_tick = 60000 / (ticks_per_beat * beats_per_minute)
 
-    def __create_track_list(self, context):
+    def __create_track_list(self, context, reload_names_from_file: bool = False):
+        def __displayed_track_name(track_name_overrides, name):
+            track_name_override = track_name_overrides[name] if name in track_name_overrides else name
+            return track_name_override if len(track_name_override.strip()) > 0 else name
+
         self.notes_list_dict = {}
         tracks = []
         self.track_list = []
@@ -224,7 +230,23 @@ class LoadedMidiData:
                 tracks.append(track_name)
                 self.tracks_dict[track_name] = track
         tracks.sort()
-        self.track_list = [(x, x, x) for x in tracks]
+        displayed_track_names = self.get_midi_data_property(context).midi_track_properties
+        existing_track_name_overrides = {x.midi_track_name: x.displayed_track_name for x in
+                                         displayed_track_names}
+
+        if reload_names_from_file:
+            # create track name properties to match the midi file, keep any existing that match
+            displayed_track_names.clear()
+            for track in tracks:
+                midi_track_property = displayed_track_names.add()
+                midi_track_property.midi_track_name = track
+                midi_track_property.midi_data_type = self.midi_data_type
+                if track in existing_track_name_overrides:
+                    midi_track_property.displayed_track_name = existing_track_name_overrides[track]
+
+        self.track_list = [(x, __displayed_track_name(existing_track_name_overrides, x), x, tracks.index(x)) for x in
+                           tracks]
+        self.track_list.sort(key=lambda x: x[1].lower())
 
     # noinspection PyUnusedLocal
     def get_tracks_list(self, property_self, context):
@@ -240,6 +262,9 @@ class LoadedMidiData:
             # middle c changed, update display
             self.__create_track_list(context)
         return self.track_list
+
+    def update_track_names(self, context):
+        self.__create_track_list(context)
 
     def get_notes_list(self, context):
         """
@@ -433,11 +458,6 @@ class LoadedMidiData:
         return None
 
 
-nla_midi_data = LoadedMidiData(lambda context: context.scene.midi_data_property)
-dope_sheet_midi_data = LoadedMidiData(lambda context: context.scene.dope_sheet_midi_data_property)
-graph_editor_midi_data = LoadedMidiData(lambda context: context.scene.graph_editor_midi_data_property)
-
-
 # Effectively an Enum. Doesn't extend Enum because if scripts are reloaded,
 # existing values would not match the reloaded class.
 class MidiDataType:
@@ -450,6 +470,13 @@ class MidiDataType:
         return [MidiDataType.NLA, MidiDataType.DOPESHEET, MidiDataType.GRAPH_EDITOR]
 
 
+nla_midi_data = LoadedMidiData(lambda context: context.scene.midi_data_property, MidiDataType.NLA)
+dope_sheet_midi_data = LoadedMidiData(lambda context: context.scene.dope_sheet_midi_data_property,
+                                      MidiDataType.DOPESHEET)
+graph_editor_midi_data = LoadedMidiData(lambda context: context.scene.graph_editor_midi_data_property,
+                                        MidiDataType.GRAPH_EDITOR)
+
+
 def get_midi_data(midi_data_type: MidiDataType) -> LoadedMidiData:
     if midi_data_type == MidiDataType.NLA:
         return nla_midi_data
@@ -459,5 +486,5 @@ def get_midi_data(midi_data_type: MidiDataType) -> LoadedMidiData:
         return graph_editor_midi_data
 
 
-def get_midi_data_property(midi_data_type: MidiDataType, context):
+def get_midi_data_property(midi_data_type: int, context):
     return get_midi_data(midi_data_type).get_midi_data_property(context)

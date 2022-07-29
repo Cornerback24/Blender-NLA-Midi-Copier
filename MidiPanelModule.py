@@ -8,36 +8,21 @@ if "bpy" in locals():
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(MidiInstrumentModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NoteFilterModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PropertyUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PanelUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NoteFilterImplementations)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PitchUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(OperatorUtils)
+    importlib.reload(i18n)
 else:
-    # noinspection PyUnresolvedReferences
     from . import midi_data
-    # noinspection PyUnresolvedReferences
     from . import NLAMidiCopierModule
-    # noinspection PyUnresolvedReferences
     from . import MidiInstrumentModule
-    # noinspection PyUnresolvedReferences
-    from . import NoteFilterModule
-    # noinspection PyUnresolvedReferences
     from . import PropertyUtils
-    # noinspection PyUnresolvedReferences
     from . import PanelUtils
-    # noinspection PyUnresolvedReferences
-    from . import NoteFilterImplementations
-    # noinspection PyUnresolvedReferences
     from . import PitchUtils
-    # noinspection PyUnresolvedReferences
-    from . import OperatorUtils
+    from .i18n import i18n
 
 import bpy
 from typing import Callable, Tuple
@@ -47,29 +32,6 @@ from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToIn
 from . import midi_data
 from bpy.props import EnumProperty
 from .midi_data import MidiDataType
-
-
-class MidiFileSelectorBase:
-    bl_label = "Select Midi File"
-    bl_description = "Select a midi file"
-    bl_options = {"REGISTER", "UNDO"}
-    # noinspection PyArgumentList,PyUnresolvedReferences
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    filter_glob: bpy.props.StringProperty(default="*.mid;*.midi", options={'HIDDEN'})
-
-    def execute(self, context):
-        OperatorUtils.load_midi_file(self, context, self.data_type, self.filepath)
-        return {'FINISHED'}
-
-    # noinspection PyUnusedLocal
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
-
-class MidiFileSelector(MidiFileSelectorBase, bpy.types.Operator):
-    data_type = MidiDataType.NLA
-    bl_idname = "ops.midi_file_selector"
 
 
 class MidiPanel(bpy.types.Panel):
@@ -84,7 +46,7 @@ class MidiPanel(bpy.types.Panel):
         midi_data_property = context.scene.midi_data_property
         midi_file = midi_data_property.midi_file
 
-        PanelUtils.draw_midi_file_selections(col, midi_data_property, MidiFileSelector.bl_idname, context)
+        PanelUtils.draw_midi_file_selections(col, midi_data_property, MidiDataType.NLA, context)
         note_action_property = midi_data_property.note_action_property
 
         MidiPanel.draw_note_action_common(self.layout, col, note_action_property, midi_data_property=midi_data_property)
@@ -101,14 +63,15 @@ class MidiPanel(bpy.types.Panel):
     def draw_note_action_common(parent_layout, col, note_action_property, midi_data_property=None, action_index=None):
         is_main_property = midi_data_property is not None  # false if this is part of a instrument
         # draw_property_on_split_row if main property to visually align with note property
-        MidiPanel.draw_property(col, note_action_property, "id_type", "Type:", is_main_property)
+        MidiPanel.draw_property(col, note_action_property, "id_type", i18n.get_label(i18n.TYPE),
+                                is_main_property)
         if note_action_property.id_type is not None:
             object_row = col.row()
             object_row.enabled = not note_action_property.copy_to_selected_objects
             MidiPanel.draw_property(object_row, note_action_property,
                                     midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][0],
-                                    note_action_property.id_type + ":", is_main_property)
-            MidiPanel.draw_property(col, note_action_property, "action", "Action:", is_main_property)
+                                    i18n.get_label(note_action_property.id_type), is_main_property)
+            MidiPanel.draw_property(col, note_action_property, "action", i18n.get_label(i18n.ACTION), is_main_property)
 
         parent_layout.separator()
 
@@ -305,7 +268,8 @@ class QuickCopyPanel(bpy.types.Panel):
 
             self.draw_copy_to_instrument_option(col, bulk_copy_property, midi_data_property)
         elif quick_copy_tool == "copy_by_object_name":
-            # col.prop(bulk_copy_property, "copy_by_name_type") # TODO match by note and track
+            col.prop(bulk_copy_property, "copy_by_name_type")
+            col.prop(bulk_copy_property, "selected_objects_only")
             self.draw_copy_to_instrument_option(col, bulk_copy_property, midi_data_property)
 
         copy_to_instrument = quick_copy_tool == "copy_to_instrument" or bulk_copy_property.copy_to_instrument
@@ -381,7 +345,16 @@ class MidiSettingsPanel(bpy.types.Panel):
     bl_idname = "ANIMATION_PT_midi_settings_panel"
 
     def draw(self, context):
-        col = self.layout.column(align=True)
-        col.prop(context.scene.midi_data_property, "middle_c_note")
-        col.separator()
-        PanelUtils.draw_tempo_settings(col, context.scene.midi_data_property.tempo_settings)
+        PanelUtils.draw_common_midi_settings(self.layout, context, MidiDataType.NLA)
+
+
+class MIDI_TRACK_PROPERTIES_UL_list(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            text = item.midi_track_name
+            if len(item.displayed_track_name.strip()) > 0:
+                text = text + " (" + item.displayed_track_name + ")"
+            layout.label(text=text, translate=False, icon='OUTLINER_DATA_GP_LAYER')
+        elif self.layout_type == 'GRID':
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon='OUTLINER_DATA_GP_LAYER')

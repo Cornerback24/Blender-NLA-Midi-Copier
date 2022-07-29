@@ -1,6 +1,7 @@
 from typing import Any
 import math
 from bpy.props import StringProperty, EnumProperty
+from bpy.app import version as blender_version
 
 
 def instrument_selected_note_property(instrument):
@@ -175,6 +176,9 @@ def note_property(name: str, description: str, get_notes_list, note_attribute: s
     :param default_pitch: default pitch for property
     :return:
     """
+    # Blender versions before 2.90 don't support defaults on dynamic enums
+    if blender_version < (2, 90, 0):
+        default_pitch = None
     return EnumProperty(items=get_notes_list, name=name, description=description, default=default_pitch,
                         update=note_updated_function(note_attribute, note_search_attribute, get_notes_list))
 

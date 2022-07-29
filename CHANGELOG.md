@@ -1,3 +1,10 @@
+- 0.13.0 2022-7-28
+  * Add ability to rename midi tracks to the midi settings panel 
+  * Add Copy by track and note name option to quick copy tools
+  * Add Copy to selected objects only option to quick copy tools
+  * Fix compatibility with Blender 2.80
+  * Fix error when copying grease pencil keyframes
+  * Fix error caused by changing the selected note to an invalid pitch when transposing an instrument
 - 0.12.1 2022-2-21
   * Add Particle to action types
   * Add icons to Type selection
