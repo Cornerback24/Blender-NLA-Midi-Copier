@@ -248,6 +248,12 @@ class LoadedMidiData:
                            tracks]
         self.track_list.sort(key=lambda x: x[1].lower())
 
+    def get_displayed_track_name(self, track_name: str) -> str:
+        for track_enum in self.track_list:
+            if track_name == track_enum[0]:
+                return track_enum[1]
+        return track_name
+
     # noinspection PyUnusedLocal
     def get_tracks_list(self, property_self, context):
         """

@@ -6,7 +6,7 @@ for a selected action could be generated to line up with all the C4 notes played
 the right-side panel in the Nonlinear Action View and select the Midi tab.
 
 This add-on is written for Blender 3.2 and is compatible back to Blender 2.80.
-Add-on Version 0.13.0. [Changelog here](CHANGELOG.md).
+Add-on Version 0.13.1. [Changelog here](CHANGELOG.md).
 
 
 <details>

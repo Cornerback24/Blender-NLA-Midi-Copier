@@ -283,9 +283,11 @@ class NoteActionCopier:
         track_name = self.note_action_track_name
         if track_name is None or len(track_name) == 0:
             track_name = self.instrument_track_name if self.instrument_track_name else \
-                PitchUtils.note_display_from_pitch(PitchUtils.note_pitch_from_id(note_id),
-                                                   midi_data.get_midi_data(MidiDataType.NLA).get_middle_c_id(
-                                                       self.context)) + " - " + track_id
+                PitchUtils.note_display_from_pitch(
+                    PitchUtils.note_pitch_from_id(note_id),
+                    midi_data.get_midi_data(MidiDataType.NLA).get_middle_c_id(
+                        self.context)) + " - " + midi_data.get_midi_data(MidiDataType.NLA).get_displayed_track_name(
+                    track_id)
         notes = midi_data.MidiDataUtil.get_notes(track_id, midi_data.get_midi_data(MidiDataType.NLA))
 
         self.copy_notes(notes, track_name, note_id)
@@ -492,19 +494,20 @@ class NLABulkMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator
         note_object_pairs = []
         match_by_track_name = bulk_copy_property.copy_by_name_type == "copy_by_track_and_note"
         track_name = midi_data_property.track_list if match_by_track_name else None
+        displayed_track_name = loaded_midi_data.get_displayed_track_name(track_name) if track_name is not None else None
 
         notes_enum_list = loaded_midi_data.notes_list
         for note_enum in notes_enum_list:
             for data_name_pair in data_name_pairs:
-                if NLABulkMidiCopier.note_matches_object_name(note_enum, data_name_pair[1], track_name):
+                if NLABulkMidiCopier.note_matches_object_name(note_enum, data_name_pair[1], displayed_track_name):
                     note_object_pairs.append((note_enum[0], data_name_pair[0]))
         NLABulkMidiCopier.animate_note_object_paris(note_object_pairs, note_action_property,
                                                     bulk_copy_property.copy_to_instrument,
                                                     context)
 
     @staticmethod
-    def note_matches_object_name(note_enum, object_name: str, track_name: str = None):
-        if track_name is not None and track_name not in object_name:
+    def note_matches_object_name(note_enum, object_name: str, displayed_track_name: str = None):
+        if displayed_track_name is not None and displayed_track_name not in object_name:
             return False
         object_name_lower: str = object_name.strip().lower()
         note_name: str = note_enum[1].lower()

@@ -1,3 +1,6 @@
+- 0.13.1 2022-7-28
+  * Update to use displayed track name for Copy by track and note name
+  * Update to use displayed track name for generated nla track names
 - 0.13.0 2022-7-28
   * Add ability to rename midi tracks to the midi settings panel 
   * Add Copy by track and note name option to quick copy tools
