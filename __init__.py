@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 13, 1),
+        "version": (0, 13, 2),
         "blender": (2, 80, 0),
         "location": "View NLA Editor > Tool Shelf",
         "description": "Copy actions to action strips based on midi file input",
@@ -80,6 +80,7 @@ else:
     from .i18n import es_strings
 
 import bpy
+import traceback
 from bpy.props import PointerProperty
 from bpy.types import NlaStrip
 from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier
@@ -128,7 +129,7 @@ classes = classes + dope_sheet_classes + graph_editor_classes
 
 
 def create_i18n_dict(i18n_data):
-    return {("*", key) if isinstance(key, str) else key: value for key, value in i18n_data.items()}
+    return {("*", key) if isinstance(key, str) else key: value for key, value in i18n_data.items() if value is not None}
 
 
 translations = {'es': create_i18n_dict(i18n_es)}
@@ -140,6 +141,7 @@ def load_midi_file(midi_data_property, midi_data_type: int, context):
             midi_data.get_midi_data(midi_data_type).update_midi_file(midi_data_property.midi_file, False, context)
         except Exception as e:
             print("Could not load midi file: " + str(e))
+            print(traceback.format_exc())
             midi_data.get_midi_data(midi_data_type).update_midi_file(None, False, context)
 
 
@@ -169,6 +171,7 @@ def updates_from_previous_version(context):
 
 # noinspection PyArgumentList
 def register():
+    bpy.app.translations.register(__name__, translations)
     for clazz in classes:
         bpy.utils.register_class(clazz)
     bpy.types.Scene.midi_data_property = PointerProperty(type=MidiPropertyGroup)
@@ -176,7 +179,6 @@ def register():
     bpy.types.Scene.graph_editor_midi_data_property = PointerProperty(type=GraphEditorMidiPropertyGroup)
     bpy.types.Scene.midi_copier_version = PointerProperty(type=MidiCopierVersion)
     bpy.app.handlers.load_post.append(on_load)
-    bpy.app.translations.register(__name__, translations)
 
 
 def unregister():

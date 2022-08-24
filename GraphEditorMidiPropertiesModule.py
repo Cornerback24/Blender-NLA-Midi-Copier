@@ -4,17 +4,21 @@ if "bpy" in locals():
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(midi_data)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(MidiPropertiesModule)
+    # importlib.reload(MidiPropertiesModule) TODO something about this is causing script reload to fail
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(NoteFilterImplementations)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PropertyUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
 else:
     from . import midi_data
     from . import MidiPropertiesModule
     from . import NoteFilterImplementations
     from . import PropertyUtils
+    from .i18n import i18n
 
+import bpy
 from bpy.app import version as blender_version
 from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
     FloatProperty
@@ -38,16 +42,19 @@ def get_all_notes(keyframe_generation_property, context):
 
 UNIT_TYPES = \
     {
-        "NONE": ("None", "None", 0, "min_value", "max_value"),
-        "ACCELERATION": ("Acceleration", "Acceleration", 1, "min_value_acceleration", "max_value_acceleration"),
-        "ANGLE": ("Angle", "Angle", 2, "min_value_angle", "max_value_angle"),
-        "AREA": ("Area", "Area", 3, "min_value_area", "max_value_area"),
-        "LENGTH": ("Distance/Length", "Distance/Length", 4, "min_value_length", "max_value_length"),
-        "MASS": ("Mass", "Mass", 5, "min_value_mass", "max_value_mass"),
-        "POWER": ("Power", "Power", 6, "min_value_power", "max_value_power"),
-        "TEMPERATURE": ("Temperature", "Temperature", 7, "min_value_temperature", "max_value_temperature"),
-        "VELOCITY": ("Velocity", "Velocity", 8, "min_value_velocity", "max_value_velocity"),
-        "VOLUME": ("Volume", "Volume", 9, "min_value_volume", "max_value_volume")
+        "NONE": (i18n.get_key(i18n.NONE), i18n.get_key(i18n.NONE), 0, "min_value", "max_value"),
+        "ACCELERATION": (i18n.get_key(i18n.ACCELERATION),
+                         i18n.get_key(i18n.ACCELERATION), 1, "min_value_acceleration", "max_value_acceleration"),
+        "ANGLE": (i18n.get_key(i18n.ANGLE), i18n.get_key(i18n.ANGLE), 2, "min_value_angle", "max_value_angle"),
+        "AREA": (i18n.get_key(i18n.AREA), i18n.get_key(i18n.AREA), 3, "min_value_area", "max_value_area"),
+        "LENGTH": (i18n.get_key(i18n.DISTANCE_LENGTH), i18n.get_key(i18n.DISTANCE_LENGTH), 4, "min_value_length",
+                   "max_value_length"),
+        "MASS": (i18n.get_key(i18n.MASS), i18n.get_key(i18n.MASS), 5, "min_value_mass", "max_value_mass"),
+        "POWER": (i18n.get_key(i18n.POWER), i18n.get_key(i18n.POWER), 6, "min_value_power", "max_value_power"),
+        "TEMPERATURE": (i18n.get_key(i18n.TEMPERATURE),
+                        i18n.get_key(i18n.TEMPERATURE), 7, "min_value_temperature", "max_value_temperature"),
+        "VELOCITY": ("Velocity", i18n.get_key(i18n.VELOCITY), 8, "min_value_velocity", "max_value_velocity"),
+        "VOLUME": ("Volume", i18n.get_key(i18n.VOLUME), 9, "min_value_volume", "max_value_volume")
     }
 if blender_version < (2, 92, 0):  # previous versions do not have this option for float property
     del UNIT_TYPES['TEMPERATURE']
@@ -56,55 +63,50 @@ unit_type_enums = [(key, value[0], value[1], value[2]) for key, value in UNIT_TY
 
 
 def min_float_property(subtype='NONE', unit='NONE'):
-    return FloatProperty(name="Min",
-                         description="Minimum keyframe value to generate",
+    return FloatProperty(name=i18n.get_key(i18n.MIN),
+                         description=i18n.get_key(i18n.MINIMUM_KEYFRAME_VALUE_TO_GENERATE),
                          default=0, subtype=subtype, unit=unit)
 
 
 def max_float_property(subtype='NONE', unit='NONE'):
-    return FloatProperty(name="Max",
-                         description="Maximum keyframe value to generate",
+    return FloatProperty(name=i18n.get_key(i18n.MAX),
+                         description=i18n.get_key(i18n.MAXIMUM_KEYFRAME_VALUE_TO_GENERATE),
                          default=1, subtype=subtype, unit=unit)
 
 
-NOTE_PROPERTIES = [("Pitch", "Pitch", "Pitch", 0),
-                   ("Length", "Length (frames)", "Note Length in Frames", 1),
-                   ("Velocity", "Velocity", "Velocity", 2)]
+NOTE_PROPERTIES = [("Pitch", i18n.get_key(i18n.PITCH), i18n.get_key(i18n.PITCH), 0),
+                   ("Length", i18n.get_key(i18n.LENGTH_FRAMES), i18n.get_key(i18n.NOTE_LENGTH_IN_FRAMES), 1),
+                   ("Velocity", i18n.get_key(i18n.VELOCITY), i18n.get_key(i18n.VELOCITY), 2)]
 
-OVERLAP_OPTIONS = [("REPLACE", "Replace", "Replace existing keyframe if on the same frame", 0),
-                   ("SKIP", "Skip", "Skip keyframe if an existing keyframe is on the same frame", 1),
-                   ("PREVIOUS_FRAME", "Previous frame",
-                    "If an existing keyframe is on the same frame, place the generated keyframe on "
-                    "the frame before the existing keyframe. If the frame before also has a "
-                    "keyframe, the generated keyframe will be skipped", 2),
-                   ("NEXT_FRAME", "Next frame",
-                    "If an existing keyframe is on the same frame, place the generated keyframe on "
-                    "the frame after the existing keyframe. If the frame after also has a "
-                    "keyframe, the generated keyframe will be skipped", 3)]
+OVERLAP_OPTIONS = [("REPLACE", i18n.get_key(i18n.REPLACE), i18n.get_key(i18n.REPLACE_KEYFRAME_DESCRIPTION), 0),
+                   ("SKIP", i18n.get_key(i18n.SKIP), i18n.get_key(i18n.SKIP_KEYFRAME_DESCRIPTION), 1),
+                   ("PREVIOUS_FRAME", i18n.get_key(i18n.PREVIOUS_FRAME),
+                    i18n.get_key(i18n.PREVIOUS_FRAME_DESCRIPTION), 2),
+                   ("NEXT_FRAME", i18n.get_key(i18n.NEXT_FRAME), i18n.get_key(i18n.NEXT_FRAME_DESCRIPTION), 3)]
 
-ON_NOTE_OVERLAP = [("include", "Include", "Generate keyframes for notes that overlap other notes", 0),
-                   ("skip", "Skip",
-                    "Skip notes if the first frame would be before the last frame of the previous note", 1)]
+ON_NOTE_OVERLAP = [("include", i18n.get_key(i18n.INCLUDE),
+                    i18n.get_key(i18n.NOTE_OVERLAP_INCLUDE_KEYFRAME_DESCRIPTION), 0),
+                   ("skip", i18n.get_key(i18n.SKIP), i18n.get_key(i18n.NOTE_OVERLAP_SKIP_KEYFRAME_DESCRIPTION), 1)]
 
 
 class GraphEditorKeyframeGenerationProperty(PropertyGroup):
-    note_property: EnumProperty(items=NOTE_PROPERTIES, name="Note Property", default="Pitch")
-    non_negative_min: FloatProperty(name="Map to min",
-                                    description="Value from midi file to map to minimum keyframe value", min=0.0)
-    non_negative_max: FloatProperty(name="Map to max",
-                                    description="Value from midi file to map to maximum keyframe value", min=0.0,
+    note_property: EnumProperty(items=NOTE_PROPERTIES, name=i18n.get_key(i18n.NOTE_PROPERTY), default="Pitch")
+    non_negative_min: FloatProperty(name=i18n.get_key(i18n.MAP_TO_MIN),
+                                    description=i18n.get_key(i18n.MAP_TO_MIN_KEYFRAME_DESCRIPTION), min=0.0)
+    non_negative_max: FloatProperty(name=i18n.get_key(i18n.MAP_TO_MAX),
+                                    description=i18n.get_key(i18n.MAP_TO_MAX_KEYFRAME_DESCRIPTION), min=0.0,
                                     default=1.0)
-    int_0_to_127_min: IntProperty(name="Map to min",
-                                  description="Value from midi file to map to minimum keyframe value",
+    int_0_to_127_min: IntProperty(name=i18n.get_key(i18n.MAP_TO_MIN),
+                                  description=i18n.get_key(i18n.MAP_TO_MIN_KEYFRAME_DESCRIPTION),
                                   min=0, max=127)
-    int_0_to_127_max: IntProperty(name="Map to max",
-                                  description="Value from midi file to map to maximum keyframe value", min=0, max=127,
+    int_0_to_127_max: IntProperty(name=i18n.get_key(i18n.MAP_TO_MAX),
+                                  description=i18n.get_key(i18n.MAP_TO_MAX_KEYFRAME_DESCRIPTION), min=0, max=127,
                                   default=127)
-    pitch_min: PropertyUtils.note_property("Min note", "Lowest Note", get_all_notes, "pitch_min",
-                                           "pitch_min_search_string")
+    pitch_min: PropertyUtils.note_property(i18n.get_key(i18n.MIN_NOTE), i18n.get_key(i18n.LOWEST_NOTE), get_all_notes,
+                                           "pitch_min", "pitch_min_search_string")
     pitch_min_search_string: PropertyUtils.note_search_property("pitch_min", "pitch_min_search_string", get_all_notes)
-    pitch_max: PropertyUtils.note_property("Max Note", "Highest note", get_all_notes, "pitch_max",
-                                           "pitch_max_search_string", 127)
+    pitch_max: PropertyUtils.note_property(i18n.get_key(i18n.MAX_NOTE), i18n.get_key(i18n.HIGHEST_NOTE), get_all_notes,
+                                           "pitch_max", "pitch_max_search_string", 127)
     pitch_max_search_string: PropertyUtils.note_search_property("pitch_max", "pitch_max_search_string", get_all_notes)
     min_value: min_float_property()
     max_value: max_float_property()
@@ -127,28 +129,32 @@ class GraphEditorKeyframeGenerationProperty(PropertyGroup):
     max_value_velocity: max_float_property(unit='VELOCITY')
     min_value_volume: min_float_property(unit='VOLUME')
     max_value_volume: max_float_property(unit='VOLUME')
-    unit_type: EnumProperty(items=unit_type_enums, name="Unit Type", default="NONE")
-    on_keyframe_overlap: EnumProperty(items=OVERLAP_OPTIONS, name="Keyframe Overlap",
-                                      description="Keyframe overlap handling mode")
+    unit_type: EnumProperty(items=unit_type_enums, name=i18n.get_key(i18n.UNIT_TYPE), default="NONE")
+    on_keyframe_overlap: EnumProperty(items=OVERLAP_OPTIONS, name=i18n.get_key(i18n.KEYFRAME_OVERLAP),
+                                      description=i18n.get_key(i18n.KEYFRAME_OVERLAP_HANDLING_MODE))
     generate_at_note_end: \
-        BoolProperty(name="Generate at Note End",
-                     description="Generate keyframes at the end of the note instead of the beginning",
+        BoolProperty(name=i18n.get_key(i18n.GENERATE_AT_NOTE_END),
+                     description=i18n.get_key(i18n.GENERATE_AT_NOTE_END_DESCRIPTION),
                      default=False)
-    on_note_overlap: EnumProperty(name="Note overlap", items=ON_NOTE_OVERLAP)
-    scale_filter_type: EnumProperty(items=MidiPropertiesModule.scale_filter_options, name="Filter by Scale",
-                                    description="Filter by Scale")
-    scale_filter_scale: EnumProperty(items=MidiPropertiesModule.scale_options, name="Scale", description="Major Scale")
-    only_notes_in_selected_track: BoolProperty(name="Only Notes in Selected Track",
-                                               description="Only calculate keyframes based on notes in the selected "
-                                                           "track",
+    on_note_overlap: EnumProperty(name=i18n.get_key(i18n.NOTE_OVERLAP), items=ON_NOTE_OVERLAP)
+    scale_filter_type: EnumProperty(items=MidiPropertiesModule.scale_filter_options,
+                                    name=i18n.get_key(i18n.FILTER_BY_SCALE),
+                                    description=i18n.get_key(i18n.FILTER_BY_SCALE))
+    scale_filter_scale: EnumProperty(items=MidiPropertiesModule.scale_options, name=i18n.get_key(i18n.SCALE),
+                                     description=i18n.get_key(i18n.MAJOR_SCALE))
+    only_notes_in_selected_track: BoolProperty(name=i18n.get_key(i18n.ONLY_NOTES_IN_SELECTED_TRACK),
+                                               description=i18n.get_key(
+                                                   i18n.ONLY_KEYFRAME_NOTES_IN_SELECTED_TRACK_DESCRIPTION),
                                                default=False)
 
 
 class GraphEditorNoteActionProperty(PropertyGroup, NoteActionPropertyBase):
     data_type = MidiDataType.GRAPH_EDITOR
-    note_filter_groups: CollectionProperty(type=GraphEditorNoteFilterGroup, name="Note Filter Groups")
-    keyframe_generators: CollectionProperty(type=GraphEditorKeyframeGenerationProperty, name="Note Filter Groups")
-    delete_existing_keyframes: BoolProperty(name="Delete existing keyframes", description="Delete existing keyframes")
+    note_filter_groups: CollectionProperty(type=GraphEditorNoteFilterGroup,
+                                           name=i18n.get_key(i18n.ONLY_KEYFRAME_NOTES_IN_SELECTED_TRACK_DESCRIPTION))
+    keyframe_generators: CollectionProperty(type=GraphEditorKeyframeGenerationProperty)
+    delete_existing_keyframes: BoolProperty(name=i18n.get_key(i18n.DELETE_EXISTING_KEYFRAMES),
+                                            description=i18n.get_key(i18n.DELETE_EXISTING_KEYFRAMES))
 
 
 class GraphEditorTempoPropertyGroup(PropertyGroup, TempoPropertyBase):

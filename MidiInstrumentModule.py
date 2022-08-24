@@ -7,19 +7,22 @@ if "bpy" in locals():
     importlib.reload(PropertyUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PitchUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
 else:
     from . import midi_data
     from . import PropertyUtils
     from . import PitchUtils
-import bpy
+    from .i18n import i18n
 
+import bpy
 from .midi_data import MidiDataType
 
 
 class AddInstrument(bpy.types.Operator):
     bl_idname = "ops.nla_midi_add_instrument"
-    bl_label = "Create New Instrument"
-    bl_description = "Create a new instrument.  An instrument defines one or many actions for each note"
+    bl_label = i18n.get_key(i18n.CREATE_NEW_INSTRUMENT_OP)
+    bl_description = i18n.get_key(i18n.CREATE_NEW_INSTRUMENT_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -33,14 +36,14 @@ class AddInstrument(bpy.types.Operator):
     def action_common(self, context):
         instruments = context.scene.midi_data_property.instruments
         new_instrument = instruments.add()
-        new_instrument.name = "Instrument " + str(len(instruments))
+        new_instrument.name = i18n.concat(i18n.get_text(i18n.INSTRUMENT), str(len(instruments)))
         context.scene.midi_data_property.selected_instrument_id = str(len(instruments) - 1)
 
 
 class DeleteInstrument(bpy.types.Operator):
     bl_idname = "ops.nla_midi_delete_instrument"
-    bl_label = "Delete Instrument"
-    bl_description = "Delete the selected instrument"
+    bl_label = i18n.get_key(i18n.DELETE_INSTRUMENT_OP)
+    bl_description = i18n.get_key(i18n.DELETE_INSTRUMENT_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -66,8 +69,8 @@ class DeleteInstrument(bpy.types.Operator):
 
 class AddActionToInstrument(bpy.types.Operator):
     bl_idname = "ops.nla_midi_add_action_to_instrument"
-    bl_label = "Add Action"
-    bl_description = "Add an action for the selected note"
+    bl_label = i18n.get_key(i18n.ADD_ACTION_OP)
+    bl_description = i18n.get_key(i18n.ADD_ACTION_TO_INSTRUMENT_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -87,8 +90,8 @@ class AddActionToInstrument(bpy.types.Operator):
 
 class RemoveActionFromInstrument(bpy.types.Operator):
     bl_idname = "ops.nla_midi_remove_action_from_instrument"
-    bl_label = "Delete Action"
-    bl_description = "Delete action"
+    bl_label = i18n.get_key(i18n.DELETE_ACTION_OP)
+    bl_description = i18n.get_key(i18n.DELETE_ACTION)
     bl_options = {"REGISTER", "UNDO"}
 
     action_index: bpy.props.IntProperty(name="Index")
@@ -120,11 +123,11 @@ class RemoveActionFromInstrument(bpy.types.Operator):
 
 class TransposeInstrument(bpy.types.Operator):
     bl_idname = "ops.nla_midi_transpose_instrument"
-    bl_label = "Transpose Instrument"
-    bl_description = "Transpose Instrument"
+    bl_label = i18n.get_key(i18n.TRANSPOSE_INSTRUMENT_OP)
+    bl_description = i18n.get_key(i18n.TRANSPOSE_INSTRUMENT)
     bl_options = {"REGISTER", "UNDO"}
 
-    transpose_steps: bpy.props.IntProperty(name="Transpose Steps")
+    transpose_steps: bpy.props.IntProperty(name=i18n.get_key(i18n.TRANSPOSE_STEPS))
 
     def execute(self, context):
         self.action_common(context)

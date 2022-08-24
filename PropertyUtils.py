@@ -1,5 +1,15 @@
 from typing import Any
 import math
+
+if "bpy" in locals():
+    import importlib
+
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
+else:
+    from .i18n import i18n
+
+import bpy
 from bpy.props import StringProperty, EnumProperty
 from bpy.app import version as blender_version
 
@@ -37,7 +47,7 @@ def get_note_action_property(instrument, note_id: int):
         instrument_note_property.note_id = note_id
 
     note_action_property = instrument_note_property.actions.add()
-    note_action_property.name = "Action " + str(len(instrument_note_property.actions))
+    note_action_property.name = i18n.concat(i18n.get_text(i18n.ACTION), str(len(instrument_note_property.actions)))
     return note_action_property
 
 
@@ -184,5 +194,5 @@ def note_property(name: str, description: str, get_notes_list, note_attribute: s
 
 
 def note_search_property(note_attribute, note_search_attribute, get_notes_list):
-    return StringProperty(name="Search", description="Enter a note name or midi note number to select a note",
+    return StringProperty(name=i18n.get_key(i18n.SEARCH), description=i18n.get_key(i18n.NOTE_SEARCH_DESCRIPTION),
                           update=note_search_updated_function(note_attribute, note_search_attribute, get_notes_list))

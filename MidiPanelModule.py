@@ -37,8 +37,8 @@ from .midi_data import MidiDataType
 class MidiPanel(bpy.types.Panel):
     bl_space_type = "NLA_EDITOR"
     bl_region_type = "UI"
-    bl_category = "Midi"
-    bl_label = "NLA Midi"
+    bl_category = i18n.get_key(i18n.MIDI)
+    bl_label = i18n.get_key(i18n.NLA_MIDI)
     bl_idname = "ANIMATION_PT_midi_panel"
 
     def draw(self, context):
@@ -56,7 +56,7 @@ class MidiPanel(bpy.types.Panel):
         col = self.layout.column(align=True)
         tooltip_creator = PanelUtils.OperatorTooltipCreator(NLAMidiCopier)
         if midi_file is None or len(midi_file) == 0:
-            tooltip_creator.add_disable_description("No midi file selected")
+            tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.NO_MIDI_FILE_SELECTED))
         tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
 
     @staticmethod
@@ -115,8 +115,8 @@ class MidiPanel(bpy.types.Panel):
 class MidiInstrumentPanel(bpy.types.Panel):
     bl_space_type = "NLA_EDITOR"
     bl_region_type = "UI"
-    bl_category = "Midi Instruments"
-    bl_label = "NLA Midi Instruments"
+    bl_category = i18n.get_key(i18n.MIDI_INSTRUMENTS)
+    bl_label = i18n.get_key(i18n.NLA_MIDI_INSTRUMENTS)
     bl_idname = "ANIMATION_PT_midi_instrument_panel"
 
     def draw(self, context):
@@ -138,19 +138,22 @@ class MidiInstrumentPanel(bpy.types.Panel):
     def draw_animate_instrument(self, context, instrument):
         if context.scene.midi_data_property.midi_file:
 
-            animate_box = PanelUtils.draw_collapsible_box(self.layout, "Animate " + instrument.name, instrument,
-                                                          "animate_expanded")[0]
+            animate_box = \
+                PanelUtils.draw_collapsible_box(self.layout, i18n.concat(i18n.get_text(i18n.ANIMATE), instrument.name),
+                                                instrument, "animate_expanded")[0]
             if instrument.animate_expanded:
                 animate_box.prop(instrument, "selected_midi_track")
                 animate_box.prop(instrument, "copy_to_single_track")
                 text_box_row = animate_box.row()
                 text_box_row.prop(instrument, "nla_track_name")
                 text_box_row.enabled = instrument.copy_to_single_track
-                animate_box.operator(NLAMidiInstrumentCopier.bl_idname, text="Animate " + instrument.name)
+                animate_box.operator(NLAMidiInstrumentCopier.bl_idname,
+                                     text=i18n.concat(i18n.get_text(i18n.ANIMATE), instrument.name))
 
     def draw_instrument_notes(self, instrument):
-        notes_box = PanelUtils.draw_collapsible_box(self.layout, instrument.name + " Notes", instrument,
-                                                    "notes_expanded")[0]
+        notes_box = \
+            PanelUtils.draw_collapsible_box(self.layout, i18n.concat(instrument.name + i18n.get_text(i18n.NOTES)),
+                                            instrument, "notes_expanded")[0]
         if instrument.notes_expanded:
             PanelUtils.draw_note_with_search(notes_box, instrument, "selected_note_id", "note_search_string")
             notes_box.operator(AddActionToInstrument.bl_idname)
@@ -160,24 +163,25 @@ class MidiInstrumentPanel(bpy.types.Panel):
                     self.draw_action(instrument_note_property.actions[i], i, notes_box)
 
     def draw_instrument_properties(self, instrument):
-        box = PanelUtils.draw_collapsible_box(self.layout, instrument.name + " Properties", instrument,
-                                              "properties_expanded")[0]
+        box = \
+            PanelUtils.draw_collapsible_box(self.layout, i18n.concat(instrument.name + i18n.get_text(i18n.PROPERTIES)),
+                                            instrument, "properties_expanded")[0]
 
         if instrument.properties_expanded:
             box.prop(instrument, "name")
             box.prop(instrument, "instrument_midi_frame_offset")
-            box.operator(DeleteInstrument.bl_idname, text="Delete " + instrument.name)
+            box.operator(DeleteInstrument.bl_idname, text=i18n.concat(i18n.get_text(i18n.DELETE), instrument.name))
 
     def draw_transpose_instrument(self, instrument):
-        box = PanelUtils.draw_collapsible_box(self.layout, "Transpose " + instrument.name, instrument,
-                                              "transpose_expanded")[0]
+        box = PanelUtils.draw_collapsible_box(self.layout, i18n.concat(i18n.get_text(i18n.TRANSPOSE), instrument.name),
+                                              instrument, "transpose_expanded")[0]
         if instrument.transpose_expanded:
             box.prop(instrument, "transpose_filters")
             transpose_row = box.row()
-            MidiInstrumentPanel.draw_transpose_operator(instrument, -12, "- octave", transpose_row)
-            MidiInstrumentPanel.draw_transpose_operator(instrument, -1, "- step", transpose_row)
-            MidiInstrumentPanel.draw_transpose_operator(instrument, +1, "+ step", transpose_row)
-            MidiInstrumentPanel.draw_transpose_operator(instrument, +12, "+ octave", transpose_row)
+            MidiInstrumentPanel.draw_transpose_operator(instrument, -12, i18n.get_key(i18n.MINUS_OCTAVE), transpose_row)
+            MidiInstrumentPanel.draw_transpose_operator(instrument, -1, i18n.get_key(i18n.MINUS_STEP), transpose_row)
+            MidiInstrumentPanel.draw_transpose_operator(instrument, +1, i18n.get_key(i18n.PLUS_STEP), transpose_row)
+            MidiInstrumentPanel.draw_transpose_operator(instrument, +12, i18n.get_key(i18n.PLUS_OCTAVE), transpose_row)
 
     @staticmethod
     def draw_transpose_operator(instrument, steps: int, text: str, row: bpy.types.UILayout):
@@ -240,8 +244,8 @@ class MidiInstrumentPanel(bpy.types.Panel):
 class QuickCopyPanel(bpy.types.Panel):
     bl_space_type = "NLA_EDITOR"
     bl_region_type = "UI"
-    bl_category = "Midi"
-    bl_label = "Quick Copy Tools"
+    bl_category = i18n.get_key(i18n.MIDI)
+    bl_label = i18n.get_key(i18n.QUICK_COPY_TOOLS)
     bl_idname = "ANIMATION_PT_nla_midi_quick_copy_panel"
     bl_options = {'DEFAULT_CLOSED'}
 
@@ -274,13 +278,13 @@ class QuickCopyPanel(bpy.types.Panel):
 
         copy_to_instrument = quick_copy_tool == "copy_to_instrument" or bulk_copy_property.copy_to_instrument
         if quick_copy_tool == "copy_to_instrument":
-            base_tooltip = "Copy action to the selected instrument"
+            base_tooltip = i18n.get_text(i18n.COPY_ACTION_TO_INSTRUMENT)
         else:
-            base_tooltip = "Copy actions to the selected instrument" if copy_to_instrument else \
-                "Copy actions to selected objects"
-        animate_button_text = "Copy to Instrument" if \
+            base_tooltip = i18n.get_text(i18n.COPY_ACTIONS_TO_INSTRUMENT) if copy_to_instrument else \
+                i18n.get_text(i18n.COPY_ACTIONS_TO_SELECTED_OBJECTS)
+        animate_button_text = i18n.get_key(i18n.COPY_TO_INSTRUMENT_OP) if \
             (bulk_copy_property.copy_to_instrument or quick_copy_tool == "copy_to_instrument") \
-            else "Copy Action to Notes"
+            else i18n.get_key(i18n.COPY_ACTION_TO_NOTES_OP)
         tooltip_creator = self.copy_button_tooltip_creator(midi_data_property, bulk_copy_property, copy_to_instrument,
                                                            base_tooltip, animate_button_text)
         tooltip_creator.draw_operator_row(col)
@@ -307,32 +311,34 @@ class QuickCopyPanel(bpy.types.Panel):
         quick_copy_tool = bulk_copy_property.quick_copy_tool
         if quick_copy_tool == "copy_along_path":
             if bulk_copy_property.bulk_copy_curve is None:
-                tooltip_creator.add_disable_description("No path selected")
+                tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.NO_PATH_SELECTED))
 
             # copy along path only works if the id_type corresponds to an object type
             if not midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type):
                 tooltip_creator.add_disable_description(
-                    "Copy along path does not with work type " + note_action_property.id_type)
+                    i18n.concat(i18n.get_text_tip(i18n.COPY_ALONG_PATH_DOES_NOT_WITH_WORK_TYPE),
+                                note_action_property.id_type))
         elif quick_copy_tool == "copy_by_object_name":
             # copy by object name only works if the id_type corresponds to an object type
             if not midi_data.can_resolve_data_from_selected_objects(note_action_property.id_type):
                 tooltip_creator.add_disable_description(
-                    "Copy by object name does not with work type " + note_action_property.id_type)
+                    i18n.concat(i18n.get_text_tip(i18n.COPY_BY_OBJECT_NAME_DOES_NOT_WITH_WORK_TYPE),
+                                note_action_property.id_type))
         elif quick_copy_tool == "copy_to_instrument":
             if note_action_property.copy_to_selected_objects:
                 tooltip_creator.add_disable_description(
-                    "Copy to selected objects (in NLA Midi Panel) not valid for instruments")
+                    i18n.get_text_tip(i18n.COPY_TO_SELECTED_OBJECTS_NOT_VALID_FOR_INSTRUMENTS))
 
         if copy_to_instrument:
             if midi_data_property.copy_to_instrument_selected_instrument is None or \
                     midi_data_property.copy_to_instrument_selected_instrument == midi_data.NO_INSTRUMENT_SELECTED:
-                tooltip_creator.add_disable_description("No instrument selected")
+                tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.NO_INSTRUMENT_SELECTED))
         else:
             midi_file = midi_data_property.midi_file
             if midi_file is None or len(midi_file) == 0:
-                tooltip_creator.add_disable_description("No midi file selected")
+                tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.NO_MIDI_FILE_SELECTED))
             if note_action_property.action is None:
-                tooltip_creator.add_disable_description("No action selected (in NLA Midi Panel)")
+                tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.NO_ACTION_SELECTED_IN_MLA_MIDI_PANEL))
 
         return tooltip_creator
 
@@ -340,8 +346,8 @@ class QuickCopyPanel(bpy.types.Panel):
 class MidiSettingsPanel(bpy.types.Panel):
     bl_space_type = "NLA_EDITOR"
     bl_region_type = "UI"
-    bl_category = "Midi"
-    bl_label = "Midi Settings"
+    bl_category = i18n.get_key(i18n.MIDI)
+    bl_label = i18n.get_key(i18n.MIDI_SETTINGS)
     bl_idname = "ANIMATION_PT_midi_settings_panel"
 
     def draw(self, context):

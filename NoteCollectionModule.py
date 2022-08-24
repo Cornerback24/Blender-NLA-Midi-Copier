@@ -9,6 +9,7 @@ else:
     from . import midi_data
     from . import NoteFilterImplementations
 
+import bpy
 from typing import List, Optional, Iterator, Generator, Any, Callable, Tuple, Iterable
 from .midi_data import LoadedMidiData
 from .midi_analysis.Note import Note

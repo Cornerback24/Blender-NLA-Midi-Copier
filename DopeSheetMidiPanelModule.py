@@ -9,6 +9,8 @@ if "bpy" in locals():
     importlib.reload(PanelUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(MidiPanelModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
 else:
     from . import midi_data
     # noinspection PyUnresolvedReferences
@@ -17,8 +19,10 @@ else:
     from . import PanelUtils
     # noinspection PyUnresolvedReferences
     from . import MidiPanelModule
+    from .i18n import i18n
 
 import bpy
+import textwrap
 from .DopeSheetMidiCopierModule import DopeSheetMidiCopier
 from . import midi_data
 from bpy.props import EnumProperty
@@ -28,8 +32,8 @@ from .midi_data import MidiDataType
 class DopeSheetMidiPanel(bpy.types.Panel):
     bl_space_type = "DOPESHEET_EDITOR"
     bl_region_type = "UI"
-    bl_category = "Midi"
-    bl_label = "Grease Pencil Midi"
+    bl_category = i18n.get_key(i18n.MIDI)
+    bl_label = i18n.get_key(i18n.GREASE_PENCIL_MIDI)
     bl_idname = "ANIMATION_PT_dope_sheet_midi_panel"
 
     @classmethod
@@ -72,15 +76,15 @@ class DopeSheetMidiPanel(bpy.types.Panel):
         tooltip_creator = PanelUtils.OperatorTooltipCreator(DopeSheetMidiCopier)
         midi_file = midi_data_property.midi_file
         if midi_file is None or len(midi_file) == 0:
-            tooltip_creator.add_disable_description("No midi file selected")
+            tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.NO_MIDI_FILE_SELECTED))
         tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
 
 
 class DopeSheetMidiSettingsPanel(bpy.types.Panel):
     bl_space_type = "DOPESHEET_EDITOR"
     bl_region_type = "UI"
-    bl_category = "Midi"
-    bl_label = "Midi Settings"
+    bl_category = i18n.get_key(i18n.MIDI)
+    bl_label = i18n.get_key(i18n.MIDI_SETTINGS)
     bl_idname = "ANIMATION_PT_dope_sheet_midi_settings_panel"
 
     @classmethod
@@ -94,6 +98,7 @@ class DopeSheetMidiSettingsPanel(bpy.types.Panel):
         if not dopesheet.show_only_selected:
             col = self.layout.column(align=True)
             col.separator()
-            col.label(text="Select \"Only Selected\"")
-            col.label(text="in the Dope Sheet bar to show")
-            col.label(text="the grease pencil midi panel.")
+            col.label()
+            only_selected_text = i18n.get_text(i18n.GREASE_PENCIL_ONLY_SELECTED)
+            for line in textwrap.TextWrapper(width=35).wrap(text=only_selected_text):
+                col.label(text=line)

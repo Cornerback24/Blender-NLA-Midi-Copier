@@ -25,8 +25,8 @@ from .midi_data import MidiDataType
 
 class MidiFileSelector(bpy.types.Operator):
     bl_idname = "ops.nla_midi_file_selector"
-    bl_label = "Select Midi File"
-    bl_description = "Select a midi file"
+    bl_label = i18n.get_key(i18n.CHOOSE_MIDI_FILE_OP)
+    bl_description = i18n.get_key(i18n.SELECT_MIDI_FILE_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
     # noinspection PyArgumentList,PyUnresolvedReferences
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -51,7 +51,7 @@ def draw_common_midi_settings(parent_layout, context, midi_data_type: int):
     draw_tempo_settings(col, midi_data_property.tempo_settings)
 
     col.separator()
-    col.label(text="Midi Tracks:")
+    col.label(text=i18n.get_label(i18n.MIDI_TRACKS))
     track_names_row = parent_layout.row()
     col = track_names_row.column(align=True)
     col.template_list("MIDI_TRACK_PROPERTIES_UL_list", "", midi_data_property,
@@ -98,7 +98,7 @@ def draw_collapsible_box(parent: bpy.types.UILayout, text: str, object_with_expa
 
 
 def draw_filter_box(parent_layout, note_action_property, is_instrument_property, action_index, midi_data_type):
-    box = draw_collapsible_box(parent_layout, "Filters", note_action_property, "filters_expanded")[0]
+    box = draw_collapsible_box(parent_layout, i18n.get_key(i18n.FILTERS), note_action_property, "filters_expanded")[0]
     if note_action_property.filters_expanded:
         filter_group_index = 0
         for filter_group in note_action_property.note_filter_groups:
@@ -117,8 +117,8 @@ def draw_filter_box(parent_layout, note_action_property, is_instrument_property,
 def draw_filter_group(parent_layout, filter_group_property, is_instrument_property, action_index,
                       filter_group_index, midi_data_type):
     collapsible_box = draw_collapsible_box(
-        parent_layout, "Filter Group " + str(filter_group_index + 1), filter_group_property,
-        "expanded", RemoveFilterGroup.bl_idname)
+        parent_layout, i18n.concat(i18n.get_text(i18n.FILTER_GROUP), str(filter_group_index + 1)),
+        filter_group_property, "expanded", RemoveFilterGroup.bl_idname)
     box = collapsible_box[0]
     remove_operator = collapsible_box[1]
     remove_operator.is_part_of_instrument = is_instrument_property
@@ -141,7 +141,7 @@ def draw_filters_list(action_index, box, filter_group_index, filter_group_proper
                     filter_index, filter_count, midi_data_type)
         filter_index = filter_index + 1
     final_row = box.row()
-    add_filter_operator = final_row.operator(AddNoteFilter.bl_idname, text='Add filter')
+    add_filter_operator = final_row.operator(AddNoteFilter.bl_idname, text=i18n.get_key(i18n.ADD_FILTER_OP))
     add_filter_operator.is_part_of_instrument = is_instrument_property
     add_filter_operator.midi_data_type = midi_data_type
     if is_instrument_property:
@@ -241,20 +241,21 @@ def draw_tempo_settings(parent_layout, tempo_property):
         ticks_per_beat_row.prop(tempo_property, "file_ticks_per_beat")
 
 
-COPY_MIDI_FILE_DICTIONARY = {MidiDataType.NLA: ("NLA", "Load midi file data from the NLA Editor"),
+COPY_MIDI_FILE_DICTIONARY = {MidiDataType.NLA: ("NLA", i18n.get_key(i18n.COPY_FILE_FROM_NLA_DESCRIPTION)),
                              MidiDataType.DOPESHEET: (
-                                 "GREASEPENCIL", "Load midi file data from the Grease Pencil Editor"),
-                             MidiDataType.GRAPH_EDITOR: ("GRAPH", "Load midi file data from the Graph Editor")}
+                                 "GREASEPENCIL", i18n.get_key(i18n.COPY_FILE_FROM_DOPESHEET_DESCRIPTION)),
+                             MidiDataType.GRAPH_EDITOR: (
+                                 "GRAPH", i18n.get_key(i18n.COPY_FILE_FROM_GRAPH_EDITOR_DESCRIPTION))}
 
 
 def draw_midi_file_selections(parent_layout, midi_data_property, midi_data_type: int, context,
-                              note_property_text="Note:"):
+                              note_property_text=i18n.get_label(i18n.NOTE)):
     def draw_copy_to_operator(copy_to_parent_layout, data_type_from, data_type_to):
         if data_type_from != data_type_to:
             copy_from_midi_file = midi_data.get_midi_data_property(data_type_from, context).midi_file
             if copy_from_midi_file is not None and len(copy_from_midi_file) > 0:
                 icon = COPY_MIDI_FILE_DICTIONARY[data_type_from][0]
-                tooltip = COPY_MIDI_FILE_DICTIONARY[data_type_from][1]
+                tooltip = i18n.get_text_tip(COPY_MIDI_FILE_DICTIONARY[data_type_from][1])
                 copy_to_operator = copy_to_parent_layout.operator(OperatorUtils.CopyMidiFileData.bl_idname, text="",
                                                                   icon=icon)
                 copy_to_operator.copy_from_data_type = data_type_from
@@ -263,7 +264,6 @@ def draw_midi_file_selections(parent_layout, midi_data_property, midi_data_type:
 
     load_file_row = parent_layout.row()
     file_selector_operator = load_file_row.operator(MidiFileSelector.bl_idname,
-                                                    text=i18n.get_key(i18n.CHOOSE_MIDI_FILE),
                                                     icon='FILE_FOLDER')
     file_selector_operator.midi_data_type = midi_data_type
 
@@ -273,8 +273,8 @@ def draw_midi_file_selections(parent_layout, midi_data_property, midi_data_type:
             draw_copy_to_operator(load_file_row, data_type, midi_data_property.data_type)
 
     if midi_data_property.midi_file:
-        draw_property_on_split_row(parent_layout, midi_data_property, "Midi File:", "midi_file")
-        draw_property_on_split_row(parent_layout, midi_data_property, "Track:", "track_list")
+        draw_property_on_split_row(parent_layout, midi_data_property, i18n.get_label(i18n.MIDI_FILE), "midi_file")
+        draw_property_on_split_row(parent_layout, midi_data_property, i18n.get_label(i18n.TRACK), "track_list")
         draw_property_on_split_row(parent_layout, midi_data_property, note_property_text, "notes_list",
                                    "note_search_string")
 
@@ -308,7 +308,7 @@ def draw_property_on_split_row(parent_layout, data, label, prop, second_prop=Non
 def draw_scale_filter(parent_layout, data, filter_type_property: str, scale_property: str):
     parent_layout.prop(data, filter_type_property)
     scale_row = indented_row(parent_layout)
-    scale_row.enabled = not getattr(data, filter_type_property) == "No filter"
+    scale_row.enabled = not getattr(data, filter_type_property) == "no_filter"
     scale_row.prop(data, scale_property)
 
 
@@ -325,7 +325,7 @@ class OperatorTooltipCreator:
         :param button_text: text for the operator button. If none will used the operator label
         """
         self.operator_class = operator_class
-        self.base_tooltip = base_tooltip if base_tooltip is not None else operator_class.bl_description
+        self.base_tooltip = base_tooltip if base_tooltip is not None else i18n.get_text(operator_class.bl_description)
         self.disable_info = []  # list of reasons why the operator is disable
         self.button_text = button_text
 
@@ -337,7 +337,7 @@ class OperatorTooltipCreator:
             tooltip += (".\n  ! " + self.disable_info[-1])
         return tooltip
 
-    def add_disable_description(self, disable_description):
+    def add_disable_description(self, disable_description: str):
         self.disable_info.append(disable_description)
 
     def is_disabled(self):

@@ -7,11 +7,15 @@ if "bpy" in locals():
     importlib.reload(MidiPropertiesModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(NoteFilterImplementations)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
 else:
     from . import midi_data
     from . import MidiPropertiesModule
     from . import NoteFilterImplementations
+    from .i18n import i18n
 
+import bpy
 from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
     FloatProperty
 from bpy.types import PropertyGroup
@@ -24,7 +28,7 @@ class DopeSheetNoteFilterProperty(PropertyGroup, NoteFilterPropertyBase):
 
 
 class DopeSheetNoteFilterGroup(PropertyGroup):
-    note_filters: CollectionProperty(type=DopeSheetNoteFilterProperty, name="Note Filters")
+    note_filters: CollectionProperty(type=DopeSheetNoteFilterProperty, name=i18n.get_key(i18n.NOTE_FILTERS))
     expanded: BoolProperty(name="Expanded", default=True)
 
 
@@ -32,22 +36,20 @@ class DopeSheetNoteActionProperty(PropertyGroup, NoteActionPropertyBase):
     data_type = MidiDataType.DOPESHEET
 
     delete_source_keyframes: \
-        BoolProperty(name="Delete Source Keyframes",
-                     description="Delete the source keyframes after copying",
+        BoolProperty(name=i18n.get_key(i18n.DELETE_SOURCE_KEYFRAMES),
+                     description=i18n.get_key(i18n.DELETE_SOURCE_KEYFRAMES_DESCRIPTION),
                      default=False)
     skip_overlaps: \
-        BoolProperty(name="Skip Overlaps",
-                     description="Skip notes if the first frame would be at or "
-                                 "before the last frame of the previous note",
+        BoolProperty(name=i18n.get_key(i18n.SKIP_OVERLAPS),
+                     description=i18n.get_key(i18n.GREASE_PENCIL_SKIP_OVERLAPS_DESCRIPTION),
                      default=False)
 
     sync_length_with_notes: \
-        BoolProperty(name="Sync Length with Notes",
-                     description="Scale the copied keyframes' spacing so that the length matches the "
-                                 "lengths of the notes they are copied to",
+        BoolProperty(name=i18n.get_key(i18n.SYNC_LENGTH_WITH_NOTES),
+                     description=i18n.get_key(i18n.GREASE_PENCIL_SYNC_LENGTH_DESCRIPTION),
                      default=False)
 
-    note_filter_groups: CollectionProperty(type=DopeSheetNoteFilterGroup, name="Note Filter Groups")
+    note_filter_groups: CollectionProperty(type=DopeSheetNoteFilterGroup, name=i18n.get_key(i18n.NOTE_FILTER_GROUPS))
 
 
 class DopeSheetTempoPropertyGroup(PropertyGroup, TempoPropertyBase):

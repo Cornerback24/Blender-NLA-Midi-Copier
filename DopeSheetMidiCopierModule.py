@@ -11,12 +11,15 @@ if "bpy" in locals():
     importlib.reload(NoteCollectionModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(OperatorUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
 else:
     from . import midi_data
     from . import NoteFilterImplementations
     from . import PitchUtils
     from . import NoteCollectionModule
     from . import OperatorUtils
+    from .i18n import i18n
 
 import bpy
 from .midi_data import MidiDataType
@@ -26,8 +29,8 @@ from .NoteCollectionModule import NoteCollection, NoteCollectionMetaData, NoteCo
 
 class DopeSheetMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
     bl_idname = "ops.nla_midi_dope_sheet_copier"
-    bl_label = "Copy Keyframes to Notes"
-    bl_description = "Copy the selected keyframes to the selected note"
+    bl_label = i18n.get_key(i18n.COPY_KEYFRAMES_TO_NOTES_OP)
+    bl_description = i18n.get_key(i18n.COPY_KEYFRAMES_TO_NOTES_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):

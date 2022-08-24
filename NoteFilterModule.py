@@ -1,5 +1,3 @@
-from abc import abstractmethod, ABC
-
 if "bpy" in locals():
     import importlib
 
@@ -7,16 +5,20 @@ if "bpy" in locals():
     importlib.reload(midi_data)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PropertyUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
 else:
     from . import midi_data
     from . import PropertyUtils
+    from .i18n import i18n
+
 import bpy
 
 
 class AddNoteFilter(bpy.types.Operator):
     bl_idname = "ops.nla_midi_add_note_filter"
-    bl_label = "Add Filter"
-    bl_description = "Add a filter"
+    bl_label = i18n.get_key(i18n.ADD_FILTER_OP)
+    bl_description = i18n.get_key(i18n.ADD_A_FILTER)
     bl_options = {"REGISTER", "UNDO"}
 
     is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument")
@@ -43,8 +45,8 @@ class AddNoteFilter(bpy.types.Operator):
 
 class RemoveNoteFilter(bpy.types.Operator):
     bl_idname = "ops.nla_midi_remove_note_filter"
-    bl_label = "Remove Filter"
-    bl_description = "Remove filter"
+    bl_label = i18n.get_key(i18n.REMOVE_FILTER_OP)
+    bl_description = i18n.get_key(i18n.REMOVE_FILTER)
     bl_options = {"REGISTER", "UNDO"}
 
     is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument")
@@ -72,8 +74,8 @@ class RemoveNoteFilter(bpy.types.Operator):
 
 class ReorderFilter(bpy.types.Operator):
     bl_idname = "ops.nla_midi_reorder_note_filter"
-    bl_label = "Reorder Filter"
-    bl_description = "Change filter order"
+    bl_label = i18n.get_key(i18n.REORDER_FILTER_OP)
+    bl_description = i18n.get_key(i18n.CHANGE_FILTER_ORDER)
     bl_options = {"REGISTER", "UNDO"}
 
     is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument")
@@ -102,10 +104,8 @@ class ReorderFilter(bpy.types.Operator):
 
 class AddNoteFilterGroup(bpy.types.Operator):
     bl_idname = "ops.nla_midi_add_note_filter_group"
-    bl_label = "Add Filter Group"
-    bl_description = "Add a filter group.\nA filter group is a list of filters to be applied when coping the action. " \
-                     "The filters in each group will be applied in the order they are defined. " \
-                     "The action is copied to notes that match any of the filter groups"
+    bl_label = i18n.get_key(i18n.ADD_FILTER_GROUP_OP)
+    bl_description = i18n.get_key(i18n.ADD_FILTER_GROUP_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
 
     is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument")
@@ -131,8 +131,8 @@ class AddNoteFilterGroup(bpy.types.Operator):
 
 class RemoveFilterGroup(bpy.types.Operator):
     bl_idname = "ops.nla_midi_remove_note_filter_group"
-    bl_label = "Remove Filter Group"
-    bl_description = "Delete Filter Group"
+    bl_label = i18n.get_key(i18n.REMOVE_FILTER_GROUP_OP)
+    bl_description = i18n.get_key(i18n.DELETE_FILTER_GROUP)
     bl_options = {"REGISTER", "UNDO"}
 
     is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument")

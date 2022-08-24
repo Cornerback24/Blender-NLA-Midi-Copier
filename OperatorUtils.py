@@ -3,11 +3,15 @@ if "bpy" in locals():
 
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(midi_data)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
 else:
     # noinspection PyUnresolvedReferences
     from . import midi_data
+    from .i18n import i18n
 
 import bpy
+import traceback
 
 
 def load_midi_file(operator, context, data_type, filepath):
@@ -18,7 +22,8 @@ def load_midi_file(operator, context, data_type, filepath):
         loaded_midi_data.update_midi_file(filepath, True, context)
     except Exception as e:
         # noinspection PyArgumentList,PyUnresolvedReferences
-        operator.report({"WARNING"}, "Could not load midi file: " + str(e))
+        operator.report({"WARNING"}, i18n.concat(i18n.get_text(i18n.COULD_NOT_LOAD_MIDI_FILE), str(e)))
+        print(traceback.format_exc())
         midi_data_property["midi_file"] = ""
         loaded_midi_data.update_midi_file(None, False, context)
 
@@ -27,8 +32,8 @@ class CopyMidiFileData(bpy.types.Operator):
     # Operator to load midi file data form another view
     # (load the midi file from the NLA editor into the graph editor, for example)
     bl_idname = "ops.midi_file_copy_data"
-    bl_label = "Copy Midi file data"
-    bl_description = "Copy midi file data"
+    bl_label = i18n.get_key(i18n.COPY_MIDI_FILE_DATA_OP)
+    bl_description = i18n.get_key(i18n.COPY_MIDI_FILE_DATA)
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
     copy_from_data_type: bpy.props.IntProperty(name="From", options={'HIDDEN'})

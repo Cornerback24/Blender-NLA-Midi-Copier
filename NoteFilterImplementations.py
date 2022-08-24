@@ -5,10 +5,14 @@ if "bpy" in locals():
     importlib.reload(PropertyUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PitchUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
 else:
     from . import PropertyUtils
     from . import PitchUtils
+    from .i18n import i18n
 
+import bpy
 from abc import abstractmethod, ABC
 from typing import List, Tuple, Callable
 
@@ -91,8 +95,8 @@ class NoteFilterBase(ABC):
 
 class PitchFilter(NoteFilterBase):
     ID = "note_pitch_filter"
-    NAME = "Pitch"
-    DESCRIPTION = "Filter by the note's pitch. (This overrides the selected note.)"
+    NAME = i18n.get_key(i18n.PITCH)
+    DESCRIPTION = i18n.get_key(i18n.PITCH_FILTER_DESCRIPTION)
     NUMBER = 2
 
     def __init__(self, note_filter_property):
@@ -112,8 +116,8 @@ class PitchFilter(NoteFilterBase):
 
 class RelativeStartTime(NoteFilterBase):
     ID = "note_start_time_relative_frames"
-    NAME = "Relative Start Time"
-    DESCRIPTION = "Filter notes by start time (relative to the start of the midi file)"
+    NAME = i18n.get_key(i18n.RELATIVE_START_TIME)
+    DESCRIPTION = i18n.get_key(i18n.RELATIVE_START_TIME_FILTER_DESCRIPTION)
     NUMBER = 3
 
     def filtered_notes(self, notes: List[Tuple[int, 'AnalyzedNote']], context) -> List[Tuple[int, 'AnalyzedNote']]:
@@ -135,8 +139,8 @@ class RelativeStartTime(NoteFilterBase):
 
 class StartTime(NoteFilterBase):
     ID = "note_start_time_frames"
-    NAME = "Start Time"
-    DESCRIPTION = "Filter notes by start time"
+    NAME = i18n.get_key(i18n.START_TIME)
+    DESCRIPTION = i18n.get_key(i18n.START_TIME_FILTER_DESCRIPTION)
     NUMBER = 5
 
     def filtered_notes(self, notes: List[Tuple[int, 'AnalyzedNote']], context) -> List[Tuple[int, 'AnalyzedNote']]:
@@ -157,8 +161,8 @@ class StartTime(NoteFilterBase):
 
 class NoteLength(NoteFilterBase):
     ID = "note_length_filter"
-    NAME = "Note Length"
-    DESCRIPTION = "Filter notes by length"
+    NAME = i18n.get_key(i18n.NOTE_LENGTH)
+    DESCRIPTION = i18n.get_key(i18n.NOTE_LENGTH_FILTER_DESCRIPTION)
     NUMBER = 1
 
     def filtered_notes(self, notes: List[Tuple[int, 'AnalyzedNote']], context):
@@ -177,8 +181,8 @@ class NoteLength(NoteFilterBase):
 
 class NoteVelocity(NoteFilterBase):
     ID = "note_velocity_filter"
-    NAME = "Velocity"
-    DESCRIPTION = "Filter notes by velocity"
+    NAME = i18n.get_key(i18n.VELOCITY)
+    DESCRIPTION = i18n.get_key(i18n.VELOCITY_FILTER_DESCRIPTION)
     NUMBER = 4
 
     def filtered_notes(self, notes: List[Tuple[int, 'AnalyzedNote']], context):
@@ -193,9 +197,8 @@ class NoteVelocity(NoteFilterBase):
 
 class AlternationFilter(NoteFilterBase):
     ID = "note_alternation_filter"
-    NAME = "Every"
-    DESCRIPTION = "Filter notes by an alternation pattern. " \
-                  "(For example only every fourth note, starting with the third note.)"
+    NAME = i18n.get_key(i18n.EVERY)
+    DESCRIPTION = i18n.get_key(i18n.ALTERNATION_FILTER_DESCRIPTION)
     NAME_DISPLAY_WEIGHT = 0.2
     NUMBER = 0
 

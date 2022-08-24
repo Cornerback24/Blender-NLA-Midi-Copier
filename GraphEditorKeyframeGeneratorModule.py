@@ -11,12 +11,15 @@ if "bpy" in locals():
     importlib.reload(NoteCollectionModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(OperatorUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
 else:
     from . import midi_data
     from . import PitchUtils
     from . import GraphEditorMidiPropertiesModule
     from . import NoteCollectionModule
     from . import OperatorUtils
+    from .i18n import i18n
 
 import bpy
 from collections import defaultdict
@@ -157,8 +160,8 @@ class FcurveKeyframeGenerator:
 
 class GraphEditorMidiKeyframeGenerator(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
     bl_idname = "ops.nla_midi_graph_editor_keyframe_generator"
-    bl_label = "Generate Keyframes"
-    bl_description = "Generate Keyframes"
+    bl_label = i18n.get_key(i18n.GENERATE_KEYFRAMES_OP)
+    bl_description = i18n.get_key(i18n.GENERATE_KEYFRAMES)
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -220,9 +223,9 @@ class GraphEditorMidiKeyframeGenerator(bpy.types.Operator, OperatorUtils.Dynamic
     def passes_pitch_filter(pitch: int, keyframe_generator_property, notes_in_active_track) -> bool:
         filter_by_scale = False
         in_scale = True
-        if keyframe_generator_property.scale_filter_type == "In scale":
+        if keyframe_generator_property.scale_filter_type == "in_scale":
             filter_by_scale = True
-        elif keyframe_generator_property.scale_filter_type == "Not in scale":
+        elif keyframe_generator_property.scale_filter_type == "not_in_scale":
             filter_by_scale = True
             in_scale = False
         scale_pitch = None
@@ -240,8 +243,8 @@ class GraphEditorMidiKeyframeGenerator(bpy.types.Operator, OperatorUtils.Dynamic
 
 class LoadMinMaxFromMidiTrack(bpy.types.Operator):
     bl_idname = "ops.nla_midi_load_min_max_from_midi_track"
-    bl_label = "Load min and max values"
-    bl_description = "Load minimum and maximum vales from the Midi Track"
+    bl_label = i18n.get_key(i18n.LOAD_MIN_AND_MAX_VALUES_OP)
+    bl_description = i18n.get_key(i18n.LOAD_MIN_MAX_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):

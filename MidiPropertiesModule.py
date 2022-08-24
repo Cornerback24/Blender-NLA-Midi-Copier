@@ -95,31 +95,39 @@ def on_action_updated(note_action_property, context):
         note_action_property.action_length = int(action.frame_range[1]) - int(action.frame_range[0])
 
 
-COMPARISON_ENUM_PROPERTY_ITEMS = [("less_than", "<", "Less than", 0),
-                                  ("less_than_or_equal_to", "<=", "Less than or equal to", 1),
-                                  ("equal_to", "=", "Equal to", 2),
-                                  ("greater_than_or_equal_to", ">=", "Greater than or equal to", 3),
-                                  ("greater_than", ">", "Greater than", 4)]
+COMPARISON_ENUM_PROPERTY_ITEMS = [("less_than", "<", i18n.get_key(i18n.LESS_THAN), 0),
+                                  ("less_than_or_equal_to", "<=", i18n.get_key(i18n.LESS_THAN_OR_EQUAL_TO), 1),
+                                  ("equal_to", "=", i18n.get_key(i18n.EQUAL_TO), 2),
+                                  ("greater_than_or_equal_to", ">=", i18n.get_key(i18n.GREATER_THAN_OR_EQUAL_TO), 3),
+                                  ("greater_than", ">", i18n.get_key(i18n.GREATER_THAN), 4)]
 
-TIME_UNITS = [("frames", "Frames", "Frames", 0),
-              ("seconds", "Seconds", "Seconds", 1)]
+TIME_UNITS = [("frames", i18n.get_key(i18n.FRAMES), i18n.get_key(i18n.FRAMES), 0),
+              ("seconds", i18n.get_key(i18n.SECONDS), i18n.get_key(i18n.SECONDS), 1)]
 
 
 class NoteFilterPropertyBase:
-    filter_type: EnumProperty(items=NoteFilterImplementations.FILTER_ENUM_PROPERTY_ITEMS, name="Filter Type",
-                              description="Filter Type", default="note_pitch_filter")
-    comparison_operator: EnumProperty(items=COMPARISON_ENUM_PROPERTY_ITEMS, name="Comparison Operator",
-                                      description="Comparison Operator", default="equal_to")
-    note_pitch: PropertyUtils.note_property("Pitch", "Pitch", get_all_notes_for_pitch_filter,
+    filter_type: EnumProperty(items=NoteFilterImplementations.FILTER_ENUM_PROPERTY_ITEMS,
+                              name=i18n.get_key(i18n.FILTER_TYPE), description=i18n.get_key(i18n.FILTER_TYPE),
+                              default="note_pitch_filter")
+    comparison_operator: EnumProperty(items=COMPARISON_ENUM_PROPERTY_ITEMS, name=i18n.get_key(i18n.COMPARISON_OPERATOR),
+                                      description=i18n.get_key(i18n.COMPARISON_OPERATOR), default="equal_to")
+    note_pitch: PropertyUtils.note_property(i18n.get_key(i18n.PITCH), i18n.get_key(i18n.PITCH),
+                                            get_all_notes_for_pitch_filter,
                                             "note_pitch", "note_pitch_search_string")
     note_pitch_search_string: PropertyUtils.note_search_property("note_pitch", "note_pitch_search_string",
                                                                  get_all_notes_for_pitch_filter)
-    non_negative_int: IntProperty(name="Non Negative Int", description="Non-negative integer", min=0)
-    positive_int: IntProperty(name="Positive Int", description="Positive Integer", min=1, default=1)
-    positive_int_2: IntProperty(name="Positive Int", description="Positive Integer", min=1, default=1)
-    int_0_to_127: IntProperty(name="Integer", description="Integer between 0 and 127, inclusive", min=0, max=127)
-    non_negative_number: FloatProperty(name="Non negative number", description="Non negative number", min=0.0)
-    time_unit: EnumProperty(items=TIME_UNITS, name="Time unit", description="Time unit", default="frames")
+    non_negative_int: IntProperty(name=i18n.get_key(i18n.NON_NEGATIVE_INT),
+                                  description=i18n.get_key(i18n.NON_NEGATIVE_INTEGER), min=0)
+    positive_int: IntProperty(name=i18n.get_key(i18n.POSITIVE_INT), description=i18n.get_key(i18n.POSITIVE_INTEGER),
+                              min=1, default=1)
+    positive_int_2: IntProperty(name=i18n.get_key(i18n.POSITIVE_INT), description=i18n.get_key(i18n.POSITIVE_INTEGER),
+                                min=1, default=1)
+    int_0_to_127: IntProperty(name=i18n.get_key(i18n.INTEGER),
+                              description=i18n.get_key(i18n.INTEGER_0_TO_127_INCLUSIVE), min=0, max=127)
+    non_negative_number: FloatProperty(name=i18n.get_key(i18n.NON_NEGATIVE_NUMBER),
+                                       description=i18n.get_key(i18n.NON_NEGATIVE_NUMBER), min=0.0)
+    time_unit: EnumProperty(items=TIME_UNITS, name=i18n.get_key(i18n.TIME_UNIT),
+                            description=i18n.get_key(i18n.TIME_UNIT), default="frames")
 
 
 class NoteFilterProperty(PropertyGroup, NoteFilterPropertyBase):
@@ -127,37 +135,34 @@ class NoteFilterProperty(PropertyGroup, NoteFilterPropertyBase):
 
 
 class NoteFilterGroup(PropertyGroup):
-    note_filters: CollectionProperty(type=NoteFilterProperty, name="Note Filters")
+    note_filters: CollectionProperty(type=NoteFilterProperty, name=i18n.get_key(i18n.NOTE_FILTERS))
     expanded: BoolProperty(name="Expanded", default=True)
 
 
 class NoteActionPropertyBase:
     midi_frame_offset: \
-        IntProperty(name="Frame Offset",
-                    description="Frame offset when copying strips")
+        IntProperty(name=i18n.get_key(i18n.FRAME_OFFSET),
+                    description=i18n.get_key(i18n.FRAME_OFFSET_WHEN_COPYING_STRIPS))
     add_filters: \
-        BoolProperty(name="Add filters",
-                     description="Add filters to exclude notes",
+        BoolProperty(name=i18n.get_key(i18n.ADD_FILTERS),
+                     description=i18n.get_key(i18n.ADD_FILTERS_DESCRIPTION),
                      default=False)
     filters_expanded: BoolProperty(name="Expanded", default=True)
     scale_factor: \
-        FloatProperty(name="Scale Factor",
-                      description="Scale factor for scaling to the note's length. "
-                                  "For example, a scale factor of 1 will scale to the note's length, "
-                                  "a scale factor of 2 will scale to twice the note's length, " +
-                                  "and a scale factor of 0.5 will scale to half the note's length",
+        FloatProperty(name=i18n.get_key(i18n.SCALE_FACTOR),
+                      description=i18n.get_key(i18n.SCALE_FACTOR_DESCRIPTION),
                       min=0.0000001, max=1000000, soft_min=0.0000001, soft_max=1000000, default=1)
     copy_to_note_end: \
-        BoolProperty(name="Copy to Note End",
-                     description="Copy the action to the end of the note instead of the beginning",
+        BoolProperty(name=i18n.get_key(i18n.COPY_TO_NOTE_END),
+                     description=i18n.get_key(i18n.COPY_TO_NOTE_END_DESCRIPTION),
                      default=False)
 
 
-OVERLAP_OPTIONS = [("SKIP", "Skip", "Skip keyframe if an existing keyframe is on the same frame", 0),
-                   ("BLEND", "Blend",
-                    "Place the action on a new track above the existing action", 1),
-                   ("DUPLICATE_OBJECT", "Duplicate Object",
-                    "Copy the action to a duplicated object", 2)]
+OVERLAP_OPTIONS = [("SKIP", i18n.get_key(i18n.SKIP), i18n.get_key(i18n.OVERLAP_SKIP_DESCRIPTION), 0),
+                   ("BLEND", i18n.get_key(i18n.BLEND),
+                    i18n.get_key(i18n.OVERLAP_BLEND_DESCRIPTION), 1),
+                   ("DUPLICATE_OBJECT", i18n.get_key(i18n.DUPLICATE_OBJECT),
+                    i18n.get_key(i18n.DUPLICATE_OBJECT_DESCRIPTION), 2)]
 
 OVERLAP_OPTIONS_WITHOUT_DUPLICATE = [x for x in OVERLAP_OPTIONS if x[0] != "DUPLICATE_OBJECT"]
 
@@ -187,35 +192,35 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
         name=i18n.get_key(i18n.TYPE), description=i18n.get_key(i18n.TYPE_DESCRIPTION), default="Object",
         update=on_id_type_updated)
 
-    action: PointerProperty(type=bpy.types.Action, name="Action", description="The action to create action strips from",
+    action: PointerProperty(type=bpy.types.Action, name=i18n.get_key(i18n.ACTION),
+                            description=i18n.get_key(i18n.ACTION_DESCRIPTION),
                             poll=action_poll, update=on_action_updated)
 
     nla_track_name: \
-        StringProperty(name="Nla Track",
-                       description="Name of the NLA Track that action strips will be placed on.\n " +
-                                   "A track name will be automatically generated if this is blank")
+        StringProperty(name=i18n.get_key(i18n.NLA_TRACK),
+                       description=i18n.get_key(i18n.NLA_TRACK_DESCRIPTION))
 
     # deprecated, on_overlap used instead
     duplicate_object_on_overlap: \
-        BoolProperty(name="Duplicate Object on Overlap",
-                     description="Copy the action to a duplicated object if it overlaps another action",
+        BoolProperty(name=i18n.get_key(i18n.DUPLICATE_OBJECT_ON_OVERLAP),
+                     description=i18n.get_key(i18n.DUPLICATE_OBJECT_ON_OVERLAP_DESCRIPTION),
                      default=False)
 
-    on_overlap: EnumProperty(items=get_overlap_options, name="Overlap",
-                             description="How to handle overlapping actions",
+    on_overlap: EnumProperty(items=get_overlap_options, name=i18n.get_key(i18n.OVERLAP),
+                             description=i18n.get_key(i18n.HOW_TO_HANDLE_OVERLAPPING_ACTIONS),
                              default=dynamic_enum_default(1))  # default to Blend
 
     blend_mode: \
-        EnumProperty(items=get_blend_modes, name="Blending", description="Blending for overlapping strips",
+        EnumProperty(items=get_blend_modes, name=i18n.get_key(i18n.BLENDING),
+                     description=i18n.get_key(i18n.BLENDING_FOR_OVERLAPPING_STRIPS),
                      default=dynamic_enum_default(1))  # default to Replace
 
     sync_length_with_notes: \
-        BoolProperty(name="Sync Length with Notes",
-                     description="Scale the copied NLA strips so that their lengths match the lengths of the notes "
-                                 "they are copied to",
+        BoolProperty(name=i18n.get_key(i18n.SYNC_LENGTH_WITH_NOTES),
+                     description=i18n.get_key(i18n.SYNC_LENGTH_WITH_NOTES_DESCRIPTION),
                      default=False)
 
-    note_filter_groups: CollectionProperty(type=NoteFilterGroup, name="Note Filter Groups")
+    note_filter_groups: CollectionProperty(type=NoteFilterGroup, name=i18n.get_key(i18n.NOTE_FILTER_GROUPS))
 
     copy_to_selected_objects: \
         BoolProperty(name=i18n.get_key(i18n.COPY_ACTION_TO_SELECTED_OBJECTS),
@@ -223,101 +228,118 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
                      default=False)
 
     action_length: \
-        IntProperty(name="Action Length (Frames)",
+        IntProperty(name=i18n.get_key(i18n.ACTION_LENGTH_FRAMES),
                     min=1,
-                    description="Length of the action, used to determine if the next action " +
-                                "overlaps for object duplication. " +
-                                "It has no effect on the actual length of the copied action.\n" +
-                                "This option has no effect if \"Sync Length with Notes\" is selected.\n" +
-                                "This will be ignored if it is shorter than the actual length of the action")
+                    description=i18n.get_key(i18n.ACTION_LENGTH_FRAMES_DESCRIPTION))
 
     # used for display in the instruments panel
     expanded: BoolProperty(name="Expanded", default=True)
 
-    armature: PointerProperty(type=bpy.types.Armature, name="Armature", description="The armature to animate")
-    brush: PointerProperty(type=bpy.types.Brush, name="Brush", description="The brush to animate")
-    camera: PointerProperty(type=bpy.types.Camera, name="Camera", description="The camera to animate")
-    cachefile: PointerProperty(type=bpy.types.CacheFile, name="Cache File", description="The cache file to animate")
-    collection: PointerProperty(type=bpy.types.Collection, name="Collection", description="The collection animate")
-    curve: PointerProperty(type=bpy.types.Curve, name="Curve", description="The curve to animate")
-    greasepencil: PointerProperty(type=bpy.types.GreasePencil, name="Grease Pencil",
-                                  description="The grease pencil to animate")
-    image: PointerProperty(type=bpy.types.Image, name="Image", description="The image to animate")
-    key: PointerProperty(type=bpy.types.Key, name="Key", description="The key to animate")
-    lattice: PointerProperty(type=bpy.types.Lattice, name="Lattice", description="The lattice to animate")
-    light: PointerProperty(type=bpy.types.Light, name="Light", description="The light to animate")
-    light_probe: PointerProperty(type=bpy.types.LightProbe, name="Light Probe",
-                                 description="The light probe to animate")
-    mask: PointerProperty(type=bpy.types.Mask, name="Mask", description="The mask to animate")
-    material: PointerProperty(type=bpy.types.Material, name="Material", description="The material to animate")
-    meta: PointerProperty(type=bpy.types.MetaBall, name="MetaBall", description="The meta to animate")
-    mesh: PointerProperty(type=bpy.types.Mesh, name="Mesh", description="The mesh to animate")
-    movieclip: PointerProperty(type=bpy.types.MovieClip, name="Movie Clip", description="The movie clip to animate")
-    nodetree: PointerProperty(type=bpy.types.NodeTree, name="Node Tree", description="The node tree to animate")
-    object: PointerProperty(type=bpy.types.Object, name="Object", description="The object to animate")
-    paintcurve: PointerProperty(type=bpy.types.PaintCurve, name="Paintcurve", description="The paintcurve to animate")
-    palette: PointerProperty(type=bpy.types.Palette, name="Palette", description="The palette to animate")
-    particle_settings: PointerProperty(type=bpy.types.ParticleSettings, name="Particle Settings",
-                                       description="The particle settings to animate")
-    scene: PointerProperty(type=bpy.types.Scene, name="Scene", description="The scene to animate")
-    sound: PointerProperty(type=bpy.types.Sound, name="Sound", description="The sound to animate")
-    speaker: PointerProperty(type=bpy.types.Speaker, name="Speaker", description="The speaker to animate")
-    text: PointerProperty(type=bpy.types.Text, name="Text", description="The text to animate")
-    texture: PointerProperty(type=bpy.types.Texture, name="Texture", description="The texture to animate")
+    armature: PointerProperty(type=bpy.types.Armature, name=i18n.get_key(i18n.ARMATURE),
+                              description=i18n.get_key(i18n.ARMATURE_TO_ANIMATE))
+    brush: PointerProperty(type=bpy.types.Brush, name=i18n.get_key(i18n.BRUSH),
+                           description=i18n.get_key(i18n.BRUSH_TO_ANIMATE))
+    camera: PointerProperty(type=bpy.types.Camera, name=i18n.get_key(i18n.CAMERA),
+                            description=i18n.get_key(i18n.CAMERA_TO_ANIMATE))
+    cachefile: PointerProperty(type=bpy.types.CacheFile, name=i18n.get_key(i18n.CACHE_FILE),
+                               description=i18n.get_key(i18n.CACHE_FILE_TO_ANIMATE))
+    collection: PointerProperty(type=bpy.types.Collection, name=i18n.get_key(i18n.COLLECTION),
+                                description=i18n.get_key(i18n.COLLECTION_TO_ANIMATE))
+    curve: PointerProperty(type=bpy.types.Curve, name=i18n.get_key(i18n.CURVE),
+                           description=i18n.get_key(i18n.CURVE_TO_ANIMATE))
+    greasepencil: PointerProperty(type=bpy.types.GreasePencil, name=i18n.get_key(i18n.GREASE_PENCIL),
+                                  description=i18n.get_key(i18n.GREASE_PENCIL_TO_ANIMATE))
+    image: PointerProperty(type=bpy.types.Image, name=i18n.get_key(i18n.IMAGE),
+                           description=i18n.get_key(i18n.IMAGE_TO_ANIMATE))
+    key: PointerProperty(type=bpy.types.Key, name=i18n.get_key(i18n.KEY), description=i18n.get_key(i18n.KEY_TO_ANIMATE))
+    lattice: PointerProperty(type=bpy.types.Lattice, name=i18n.get_key(i18n.LATTICE),
+                             description=i18n.get_key(i18n.LATTICE_TO_ANIMATE))
+    light: PointerProperty(type=bpy.types.Light, name=i18n.get_key(i18n.LIGHT),
+                           description=i18n.get_key(i18n.LIGHT_TO_ANIMATE))
+    light_probe: PointerProperty(type=bpy.types.LightProbe, name=i18n.get_key(i18n.LIGHT_PROBE),
+                                 description=i18n.get_key(i18n.LIGHT_PROBE_TO_ANIMATE))
+    mask: PointerProperty(type=bpy.types.Mask, name=i18n.get_key(i18n.MASK),
+                          description=i18n.get_key(i18n.MASK_TO_ANIMATE))
+    material: PointerProperty(type=bpy.types.Material, name=i18n.get_key(i18n.MATERIAL),
+                              description=i18n.get_key(i18n.MATERIAL_TO_ANIMATE))
+    meta: PointerProperty(type=bpy.types.MetaBall, name=i18n.get_key(i18n.METABALL),
+                          description=i18n.get_key(i18n.METABALL_TO_ANIMATE))
+    mesh: PointerProperty(type=bpy.types.Mesh, name=i18n.get_key(i18n.MESH),
+                          description=i18n.get_key(i18n.MESH_TO_ANIMATE))
+    movieclip: PointerProperty(type=bpy.types.MovieClip, name=i18n.get_key(i18n.MOVIE_CLIP),
+                               description=i18n.get_key(i18n.MOVIE_CLIP_TO_ANIMATE))
+    nodetree: PointerProperty(type=bpy.types.NodeTree, name=i18n.get_key(i18n.NODE_TREE),
+                              description=i18n.get_key(i18n.THE_NODE_TREE_TO_ANIMATE))
+    object: PointerProperty(type=bpy.types.Object, name=i18n.get_key(i18n.OBJECT),
+                            description=i18n.get_key(i18n.OBJECT_TO_ANIMATE))
+    paintcurve: PointerProperty(type=bpy.types.PaintCurve, name=i18n.get_key(i18n.PAINTCURVE),
+                                description=i18n.get_key(i18n.PAINTCURVE_TO_ANIMATE))
+    palette: PointerProperty(type=bpy.types.Palette, name=i18n.get_key(i18n.PALETTE),
+                             description=i18n.get_key(i18n.PALETTE_TO_ANIMATE))
+    particle_settings: PointerProperty(type=bpy.types.ParticleSettings, name=i18n.get_key(i18n.PARTICLE_SETTINGS),
+                                       description=i18n.get_key(i18n.PARTICLE_SETTINGS_TO_ANIMATE))
+    scene: PointerProperty(type=bpy.types.Scene, name=i18n.get_key(i18n.SCENE),
+                           description=i18n.get_key(i18n.SCENE_TO_ANIMATE))
+    sound: PointerProperty(type=bpy.types.Sound, name=i18n.get_key(i18n.SOUND),
+                           description=i18n.get_key(i18n.SOUND_TO_ANIMATE))
+    speaker: PointerProperty(type=bpy.types.Speaker, name=i18n.get_key(i18n.SPEAKER),
+                             description=i18n.get_key(i18n.SPEAKER_TO_ANIMATE))
+    text: PointerProperty(type=bpy.types.Text, name=i18n.get_key(i18n.TEXT),
+                          description=i18n.get_key(i18n.TEXT_TO_ANIMATE))
+    texture: PointerProperty(type=bpy.types.Texture, name=i18n.get_key(i18n.TEXTURE),
+                             description=i18n.get_key(i18n.TEXTURE_TO_ANIMATE))
     if blender_version >= (2, 83, 0):
-        volume: PointerProperty(type=bpy.types.Volume, name="Volume", description="The volume to animate")
-    world: PointerProperty(type=bpy.types.World, name="World", description="The world to animate")
+        volume: PointerProperty(type=bpy.types.Volume, name=i18n.get_key(i18n.VOLUME),
+                                description=i18n.get_key(i18n.VOLUME_TO_ANIMATE))
+    world: PointerProperty(type=bpy.types.World, name=i18n.get_key(i18n.WORLD),
+                           description=i18n.get_key(i18n.WORLD_TO_ANIMATE))
 
 
 class InstrumentNoteProperty(PropertyGroup):
-    name: StringProperty(name="Name")
-    note_id: IntProperty(name="Note")
-    actions: CollectionProperty(type=NoteActionProperty, name="Actions")
+    name: StringProperty(name=i18n.get_key(i18n.NAME))
+    note_id: IntProperty(name=i18n.get_key(i18n.NOTE))
+    actions: CollectionProperty(type=NoteActionProperty, name=i18n.get_key(i18n.ACTIONS))
 
 
 TRANSPOSE_FILTER_ITEMS = \
-    [("no_transpose", "Do not transpose", "Do not transpose", 0),
-     ("transpose_if_possible_leave_all_inclusive", "Transpose if possible except all-inclusive",
-      "Transpose filters if possible. Does not transpose filters that can't be transposed due to range constraints. "
-      "Does not transpose filters than include every pitch", 1),
-     ("transpose_if_possible", "Transpose if possible",
-      "Transpose filters if possible. Does not transpose filters that can't be transposed due to range constraints", 2),
-     ("transpose_all_leave_all_inclusive", "Transpose all except all-inclusive",
-      "Transpose all filters except for filters than include every pitch", 3),
-     ("transpose_all", "Transpose all", "Transpose all filters", 4)]
+    [("no_transpose", i18n.get_key(i18n.DO_NOT_TRANSPOSE), i18n.get_key(i18n.DO_NOT_TRANSPOSE), 0),
+     ("transpose_if_possible_leave_all_inclusive", i18n.get_key(i18n.TRANSPOSE_IF_POSSIBLE_EXCEPT_ALL_INCLUSIVE),
+      i18n.get_key(i18n.TRANSPOSE_IF_POSSIBLE_EXCEPT_ALL_DESCRIPTION), 1),
+     ("transpose_if_possible", i18n.get_key(i18n.TRANSPOSE_IF_POSSIBLE),
+      i18n.get_key(i18n.TRANSPOSE_IF_POSSIBLE_DESCRIPTION), 2),
+     ("transpose_all_leave_all_inclusive", i18n.get_key(i18n.TRANSPOSE_EXCEPT_ALL_INCLUSIVE),
+      i18n.get_key(i18n.TRANSPOSE_EXCEPT_ALL_INCLUSIVE_DESCRIPTION), 3),
+     ("transpose_all", i18n.get_key(i18n.TRANSPOSE_ALL), i18n.get_key(i18n.TRANSPOSE_ALL_FILTERS), 4)]
 
 
 class InstrumentProperty(PropertyGroup):
     data_type = MidiDataType.NLA
-    name: StringProperty(name="Name")
-    instrument_midi_frame_offset: IntProperty(name="Instrument Frame Offset",
-                                              description="Frame offset when copying strips")
-    notes: CollectionProperty(type=InstrumentNoteProperty, name="Notes")
-    selected_note_id: PropertyUtils.note_property("Note", "Note", get_instrument_notes,
+    name: StringProperty(name=i18n.get_key(i18n.NAME))
+    instrument_midi_frame_offset: IntProperty(name=i18n.get_key(i18n.INSTRUMENT_FRAME_OFFSET),
+                                              description=i18n.get_key(i18n.FRAME_OFFSET_WHEN_COPYING_STRIPS))
+    notes: CollectionProperty(type=InstrumentNoteProperty, name=i18n.get_key(i18n.NOTES))
+    selected_note_id: PropertyUtils.note_property(i18n.get_key(i18n.NOTE), i18n.get_key(i18n.NOTE),
+                                                  get_instrument_notes,
                                                   "selected_note_id", "note_search_string")
 
     note_search_string: PropertyUtils.note_search_property("selected_note_id", "note_search_string",
                                                            get_instrument_notes)
 
     selected_midi_track: EnumProperty(items=get_tracks_list,
-                                      name="Track",
-                                      description="Selected Midi Track")
-    copy_to_single_track: BoolProperty(name="Copy to single track",
-                                       description="If selected, copy actions to a single nla track. "
-                                                   "Otherwise create a track for each note. "
-                                                   "This is overwritten for any actions that have an Nla Track",
+                                      name=i18n.get_key(i18n.TRACK),
+                                      description=i18n.get_key(i18n.SELECTED_MIDI_TRACK))
+    copy_to_single_track: BoolProperty(name=i18n.get_key(i18n.COPY_TO_SINGLE_TRACK),
+                                       description=i18n.get_key(i18n.COPY_TO_SINGLE_TRACK_DESCRIPTION),
                                        default=True)
-    nla_track_name: StringProperty(name="Nla Track",
-                                   description="Name of the nla track to copy actions to. "
-                                               "A name will be generated of this field is blank. "
-                                               "This field is not used if \"Copy to Single Track\" is not selected")
+    nla_track_name: StringProperty(name=i18n.get_key(i18n.NLA_TRACK),
+                                   description=i18n.get_key(i18n.NLA_TRACK_INSTRUMENT_DESCRIPTION))
     # properties for drawing the panel
     properties_expanded: BoolProperty(name="Expanded", default=True)
     transpose_expanded: BoolProperty(name="Transpose:", default=False)
     notes_expanded: BoolProperty(name="Expanded", default=True)
     animate_expanded: BoolProperty(name="Expanded", default=True)
-    transpose_filters: EnumProperty(items=TRANSPOSE_FILTER_ITEMS, name="Transpose Filters",
-                                    description="Set how pitch filters will be transposed",
+    transpose_filters: EnumProperty(items=TRANSPOSE_FILTER_ITEMS, name=i18n.get_key(i18n.TRANSPOSE_FILTERS),
+                                    description=i18n.get_key(i18n.TRANSPOSE_FILTERS_DESCRIPTION),
                                     default="transpose_all_leave_all_inclusive")
 
 
@@ -359,53 +381,51 @@ def object_is_curve(bulk_copy_property_group, bpy_object):
     return bpy_object.type == "CURVE"
 
 
-scale_filter_options = [("No filter", "No filter", "Do not filter by scale", 0),
-                        ("In scale", "In scale", "Only include nodes in the selected scale", 1),
-                        ("Not in scale", "Not in scale", "Only include notes that are not in the selected scale", 2)]
+scale_filter_options = [("no_filter", i18n.get_key(i18n.NO_FILTER), i18n.get_key(i18n.DO_NOT_FILTER_BY_SCALE), 0),
+                        ("in_scale", i18n.get_key(i18n.IN_SCALE), i18n.get_key(i18n.IN_SCALE_DESCRIPTION), 1),
+                        ("not_in_scale", i18n.get_key(i18n.NOT_IN_SCALE), i18n.get_key(i18n.NOT_IN_SCALE_DESCRIPTION),
+                         2)]
 scale_options = [("A", "A", "A", 9), ("A#", "A#", "A#", 10), ("B", "B", "B", 11), ("C", "C", "C", 0),
                  ("C#", "C#", "C#", 1), ("D", "D", "D", 2), ("D#", "D#", "D#", 3), ("E", "E", "E", 4),
                  ("F", "F", "F", 5), ("F#", "F#", "F#", 6), ("G", "G", "G", 7), ("G#", "G#", "G#", 8), ]
-copy_tools = [("copy_to_instrument", "Copy to instrument", "Copy to instrument", 0),
-              ("copy_along_path", "Copy along path", "Animate selected objects, ordered by a path.\n"
-                                                     "Each object is animated to a different note, ascending by pitch "
-                                                     "along the path.", 1),
-              ("copy_by_object_name", "Copy by object name",
-               "Copy notes to selected objects based on the object's name. ", 2)]
-copy_by_name_type = [("copy_by_note", "Copy by note name",
-                      "Copy to objects with names beginning or ending"
-                      " with the note (for example A3 notes would be copied"
-                      " to an object named CubeA3 or A3Cube)", 0),
-                     ("copy_by_track_and_note", "Copy by track and note name",
-                      "Copy to objects with names beginning or ending"
-                      " with the note and containing selected track name", 1)]
+copy_tools = [("copy_to_instrument", i18n.get_key(i18n.COPY_TO_INSTRUMENT), i18n.get_key(i18n.COPY_TO_INSTRUMENT), 0),
+              ("copy_along_path", i18n.get_key(i18n.COPY_ALONG_PATH),
+               i18n.get_key(i18n.COPY_ALONG_PATH_DESCRIPTION), 1),
+              ("copy_by_object_name", i18n.get_key(i18n.COPY_BY_OBJECT_NAME),
+               i18n.get_key(i18n.COPY_BY_OBJECT_NAME_DESCRIPTION), 2)]
+copy_by_name_type = [("copy_by_note", i18n.get_key(i18n.COPY_BY_NOTE_NAME),
+                      i18n.get_key(i18n.COPY_BY_NOTE_NAME_DESCRIPTION), 0),
+                     ("copy_by_track_and_note", i18n.get_key(i18n.COPY_BY_TRACK_AND_NOTE_NAME),
+                      i18n.get_key(i18n.COPY_BY_TRACK_AND_NOTE_NAME_DESCRIPTION), 1)]
 
 
 class BulkCopyPropertyGroup(PropertyGroup):
-    quick_copy_tool: EnumProperty(name="Quick copy tool", description="Quick copy tool", items=copy_tools,
+    quick_copy_tool: EnumProperty(name=i18n.get_key(i18n.QUICK_COPY_TOOL),
+                                  description=i18n.get_key(i18n.QUICK_COPY_TOOL), items=copy_tools,
                                   default="copy_by_object_name")
-    copy_to_instrument: BoolProperty(name="Copy to Instrument", default=False,
-                                     description="Copies actions to an instrument if selected, otherwise copies "
-                                                 "actions directly to NLA strips")
-    selected_objects_only: BoolProperty(name="Copy to selected objects only", default=True,
-                                        description="If selected, copies to selected objects only. "
-                                                    "Otherwise copies to any matching objects in the scene.")
-    bulk_copy_curve: PointerProperty(type=bpy.types.Object, name="Path", poll=object_is_curve,
-                                     description="The path of selected objects to animate")
+    copy_to_instrument: BoolProperty(name=i18n.get_key(i18n.COPY_TO_INSTRUMENT), default=False,
+                                     description=i18n.get_key(i18n.COPY_TO_INSTRUMENT_DESCRIPTION))
+    selected_objects_only: BoolProperty(name=i18n.get_key(i18n.COPY_TO_SELECTED_OBJECTS_ONLY), default=True,
+                                        description=i18n.get_key(i18n.COPY_TO_SELECTED_OBJECTS_ONLY_DESCRIPTION))
+    bulk_copy_curve: PointerProperty(type=bpy.types.Object, name=i18n.get_key(i18n.PATH), poll=object_is_curve,
+                                     description=i18n.get_key(i18n.COPY_ALONG_PATH_CURVE_DESCRIPTION))
     bulk_copy_starting_note: \
-        PropertyUtils.note_property("Starting Note", "The note to use for the first object",
+        PropertyUtils.note_property(i18n.get_key(i18n.STARTING_NOTE),
+                                    i18n.get_key(i18n.COPY_ALONG_PATH_STARTING_NOTE_DESCRIPTION),
                                     get_bulk_copy_starting_note,
                                     "bulk_copy_starting_note", "bulk_copy_starting_note_search_string")
     bulk_copy_starting_note_search_string: \
         PropertyUtils.note_search_property("bulk_copy_starting_note", "bulk_copy_starting_note_search_string",
                                            get_bulk_copy_starting_note)
-    scale_filter_type: EnumProperty(items=scale_filter_options, name="Filter by Scale", description="Filter by Scale")
-    scale_filter_scale: EnumProperty(items=scale_options, name="Scale", description="Major Scale")
-    only_notes_in_selected_track: BoolProperty(name="Only Notes in Selected Track",
-                                               description="Only copy to notes in the selected Track "
-                                                           "in the NLA Midi Panel",
+    scale_filter_type: EnumProperty(items=scale_filter_options, name=i18n.get_key(i18n.FILTER_BY_SCALE),
+                                    description=i18n.get_key(i18n.FILTER_BY_SCALE))
+    scale_filter_scale: EnumProperty(items=scale_options, name=i18n.get_key(i18n.SCALE),
+                                     description=i18n.get_key(i18n.MAJOR_SCALE))
+    only_notes_in_selected_track: BoolProperty(name=i18n.get_key(i18n.ONLY_NOTES_IN_SELECTED_TRACK),
+                                               description=i18n.get_key(i18n.ONLY_NOTES_IN_SELECTED_TRACK_DESCRIPTION),
                                                default=False)
-    copy_by_name_type: EnumProperty(name="Copy by", description="Copy by name", items=copy_by_name_type,
-                                    default="copy_by_note")
+    copy_by_name_type: EnumProperty(name=i18n.get_key(i18n.COPY_BY), description=i18n.get_key(i18n.COPY_BY_NAME),
+                                    items=copy_by_name_type, default="copy_by_note")
 
 
 def get_midi_file_beats_per_minute(tempo_property):
@@ -425,22 +445,23 @@ def on_tempo_property_update(tempo_property, context):
 
 
 class TempoPropertyBase:
-    use_file_tempo: BoolProperty(name="File Tempo", default=True,
-                                 description="Use the tempo defined by the midi file", update=on_tempo_property_update)
-    beats_per_minute: FloatProperty(name="Bpm", default=120, description="Beats per minute",
+    use_file_tempo: BoolProperty(name=i18n.get_key(i18n.FILE_TEMPO), default=True,
+                                 description=i18n.get_key(i18n.FILE_TEMPO_DESCRIPTION), update=on_tempo_property_update)
+    beats_per_minute: FloatProperty(name=i18n.get_key(i18n.BPM), default=120,
+                                    description=i18n.get_key(i18n.BEATS_PER_MINUTE),
                                     update=on_tempo_property_update, min=0.01)
     # defining get= (and not set=) disables editing in the UI
-    file_beats_per_minute: FloatProperty(name="Bpm", default=120, description="Beats per minute",
+    file_beats_per_minute: FloatProperty(name=i18n.get_key(i18n.BPM), default=120,
+                                         description=i18n.get_key(i18n.BEATS_PER_MINUTE),
                                          get=get_midi_file_beats_per_minute, update=on_tempo_property_update)
-    use_file_ticks_per_beat: BoolProperty(name="File Ticks per Beat", default=True,
-                                          description="Use the ticks per beat defined by the midi file. "
-                                                      "(Selecting this and changing only the beats per minute should be"
-                                                      " sufficient for most tempo changes.)",
+    use_file_ticks_per_beat: BoolProperty(name=i18n.get_key(i18n.FILE_TICKS_PER_BEAT), default=True,
+                                          description=i18n.get_key(i18n.FILE_TICKS_PER_BEAT_DESCRIPTION),
                                           update=on_tempo_property_update)
-    ticks_per_beat: IntProperty(name="Ticks per beat", default=96, description="Ticks per beat", min=1,
-                                update=on_tempo_property_update)
+    ticks_per_beat: IntProperty(name=i18n.get_key(i18n.TICKS_PER_BEAT), default=96,
+                                description=i18n.get_key(i18n.TICKS_PER_BEAT), min=1, update=on_tempo_property_update)
     # defining get= (and not set=) disables editing in the UI
-    file_ticks_per_beat: IntProperty(name="Ticks per beat", default=96, description="Ticks per beat",
+    file_ticks_per_beat: IntProperty(name=i18n.get_key(i18n.TICKS_PER_BEAT), default=96,
+                                     description=i18n.get_key(i18n.TICKS_PER_BEAT),
                                      get=get_midi_file_ticks_per_beat, update=on_tempo_property_update)
 
 
@@ -450,34 +471,36 @@ class TempoPropertyGroup(PropertyGroup, TempoPropertyBase):
 
 class MidiTrackProperty(PropertyGroup):
     midi_data_type: IntProperty(name="MidiDataType")
-    midi_track_name: StringProperty(name="Midi Track", description="Name of the track from the midi file")
-    displayed_track_name: StringProperty(name="Displayed Name",
-                                         description="Displayed name of the midi track in selection dropdowns",
+    midi_track_name: StringProperty(name=i18n.get_key(i18n.MIDI_TRACK),
+                                    description=i18n.get_key(i18n.MIDI_TRACK_DESCRIPTION))
+    displayed_track_name: StringProperty(name=i18n.get_key(i18n.DISPLAYED_NAME),
+                                         description=i18n.get_key(i18n.DISPLAYED_TRACK_NAME_DESCRIPTION),
                                          update=on_track_name_updated)
 
 
 class MidiPropertyBase:
     # defining get= (and not set=) disables editing in the UI
-    midi_file: StringProperty(name="Midi File", description="Select Midi File", get=get_midi_file_name)
+    midi_file: StringProperty(name=i18n.get_key(i18n.MIDI_FILE), description=i18n.get_key(i18n.SELECTED_MIDI_FILE),
+                              get=get_midi_file_name)
     # the selected note
-    notes_list: PropertyUtils.note_property("Note", "Note", get_notes_list,
+    notes_list: PropertyUtils.note_property(i18n.get_key(i18n.NOTE), i18n.get_key(i18n.NOTE), get_notes_list,
                                             "notes_list", "note_search_string")
     note_search_string: PropertyUtils.note_search_property("notes_list", "note_search_string",
                                                            get_notes_list)
     track_list: EnumProperty(items=get_tracks_list,
-                             name="Track",
-                             description="Selected Midi Track",
+                             name=i18n.get_key(i18n.TRACK),
+                             description=i18n.get_key(i18n.SELECTED_MIDI_TRACK),
                              update=on_track_updated)
     note_action_property: PointerProperty(type=NoteActionProperty)
     midi_frame_start: \
-        IntProperty(name="First Frame",
-                    description="The frame corresponding to the beginning of the midi file",
+        IntProperty(name=i18n.get_key(i18n.FIRST_FRAME),
+                    description=i18n.get_key(i18n.FIRST_FRAME_DESCRIPTION),
                     default=1)
     middle_c_note: EnumProperty(items=middle_c_options,
-                                name="Middle C", description="The note corresponding to middle C (midi note 60)",
+                                name=i18n.get_key(i18n.MIDDLE_C), description=i18n.get_key(i18n.MIDDLE_C_DESCRIPTION),
                                 default="C4", update=on_middle_c_updated)
     tempo_settings: PointerProperty(type=TempoPropertyGroup)
-    midi_track_properties: CollectionProperty(type=MidiTrackProperty, name="Displayed Track Names")
+    midi_track_properties: CollectionProperty(type=MidiTrackProperty, name=i18n.get_key(i18n.DISPLAYED_TRACK_NAMES))
     midi_track_property_index: IntProperty()
 
 
@@ -488,19 +511,21 @@ class MidiPropertyGroup(MidiPropertyBase, PropertyGroup):
     data_type = MidiDataType.NLA
     # overwrite property from parent class MidiPropertyBase in order to override update function
     notes_list: EnumProperty(items=get_notes_list,
-                             name="Note",
-                             description="Note",
+                             name=i18n.get_key(i18n.NOTE),
+                             description=i18n.get_key(i18n.NOTE),
                              update=update_notes_list)
     note_action_property: PointerProperty(type=NoteActionProperty)
 
-    instruments: CollectionProperty(type=InstrumentProperty, name="Instruments")
-    selected_instrument_id: EnumProperty(items=get_instruments, name="Instrument",
-                                         description="Select an instrument")
+    instruments: CollectionProperty(type=InstrumentProperty, name=i18n.get_key(i18n.INSTRUMENTS))
+    selected_instrument_id: EnumProperty(items=get_instruments, name=i18n.get_key(i18n.INSTRUMENT),
+                                         description=i18n.get_key(i18n.SELECT_AN_INSTRUMENT))
 
-    copy_to_instrument_selected_instrument: EnumProperty(items=get_instruments, name="Instrument",
-                                                         description="Instrument to copy the action to")
+    copy_to_instrument_selected_instrument: EnumProperty(items=get_instruments, name=i18n.get_key(i18n.INSTRUMENT),
+                                                         description=i18n.get_key(
+                                                             i18n.INSTRUMENT_TO_COPY_THE_ACTION_TO))
     copy_to_instrument_selected_note_id: \
-        PropertyUtils.note_property("Note", "Note to copy the action to", get_notes_for_copy_panel,
+        PropertyUtils.note_property(i18n.get_key(i18n.NOTE), i18n.get_key(i18n.NOTE_TO_COPY_THE_ACTION_TO),
+                                    get_notes_for_copy_panel,
                                     "copy_to_instrument_selected_note_id", "copy_to_instrument_note_search_string")
     copy_to_instrument_note_search_string: \
         PropertyUtils.note_search_property("copy_to_instrument_selected_note_id",

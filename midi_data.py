@@ -1,9 +1,22 @@
-from enum import Enum
 from typing import Optional
 
 from .midi_analysis.MidiData import MidiData
-from . import PitchUtils
-from . import PropertyUtils
+
+if "bpy" in locals():
+    import importlib
+
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PitchUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PropertyUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
+else:
+    from .i18n import i18n
+    from . import PitchUtils
+    from . import PropertyUtils
+
+import bpy
 
 # key is display name, value is (NoteActionProperty field name, Action id_root, enum number)
 ID_PROPERTIES_DICTIONARY = {"Armature": ("armature", "ARMATURE", "ARMATURE_DATA", 0),
@@ -24,7 +37,7 @@ ID_PROPERTIES_DICTIONARY = {"Armature": ("armature", "ARMATURE", "ARMATURE_DATA"
                             # "Linestyle": ("linestyle", "LINESTYLE"),
                             "Mask": ("mask", "MASK", "MOD_MASK", 8),
                             "Material": ("material", "MATERIAL", "MATERIAL", 9),
-                            "MetaBall": ("meta", "META", "META_DATA", 10),
+                            "Metaball": ("meta", "META", "META_DATA", 10),
                             "Mesh": ("mesh", "MESH", "MESH_DATA", 11),
                             "Movie Clip": ("movieclip", "MOVIECLIP", "TRACKER", 12),
                             "Node Tree": ("nodetree", "NODETREE", "NODETREE", 26),
@@ -85,11 +98,11 @@ NO_INSTRUMENT_SELECTED = "[No Instrument Selected]"
 
 # "None" is deprecated, replaced with Skip overlap option
 BLEND_MODES_DEPRECATED = [("None", "None (skip overlaps)", "No blending. Overlapping strips are not copied", 0),
-                          ("REPLACE", "Replace", "Replace", 1),
-                          ("COMBINE", "Combine", "Combine", 2),
-                          ("ADD", "Add", "Add", 3),
-                          ("SUBTRACT", "Subtract", "Subtract", 4),
-                          ("MULTIPLY", "Multiply", "Multiply", 5)]
+                          ("REPLACE", i18n.get_key(i18n.REPLACE), i18n.get_key(i18n.REPLACE), 1),
+                          ("COMBINE", i18n.get_key(i18n.COMBINE), i18n.get_key(i18n.COMBINE), 2),
+                          ("ADD", i18n.get_key(i18n.ADD), i18n.get_key(i18n.ADD), 3),
+                          ("SUBTRACT", i18n.get_key(i18n.SUBTRACT), i18n.get_key(i18n.SUBTRACT), 4),
+                          ("MULTIPLY", i18n.get_key(i18n.MULTIPLY), i18n.get_key(i18n.MULTIPLY), 5)]
 
 BLEND_MODES = [x for x in BLEND_MODES_DEPRECATED if x[0] != "None"]
 
@@ -307,7 +320,7 @@ class LoadedMidiData:
             # the selected instrument is preserved
             self.instruments_list.append((str(i), instrument.name, instrument.name, i + 1))
         self.instruments_list.sort(key=lambda x: x[1].lower())
-        self.instruments_list.insert(0, (NO_INSTRUMENT_SELECTED, "", "No Instrument Selected", 0))
+        self.instruments_list.insert(0, (NO_INSTRUMENT_SELECTED, "", i18n.get_key(i18n.NO_INSTRUMENT_SELECTED), 0))
 
         return self.instruments_list
 
@@ -335,10 +348,11 @@ class LoadedMidiData:
                 note_display += " (" + str(action_count_for_note) + ")"
                 if LoadedMidiData.__instrument_filters_may_not_match_pitch(actions_for_note, pitch):
                     append_to_note = " *"
-                    append_to_description = "\n* Some actions have filters that may pitch different pitches"
+                    append_to_description = "\n* " + i18n.get_text(i18n.FILTERS_MAY_PATH_DIFFERENT_PITCHES)
                 if LoadedMidiData.__contains_incomplete_action(actions_for_note):
                     append_to_note = append_to_note + " !"
-                    append_to_description = append_to_description + "\n! Some actions are missing an object or action"
+                    append_to_description = append_to_description + "\n! " + i18n.get_key(
+                        i18n.ACTIONS_MISSING_OBJECT_OR_ACTION)
             note_description = PitchUtils.note_description_from_pitch(pitch, self.middle_c_id)
             new_notes_list.append((str(pitch), note_display + append_to_note,
                                    note_description + append_to_description, pitch))
@@ -421,9 +435,8 @@ class LoadedMidiData:
                 note_enum = (PitchUtils.note_id_from_pitch(pitch), note_display, note_description)
                 self.all_notes.append(note_enum)
                 self.all_notes_for_pitch_filter.append(note_enum)
-            self.all_notes_for_pitch_filter.append(("selected", "Selected",
-                                                    "The selected pitch in the Midi panel, or the pitch corresponding "
-                                                    "to the instrument note if this filter is part of an instrument"))
+            self.all_notes_for_pitch_filter.append(("selected", i18n.get_key(i18n.SELECTED),
+                                                    i18n.get_key(i18n.SELECTED_NOTE_FILTER_ENUM_DESCRIPTION)))
         return self.all_notes_for_pitch_filter
 
     def get_middle_c_id(self, context):
@@ -483,7 +496,7 @@ graph_editor_midi_data = LoadedMidiData(lambda context: context.scene.graph_edit
                                         MidiDataType.GRAPH_EDITOR)
 
 
-def get_midi_data(midi_data_type: MidiDataType) -> LoadedMidiData:
+def get_midi_data(midi_data_type: int) -> LoadedMidiData:
     if midi_data_type == MidiDataType.NLA:
         return nla_midi_data
     elif midi_data_type == MidiDataType.DOPESHEET:

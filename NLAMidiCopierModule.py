@@ -17,6 +17,8 @@ if "bpy" in locals():
     importlib.reload(NoteCollectionModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(OperatorUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
 else:
     from . import midi_data
     from . import PitchUtils
@@ -25,6 +27,7 @@ else:
     from . import NoteFilterImplementations
     from . import NoteCollectionModule
     from . import OperatorUtils
+    from .i18n import i18n
 
 import bpy
 import re
@@ -312,8 +315,8 @@ class NoteActionCopier:
 
 class NLAMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
     bl_idname = "ops.nla_midi_copier"
-    bl_label = "Copy Action to Notes"
-    bl_description = "Copy the selected Action to the selected note"
+    bl_label = i18n.get_key(i18n.COPY_ACTION_TO_NOTES_OP)
+    bl_description = i18n.get_key(i18n.COPY_ACTION_TO_NOTES_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -352,8 +355,8 @@ class NLAMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
 
 class NLAMidiInstrumentCopier(bpy.types.Operator):
     bl_idname = "ops.nla_midi_instrument_copier"
-    bl_label = "Animate Instrument"
-    bl_description = "Animate Instrument"
+    bl_label = i18n.get_key(i18n.ANIMATE_INSTRUMENT_OP)
+    bl_description = i18n.get_key(i18n.ANIMATE_INSTRUMENT)
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -387,8 +390,8 @@ class NLAMidiInstrumentCopier(bpy.types.Operator):
 
 class NLAMidiAllInstrumentCopier(bpy.types.Operator):
     bl_idname = "ops.nla_midi_all_instrument_copier"
-    bl_label = "Animate All Instruments"
-    bl_description = "Animate All Instruments"
+    bl_label = i18n.get_key(i18n.ANIMATE_ALL_INSTRUMENTS_OP)
+    bl_description = i18n.get_key(i18n.ANIMATE_ALL_INSTRUMENTS)
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -409,8 +412,8 @@ class NLABulkMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator
     This operator handles both copying to an instrument and copying to notes from the bulk copy panel.
     """
     bl_idname = "ops.nla_bulk_midi_copier"
-    bl_label = "Copy Action to Notes"
-    bl_description = "Copy the selected Action to the selected note"
+    bl_label = i18n.get_key(i18n.COPY_ACTION_TO_NOTES_OP)
+    bl_description = i18n.get_key(i18n.COPY_ACTION_TO_NOTES_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -521,9 +524,9 @@ class NLABulkMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator
         filter_by_active_track = bulk_copy_property.only_notes_in_selected_track
         filter_by_scale = False
         in_scale = True
-        if bulk_copy_property.scale_filter_type == "In scale":
+        if bulk_copy_property.scale_filter_type == "in_scale":
             filter_by_scale = True
-        elif bulk_copy_property.scale_filter_type == "Not in scale":
+        elif bulk_copy_property.scale_filter_type == "not_in_scale":
             filter_by_scale = True
             in_scale = False
 

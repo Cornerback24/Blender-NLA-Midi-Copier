@@ -1,3 +1,5 @@
+- 0.13.2 2022-8-23
+  * Move user facing text to i18n (no functionality changes) 
 - 0.13.1 2022-7-28
   * Update to use displayed track name for Copy by track and note name
   * Update to use displayed track name for generated nla track names

@@ -1,4 +1,12 @@
-from .midi_analysis.Note import Note
+if "bpy" in locals():
+    import importlib
+
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
+else:
+    from .i18n import i18n
+
+import bpy
 
 
 def pitch_dictionary(lowest_octave: int):
@@ -31,7 +39,8 @@ def note_display_from_pitch(pitch: int, middle_c_note: str) -> str:
 
 
 def note_description_from_pitch(pitch: int, middle_c_note: str) -> str:
-    return f"{note_display_from_pitch(pitch, middle_c_note)} (Midi note {pitch})"
+    return i18n.concat(note_display_from_pitch(pitch, middle_c_note),
+                       i18n.parenthetical(i18n.concat(i18n.get_text(i18n.MIDI_NOTE), str(pitch))))
 
 
 def note_pitch_from_id(note_id_str: str) -> int:
