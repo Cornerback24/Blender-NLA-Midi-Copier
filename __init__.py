@@ -73,6 +73,8 @@ else:
     # noinspection PyUnresolvedReferences
     from . import CompatibilityModule
     # noinspection PyUnresolvedReferences
+    from . import PreferenceModule
+    # noinspection PyUnresolvedReferences
     from . import PanelUtils
     # noinspection PyUnresolvedReferences
     from bpy.app.handlers import persistent
@@ -81,6 +83,7 @@ else:
 
 import bpy
 import traceback
+from . import addon_updater_ops
 from bpy.props import PointerProperty
 from bpy.types import NlaStrip
 from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier
@@ -105,6 +108,7 @@ from .GraphEditorMidiPropertiesModule import GraphEditorTempoPropertyGroup, Grap
 from .NoteFilterModule import AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter
 from .midi_data import MidiDataType
 from .i18n.es_strings import i18n_es
+from .PreferenceModule import MidiCopierPreferences
 
 classes = [
     NoteFilterProperty, NoteFilterGroup, BulkCopyPropertyGroup,
@@ -125,7 +129,7 @@ graph_editor_classes = [GraphEditorNoteFilterProperty, GraphEditorNoteFilterGrou
                         GraphEditorMidiKeyframeGenerator, GraphEditorMidiPropertyGroup,
                         LoadMinMaxFromMidiTrack,
                         GraphEditorMidiPanel, GraphEditorMidiSettingsPanel]
-classes = classes + dope_sheet_classes + graph_editor_classes
+classes = classes + dope_sheet_classes + graph_editor_classes + [MidiCopierPreferences]
 
 
 def create_i18n_dict(i18n_data):
@@ -172,6 +176,7 @@ def updates_from_previous_version(context):
 # noinspection PyArgumentList
 def register():
     bpy.app.translations.register(__name__, translations)
+    addon_updater_ops.register(bl_info)
     for clazz in classes:
         bpy.utils.register_class(clazz)
     bpy.types.Scene.midi_data_property = PointerProperty(type=MidiPropertyGroup)
@@ -182,10 +187,14 @@ def register():
 
 
 def unregister():
-    bpy.app.translations.unregister(__name__)
-    for clazz in classes:
-        bpy.utils.unregister_class(clazz)
+    del bpy.types.Scene.midi_copier_version
+    del bpy.types.Scene.graph_editor_midi_data_property
+    del bpy.types.Scene.dope_sheet_midi_data_property
     del bpy.types.Scene.midi_data_property
+    for clazz in reversed(classes):
+        bpy.utils.unregister_class(clazz)
+    addon_updater_ops.unregister()
+    bpy.app.translations.unregister(__name__)
 
 
 if __name__ == "__main__":

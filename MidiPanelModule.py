@@ -26,6 +26,7 @@ else:
 
 import bpy
 from typing import Callable, Tuple
+from . import addon_updater_ops
 from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier
 from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToInstrument, RemoveActionFromInstrument, \
     TransposeInstrument
@@ -42,6 +43,9 @@ class MidiPanel(bpy.types.Panel):
     bl_idname = "ANIMATION_PT_midi_panel"
 
     def draw(self, context):
+        # Check for addon update in the background
+        addon_updater_ops.check_for_update_background()
+
         col = self.layout.column(align=True)
         midi_data_property = context.scene.midi_data_property
         midi_file = midi_data_property.midi_file
@@ -58,6 +62,9 @@ class MidiPanel(bpy.types.Panel):
         if midi_file is None or len(midi_file) == 0:
             tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.NO_MIDI_FILE_SELECTED))
         tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
+
+        # notify update if available
+        addon_updater_ops.update_notice_box_ui(self, context)
 
     @staticmethod
     def draw_note_action_common(parent_layout, col, note_action_property, midi_data_property=None, action_index=None):

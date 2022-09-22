@@ -23,6 +23,7 @@ else:
 
 import bpy
 import textwrap
+from . import addon_updater_ops
 from .DopeSheetMidiCopierModule import DopeSheetMidiCopier
 from . import midi_data
 from bpy.props import EnumProperty
@@ -44,6 +45,9 @@ class DopeSheetMidiPanel(bpy.types.Panel):
         return False
 
     def draw(self, context):
+        # Check for addon update in the background
+        addon_updater_ops.check_for_update_background()
+
         col = self.layout.column(align=True)
         midi_data_property = context.scene.dope_sheet_midi_data_property
 
@@ -78,6 +82,9 @@ class DopeSheetMidiPanel(bpy.types.Panel):
         if midi_file is None or len(midi_file) == 0:
             tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.NO_MIDI_FILE_SELECTED))
         tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
+
+        # notify update if available
+        addon_updater_ops.update_notice_box_ui(self, context)
 
 
 class DopeSheetMidiSettingsPanel(bpy.types.Panel):
