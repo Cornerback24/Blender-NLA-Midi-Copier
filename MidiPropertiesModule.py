@@ -182,6 +182,11 @@ def dynamic_enum_default(default: int):
     return default if blender_version >= (2, 90, 0) else None
 
 
+SYNC_LENGTH_ACTION_TIMING_MODES = \
+    [("scale_action_length", i18n.get_key(i18n.SCALE_ACTION_LENGTH), i18n.get_key(i18n.SCALE_ACTION_LENGTH), 0),
+     ("repeat_action", i18n.get_key(i18n.REPEAT), i18n.get_key(i18n.REPEAT_ACTION_LENGTH_DESCRIPTION), 1)]
+
+
 class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
     data_type = MidiDataType.NLA
     id_type: EnumProperty(
@@ -219,6 +224,11 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
         BoolProperty(name=i18n.get_key(i18n.SYNC_LENGTH_WITH_NOTES),
                      description=i18n.get_key(i18n.SYNC_LENGTH_WITH_NOTES_DESCRIPTION),
                      default=False)
+    sync_length_action_timing_mode: \
+        EnumProperty(items=SYNC_LENGTH_ACTION_TIMING_MODES,
+                     name=i18n.get_key(i18n.ACTION_TIMING),
+                     description=i18n.get_key(i18n.ACTION_TIMING),
+                     default="scale_action_length")
 
     note_filter_groups: CollectionProperty(type=NoteFilterGroup, name=i18n.get_key(i18n.NOTE_FILTER_GROUPS))
 
@@ -504,6 +514,31 @@ class MidiPropertyBase:
     midi_track_property_index: IntProperty()
 
 
+# region Other tools properties
+# note: would be nice to have these in another file but that seems to be causing issues with reloading the script
+
+OTHER_TOOLS = [("rename_action", i18n.get_key(i18n.RENAME_ACTION), i18n.get_key(i18n.RENAME_ACTION), 0)]
+RENAME_ACTION_SOURCE = \
+    [("nla_midi_panel", i18n.get_key(i18n.MIDI_PANEL), i18n.get_key(i18n.RENAME_MIDI_PANEL_ACTION_DESCRIPTION), 0),
+     ("selected_nla_strip", i18n.get_key(i18n.SELECTED_NLA_STRIP),
+      i18n.get_key(i18n.RENAME_SELECTED_NLA_STRIP_ACTION_DESCRIPTION), 1),
+     ("selected", i18n.get_key(i18n.SELECT_ACTION), i18n.get_key(i18n.SELECT_THE_ACTION_TO_RENAME), 2)]
+
+
+class OtherToolsPropertyGroup(PropertyGroup):
+    selected_tool: EnumProperty(name=i18n.get_key(i18n.TOOL),
+                                description=i18n.get_key(i18n.TOOL), items=OTHER_TOOLS,
+                                default="rename_action")
+    rename_action_source: EnumProperty(name="Action source",
+                                       description="Where to get the action to rename", items=RENAME_ACTION_SOURCE,
+                                       default="nla_midi_panel")
+    selected_rename_action: PointerProperty(type=bpy.types.Action, name=i18n.get_key(i18n.ACTION),
+                                            description="The action to rename")
+
+
+# endregion
+
+
 # Property definitions from a parent class work with multiple inheritance, with one of the classes being PropertyGroup.
 # It doesn't work if extending a class that extends PropertyGroup (properties from the parent class are not recognized
 # in that case).
@@ -535,6 +570,8 @@ class MidiPropertyGroup(MidiPropertyBase, PropertyGroup):
     bulk_copy_property: PointerProperty(type=BulkCopyPropertyGroup)
 
     tempo_settings: PointerProperty(type=TempoPropertyGroup)
+
+    other_tool_property: PointerProperty(type=OtherToolsPropertyGroup)
 
 
 class MidiCopierVersion(PropertyGroup):

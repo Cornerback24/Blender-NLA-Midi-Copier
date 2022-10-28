@@ -61,6 +61,8 @@ class MidiPanel(bpy.types.Panel):
         tooltip_creator = PanelUtils.OperatorTooltipCreator(NLAMidiCopier)
         if midi_file is None or len(midi_file) == 0:
             tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.NO_MIDI_FILE_SELECTED))
+        if note_action_property.action is None:
+            tooltip_creator.add_disable_description(i18n.get_key(i18n.NO_ACTION_SELECTED))
         tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
 
         # notify update if available
@@ -90,7 +92,8 @@ class MidiPanel(bpy.types.Panel):
 
         col.prop(note_action_property, "sync_length_with_notes")
         if note_action_property.sync_length_with_notes:
-            col.prop(note_action_property, "scale_factor")
+            PanelUtils.indented_row(col).prop(note_action_property, "sync_length_action_timing_mode")
+            PanelUtils.indented_row(col).prop(note_action_property, "scale_factor")
 
         col.prop(note_action_property, "copy_to_note_end")
 
@@ -359,6 +362,44 @@ class MidiSettingsPanel(bpy.types.Panel):
 
     def draw(self, context):
         PanelUtils.draw_common_midi_settings(self.layout, context, MidiDataType.NLA)
+
+
+class OtherToolsPanel(bpy.types.Panel):
+    bl_space_type = "NLA_EDITOR"
+    bl_region_type = "UI"
+    bl_category = i18n.get_key(i18n.MIDI)
+    bl_label = i18n.get_key(i18n.OTHER_TOOLS)
+    bl_idname = "ANIMATION_PT_midi_other_tools_panel"
+
+    @classmethod
+    def poll(cls, context):
+        return context.preferences.addons[__package__].preferences.show_nla_midi_other_tools_panel
+
+    def draw(self, context):
+        midi_data_property = context.scene.midi_data_property
+        col = self.layout.column(align=True)
+        col.prop(midi_data_property.other_tool_property, "selected_tool")
+        col.separator()
+        if midi_data_property.other_tool_property.selected_tool == "rename_action":
+            self.draw_rename_action(context, col, midi_data_property)
+
+    def draw_rename_action(self, context, layout, midi_data_property):
+        other_tool_property = midi_data_property.other_tool_property
+        rename_action_source = other_tool_property.rename_action_source
+        layout.prop(other_tool_property, "rename_action_source")
+        if rename_action_source == "selected":
+            layout.prop(other_tool_property, "selected_rename_action")
+
+        action = None
+        if rename_action_source == "selected_nla_strip":
+            if context.active_nla_strip is not None:
+                action = context.active_nla_strip.action
+        elif rename_action_source == "nla_midi_panel":
+            action = midi_data_property.note_action_property.action
+        elif rename_action_source == "selected":
+            action = other_tool_property.selected_rename_action
+        if action is not None:
+            layout.prop(action, "name", text=i18n.get_key(i18n.ACTION_NAME))
 
 
 class MIDI_TRACK_PROPERTIES_UL_list(bpy.types.UIList):

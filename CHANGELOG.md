@@ -1,3 +1,8 @@
+- 0.14.0 2022-10-27
+  * Fix Sync Length with Notes repeating the action instead of scaling action length in Blender 3.3
+  * Add repeat action option to Sync Length with notes
+  * Add tool to rename actions from the Nonlinear Animation view
+  * Disable Copy Action to Notes button if no action is selected
 - 0.13.2 2022-9-21
   * Move user facing text to i18n (no functionality changes) 
   * Add Blender Addon Updater

@@ -1,9 +1,22 @@
+if "bpy" in locals():
+    import importlib
+
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
+else:
+    from .i18n import i18n
+
 import bpy
 from . import addon_updater_ops
 
 
 class MidiCopierPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
+
+    show_nla_midi_other_tools_panel: bpy.props.BoolProperty(
+        name=i18n.get_key(i18n.SHOW_OTHER_TOOLS_PANEL),
+        description=i18n.get_key(i18n.SHOW_OTHER_TOOLS_PANEL_IF_ENABLED),
+        default=True)
 
     # addon updater preferences
     auto_check_update: bpy.props.BoolProperty(
@@ -39,4 +52,6 @@ class MidiCopierPreferences(bpy.types.AddonPreferences):
         max=59)
 
     def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "show_nla_midi_other_tools_panel")
         addon_updater_ops.update_settings_ui(self, context)

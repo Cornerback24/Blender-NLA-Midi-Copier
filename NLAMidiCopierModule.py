@@ -39,19 +39,30 @@ from .NoteCollectionModule import NoteCollectionOverlapStrategy, NoteCollectionM
 
 
 class ActionToCopy:
-    def __init__(self, action, nla_track, first_frame: int, last_frame: int, blend_type: str, strips_to_shift):
+    def __init__(self, action, nla_track, first_frame: int, last_frame: int, blend_type: str, repeat_action: bool,
+                 strips_to_shift):
+        """
+        :param action: the action for the nla strip
+        :param nla_track: nla track to place the action on
+        :param first_frame: first frame of the nla strip
+        :param last_frame: last frame of the nla strip
+        :param blend_type: blending for the nla strip
+        :param repeat_action: if true repeat the action when scaling strip length, if false scale the action length
+        :param strips_to_shift: strips to temporarily shift to make room for the new strip until it is scaled down
+        """
         self.action = action
         self.nla_track = nla_track
         self.first_frame = first_frame
         self.last_frame = last_frame
         self.blend_type = blend_type
+        self.repeat_action = repeat_action
         self.strips_to_shift = strips_to_shift
 
     def copy_action(self):
-        # shift strips to the right if adding the non-scaled action will caused an overlap
+        # shift strips to the right if adding the non-scaled action will cause an overlap
         shift_amount_frames = 0
+        true_action_length = self.action.frame_range[1] - self.action.frame_range[0]
         if len(self.strips_to_shift) > 0:
-            true_action_length = self.action.frame_range[1] - self.action.frame_range[0]
             shift_amount_frames = true_action_length
             for strip in reversed(self.strips_to_shift):
                 strip.frame_end = strip.frame_end + shift_amount_frames
@@ -59,7 +70,11 @@ class ActionToCopy:
 
         nla_strips = self.nla_track.strips
         copied_strip = nla_strips.new(str(self.first_frame) + ' ' + self.action.name, self.first_frame, self.action)
-        copied_strip.frame_end = self.last_frame
+        scale = (self.last_frame - self.first_frame) / max(true_action_length, 1)
+        if self.repeat_action:
+            copied_strip.repeat = scale
+        else:
+            copied_strip.scale = scale
         if self.blend_type is not None:
             copied_strip.blend_type = self.blend_type
             copied_strip.extrapolation = "NOTHING"
@@ -90,19 +105,22 @@ class NlaTrackInfo:
             index += 1
         return []
 
-    def create_action_to_copy(self, action, first_frame: int, last_frame: int, actions_to_shift) -> ActionToCopy:
-        return ActionToCopy(action, self.nla_track, first_frame, last_frame, self.blend_type, actions_to_shift)
+    def create_action_to_copy(self, action, first_frame: int, last_frame: int, repeat_action: bool,
+                              actions_to_shift) -> ActionToCopy:
+        return ActionToCopy(action, self.nla_track, first_frame, last_frame, self.blend_type, repeat_action,
+                            actions_to_shift)
 
 
 class NlaTracksManager:
     def __init__(self, action, track_name: str, animated_object, context, duplicate_on_overlap: bool, blend_mode: str,
-                 skip_overlaps: bool):
+                 repeat_action: bool, skip_overlaps: bool):
         self.action = action
         self.track_name: str = track_name
         self.animated_object = animated_object
         self.context = context
         self.duplicate_on_overlap: bool = duplicate_on_overlap
         self.blend_mode: str = blend_mode
+        self.repeat_action: bool = repeat_action
 
         self.nla_track_infos: List[NlaTrackInfo] = []
         self.skip_overlaps: bool = skip_overlaps
@@ -140,7 +158,8 @@ class NlaTracksManager:
             # be scaled down at that point and could extend past the next strip. In this case, temporarily shift
             # actions to the right to make space.
             actions_to_shift = nla_track_info.actions_to_shift_when_copy(first_frame) if scaled_down else []
-            return nla_track_info.create_action_to_copy(self.action, first_frame, last_frame, actions_to_shift)
+            return nla_track_info.create_action_to_copy(self.action, first_frame, last_frame, self.repeat_action,
+                                                        actions_to_shift)
         return None
 
     def next_track(self) -> Optional[NlaTrackInfo]:
@@ -238,6 +257,7 @@ class NoteActionCopier:
         self.filter_groups_property = note_action_property.note_filter_groups
         self.add_filters = note_action_property.add_filters
         self.blend_mode: str = note_action_property.blend_mode
+        self.repeat_action: bool = note_action_property.sync_length_action_timing_mode == "repeat_action"
         self.skip_overlaps: bool = note_action_property.on_overlap == "SKIP"
         self.note_action_track_name: str = note_action_property.nla_track_name
         self.instrument_track_name = instrument_track_name
@@ -256,6 +276,7 @@ class NoteActionCopier:
                                       context=self.context,
                                       duplicate_on_overlap=self.duplicate_on_overlap,
                                       blend_mode=self.blend_mode,
+                                      repeat_action=self.repeat_action,
                                       skip_overlaps=self.skip_overlaps)
 
         loaded_midi_data = midi_data.get_midi_data(MidiDataType.NLA)

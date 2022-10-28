@@ -71,6 +71,7 @@ def copy_note_action_property(copy_from, copy_to, id_properties_dictionary):
     copy_to.filters_expanded = copy_from.filters_expanded
     copy_to.action_length = copy_from.action_length
     copy_to.scale_factor = copy_from.scale_factor
+    copy_to.sync_length_action_timing_mode = copy_from.sync_length_action_timing_mode
     for copy_from_filter_group in copy_from.note_filter_groups:
         copy_to_filter_group = copy_to.note_filter_groups.add()
         for copy_from_filter in copy_from_filter_group.note_filters:

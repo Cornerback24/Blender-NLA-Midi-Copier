@@ -6,7 +6,7 @@ for a selected action could be generated to line up with all the C4 notes played
 the right-side panel in the Nonlinear Action View and select the Midi tab.
 
 This add-on is written for Blender 3.2 and is compatible back to Blender 2.80.
-Add-on Version 0.13.2. [Changelog here](CHANGELOG.md).
+Add-on Version 0.14.0. [Changelog here](CHANGELOG.md).
 
 
 <details>
@@ -43,9 +43,14 @@ Midi Panel
 * Sync Length with Notes
     * If selected, the length of the copied action will be scaled to match the length of the note it is copied to
       multiplied by the scale factor.
-* Scale Factor
-    * Affects the length of actions when "Sync Length with Notes" is selected. The copied action length will be equal to
-      the length of the note multiplied by this scale factor. (Scale factor of 1 will match the note length exactly.)
+    * Action Timing
+        * Scale Action Length
+          * Stretch or compress the action to fit the scaled NLA strip.
+        * Repeat
+          * Repeat the action to fill the scaled NLA strip. Truncates the action if the action is longer than the NLA strip.
+    * Scale Factor
+        * Affects the length of actions when "Sync Length with Notes" is selected. The copied action length will be equal to
+          the length of the note multiplied by this scale factor. (Scale factor of 1 will match the note length exactly.)
 * Copy to Note End
     * Copies the action to the end of the note instead of the beginning.
 * Add filters:
@@ -338,6 +343,9 @@ Midi Settings
       (Midi files count time in ticks. Most midi files divide minutes into beats, and beats into ticks. Some midi files
       may be in frames per second (and ticks per frame) instead of beats per minute. For these files, the file bpm will
       be shown as 60, and the file ticks per beat will show the number of ticks per second.)
+* Midi Tracks
+  * Lists the tracks in the midi file. The name displayed for a track in track selection drop-downs can be changed 
+    using the Displayed Name field.  
 
 </details>
 

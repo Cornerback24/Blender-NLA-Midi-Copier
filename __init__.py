@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 13, 2),
+        "version": (0, 14, 0),
         "blender": (2, 80, 0),
         "location": "View NLA Editor > Tool Shelf",
         "description": "Copy actions to action strips based on midi file input",
@@ -94,12 +94,12 @@ from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToIn
 from .OperatorUtils import CopyMidiFileData
 from .PanelUtils import MidiFileSelector
 from .MidiPanelModule import MidiPanel, MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel, \
-    MIDI_TRACK_PROPERTIES_UL_list
+    OtherToolsPanel, MIDI_TRACK_PROPERTIES_UL_list
 from .GraphEditorMidiPanelModule import GraphEditorMidiPanel, GraphEditorMidiSettingsPanel
 from .DopeSheetMidiPanelModule import DopeSheetMidiPanel, DopeSheetMidiSettingsPanel
 from .MidiPropertiesModule import MidiTrackProperty, MidiPropertyGroup, NoteActionProperty, InstrumentNoteProperty, \
     InstrumentProperty, NoteFilterGroup, NoteFilterProperty, BulkCopyPropertyGroup, TempoPropertyGroup, \
-    MidiCopierVersion
+    MidiCopierVersion, OtherToolsPropertyGroup
 from .DopeSheetMidiPropertiesModule import DopeSheetMidiPropertyGroup, DopeSheetNoteActionProperty, \
     DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup, DopeSheetTempoPropertyGroup
 from .GraphEditorMidiPropertiesModule import GraphEditorTempoPropertyGroup, GraphEditorNoteActionProperty, \
@@ -116,9 +116,11 @@ classes = [
     NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier,
     AddActionToInstrument, RemoveActionFromInstrument, TransposeInstrument,
     AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter,
-    CopyMidiFileData, TempoPropertyGroup, MidiCopierVersion, MidiTrackProperty,
-    MidiPropertyGroup, MIDI_TRACK_PROPERTIES_UL_list, MidiPanel, MidiFileSelector,
-    MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel]
+    CopyMidiFileData,
+    TempoPropertyGroup, MidiCopierVersion, MidiTrackProperty,
+    OtherToolsPropertyGroup, MidiPropertyGroup,
+    MIDI_TRACK_PROPERTIES_UL_list, MidiPanel, MidiFileSelector,
+    MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel, OtherToolsPanel]
 dope_sheet_classes = [DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup,
                       DopeSheetNoteActionProperty, DopeSheetTempoPropertyGroup,
                       DopeSheetMidiCopier, DopeSheetMidiPropertyGroup, DopeSheetMidiPanel,
