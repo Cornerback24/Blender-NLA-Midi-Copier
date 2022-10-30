@@ -8,6 +8,8 @@ if "bpy" in locals():
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(MidiInstrumentModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(OtherToolsModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PropertyUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PanelUtils)
@@ -19,6 +21,7 @@ else:
     from . import midi_data
     from . import NLAMidiCopierModule
     from . import MidiInstrumentModule
+    from . import OtherToolsModule
     from . import PropertyUtils
     from . import PanelUtils
     from . import PitchUtils
@@ -30,6 +33,7 @@ from . import addon_updater_ops
 from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier
 from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToInstrument, RemoveActionFromInstrument, \
     TransposeInstrument
+from .OtherToolsModule import GenerateTransitionsOperator
 from . import midi_data
 from bpy.props import EnumProperty
 from .midi_data import MidiDataType
@@ -382,6 +386,8 @@ class OtherToolsPanel(bpy.types.Panel):
         col.separator()
         if midi_data_property.other_tool_property.selected_tool == "rename_action":
             self.draw_rename_action(context, col, midi_data_property)
+        elif midi_data_property.other_tool_property.selected_tool == "generate_transitions":
+            self.draw_generate_transitions(context, col, midi_data_property)
 
     def draw_rename_action(self, context, layout, midi_data_property):
         other_tool_property = midi_data_property.other_tool_property
@@ -400,6 +406,34 @@ class OtherToolsPanel(bpy.types.Panel):
             action = other_tool_property.selected_rename_action
         if action is not None:
             layout.prop(action, "name", text=i18n.get_key(i18n.ACTION_NAME))
+
+    def draw_generate_transitions(self, context, col, midi_data_property):
+        left, right, active_track_row = PanelUtils.split_row(col, .2)
+        right.enabled = False
+        active_nla_track = bpy.context.active_nla_track
+        left.label(text=i18n.get_label("Active NLA track"))
+        if active_nla_track is not None:
+            # label instead of text argument so that label is not greyed out
+            right.prop(active_nla_track, "name", text="")
+        else:
+            right.label(text=i18n.get_key("No NLA track selected"))
+        other_tool_property = midi_data_property.other_tool_property
+        keframe_properties = other_tool_property.keyframe_properties
+        col.prop(keframe_properties, "interpolation")
+        if keframe_properties.interpolation not in (
+                "CONSTANT", "LINEAR", "BEZIER"):
+            col.prop(keframe_properties, "easing")
+        col.prop(other_tool_property, "limit_transition_length")
+        if other_tool_property.limit_transition_length:
+            PanelUtils.indented_row(col).prop(other_tool_property, "transition_limit_frames")
+            PanelUtils.indented_row(col).prop(other_tool_property, "transition_placement")
+        col.prop(other_tool_property, "replace_transition_strips")
+
+        col.separator()
+        tooltip_creator = PanelUtils.OperatorTooltipCreator(GenerateTransitionsOperator)
+        if active_nla_track is None:
+            tooltip_creator.add_disable_description("No NLA track selected")
+        tooltip_creator.draw_operator_row(col)
 
 
 class MIDI_TRACK_PROPERTIES_UL_list(bpy.types.UIList):

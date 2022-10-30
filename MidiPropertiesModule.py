@@ -516,24 +516,62 @@ class MidiPropertyBase:
 
 # region Other tools properties
 # note: would be nice to have these in another file but that seems to be causing issues with reloading the script
+INTERPOLATIONS = [("CONSTANT", "Constant", "Constant", "IPO_CONSTANT", 0),
+                  ("LINEAR", "Linear", "Linear", "IPO_LINEAR", 1),
+                  ("BEZIER", "Bezier", "Bezier", "IPO_BEZIER", 2),
+                  ("SINE", "Sinusoidal", "Sinusoidal", "IPO_SINE", 3),
+                  ("QUAD", "Quadratic", "Quadratic", "IPO_QUAD", 4),
+                  ("CUBIC", "Cubic", "Cubic", "IPO_CUBIC", 5),
+                  ("QUART", "Quintic", "Quintic", "IPO_QUART", 6),
+                  ("QUINT", "Quartic", "Quartic", "IPO_QUINT", 6),
+                  ("EXPO", "Exponential", "Exponential", "IPO_EXPO", 7),
+                  ("CIRC", "Circular", "Circular", "IPO_CIRC", 8),
+                  ("BACK", "Back", "Back", "IPO_BACK", 9),
+                  ("BOUNCE", "Bounce", "Bounce", "IPO_BOUNCE", 10),
+                  ("ELASTIC", "Elastic", "Elastic", "IPO_ELASTIC", 11)]
+EASING_ENUMS = [("AUTO", "Automatic Easing", "Automatic Easing", "IPO_EASE_IN_OUT", 0),
+                ("EASE_IN", "Ease In", "Ease In", "IPO_EASE_IN", 1),
+                ("EASE_OUT", "Ease Out", "Ease Out", "IPO_EASE_OUT", 2),
+                ("EASE_IN_OUT", "Ease In and Out", "Ease In and Out", "IPO_EASE_IN_OUT", 3)]
 
-OTHER_TOOLS = [("rename_action", i18n.get_key(i18n.RENAME_ACTION), i18n.get_key(i18n.RENAME_ACTION), 0)]
+
+class KeyframeProperties(PropertyGroup):
+    interpolation: EnumProperty(items=INTERPOLATIONS, default="BEZIER")
+    easing: EnumProperty(items=EASING_ENUMS, default="AUTO")
+
+
+OTHER_TOOLS = [("rename_action", i18n.get_key(i18n.RENAME_ACTION), i18n.get_key(i18n.RENAME_ACTION), 0),
+               ("generate_transitions", "Generate transitions", "Generate transitions", 1)]
 RENAME_ACTION_SOURCE = \
     [("nla_midi_panel", i18n.get_key(i18n.MIDI_PANEL), i18n.get_key(i18n.RENAME_MIDI_PANEL_ACTION_DESCRIPTION), 0),
      ("selected_nla_strip", i18n.get_key(i18n.SELECTED_NLA_STRIP),
       i18n.get_key(i18n.RENAME_SELECTED_NLA_STRIP_ACTION_DESCRIPTION), 1),
      ("selected", i18n.get_key(i18n.SELECT_ACTION), i18n.get_key(i18n.SELECT_THE_ACTION_TO_RENAME), 2)]
+TRANSITION_PLACEMENT = [("start", "Start", "Place transitions right after the leading action", 0),
+                        ("end", "End", "Place transitions right before the trailing action", 1)]
 
 
 class OtherToolsPropertyGroup(PropertyGroup):
     selected_tool: EnumProperty(name=i18n.get_key(i18n.TOOL),
                                 description=i18n.get_key(i18n.TOOL), items=OTHER_TOOLS,
                                 default="rename_action")
+    # rename action
     rename_action_source: EnumProperty(name="Action source",
                                        description="Where to get the action to rename", items=RENAME_ACTION_SOURCE,
                                        default="nla_midi_panel")
     selected_rename_action: PointerProperty(type=bpy.types.Action, name=i18n.get_key(i18n.ACTION),
                                             description="The action to rename")
+    # generation transitions
+    keyframe_properties: PointerProperty(type=KeyframeProperties)
+    limit_transition_length: BoolProperty(name="Limit transition length", description="Limit transition length",
+                                          default=False)
+    transition_limit_frames: IntProperty(name="Transition length frames",
+                                         description="Generate transitions no longer than this length in frames",
+                                         default=10,
+                                         min=1)
+    transition_placement: EnumProperty(items=TRANSITION_PLACEMENT)
+    replace_transition_strips: BoolProperty(name="Replace transition strips",
+                                            description="Replace existing transition strips", default=False)
 
 
 # endregion
