@@ -486,7 +486,7 @@ See the midi panel section for more information about the other controls.
 ### Installation:
 
 * Installation is the normal installation process for multi-file add-ons.
-    * Option 1: [Download as a zip file](https://github.com/Cornerback24/Blender-NLA-Midi-Copier/archive/master.zip). In
+    * Option 1: [Download as a zip file](https://github.com/Cornerback24/Blender-NLA-Midi-Copier/archive/refs/heads/generate_nla_transitions.zip). In
       Blender, go to Edit > Preferences > Add-ons, and click Install. Select the zip file and click Install Add-on from
       File.
     * Option 2: Clone into the \<version\>/scripts/addons directory in the Blender installation.
