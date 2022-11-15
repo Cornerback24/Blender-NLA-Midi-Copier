@@ -322,11 +322,11 @@ class OperatorTooltipCreator:
         """
         :param operator_class: blender Operator
         :param base_tooltip: base tooltip, operator description will be used if this is None
-        :param button_text: text for the operator button. If none will used the operator label
+        :param button_text: text for the operator button. If None, uses the operator label
         """
         self.operator_class = operator_class
         self.base_tooltip = base_tooltip if base_tooltip is not None else i18n.get_text(operator_class.bl_description)
-        self.disable_info = []  # list of reasons why the operator is disable
+        self.disable_info = []  # list of reasons why the operator is disabled
         self.button_text = button_text
 
     def get_tooltip(self):

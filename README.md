@@ -5,8 +5,8 @@ Animation view that allows for copying an action to each instance of a note in a
 for a selected action could be generated to line up with all the C4 notes played by a piano. To access the panel, expand
 the right-side panel in the Nonlinear Action View and select the Midi tab.
 
-This add-on is written for Blender 3.2 and is compatible back to Blender 2.80.
-Add-on Version 0.14.0. [Changelog here](CHANGELOG.md).
+This add-on is written for Blender 3.3 and is compatible back to Blender 2.80.
+Add-on Version 0.15.0. [Changelog here](CHANGELOG.md). 
 
 
 <details>
@@ -477,6 +477,80 @@ For the most part, controls are the same as in the Nonlinear Animation midi pane
     * Copies the selected keyframes to times that line up with instances of the selected note.
 
 See the midi panel section for more information about the other controls.
+
+</details>
+
+
+<details>
+<summary>
+Other Tools Panel
+</summary>
+
+### Other Tools Panel
+
+This panel contains tools that are not necessarily related to Midi. It can be hidden in the add-ons preferences.
+
+<details>
+<summary>
+Rename Action
+</summary>
+
+![Grease Pencil Midi Panel](images/rename_action.png)
+
+Allows for renaming an action directly from the Nonlinear Animation view.
+
+* Action source:
+  * Midi Panel
+    * Rename the action selected in the NLA Midi panel.
+  * Selected NLA Strip
+    * Rename the selected NLA strip's action.
+  * Select the action to rename.
+* Action
+  * The action to rename. This field is only visible if the Action source is "Select Action"
+* Action name
+  * The action's name. Type a name here to rename the action.
+
+</details>
+
+
+<details>
+<summary>
+Generate transitions
+</summary>
+
+![Generate Transitions](images/generate_transitions.png)
+
+Generates NLA strips that act as transitions. 
+Transitions strips are placed between selected actions on the active NLA track.
+
+* Interpolation
+    * The interpolation for the first keyframe of the transition strip's action.
+* Limit transition length
+    * If selected, limit the length of generated transition strips.
+    * Transition Length (frames)
+      * The maximum transition length to generate.
+    * Transition offset
+      * Transition will be offset from either previous or next strip (depending on the Placement) by up to this many frames.
+    * Placement
+      * Start
+        * Place transitions directly after the leading action strip.
+      * End
+        * Place transitions immediately before the trailing action strip.
+* Replace Transitions
+  * If selected, replaces existing transition strips with generated transitions. Otherwise, keeps the existing transitions.
+</details>
+
+<details>
+<summary>
+Delete transitions
+</summary>
+
+![Delete transitions](images/delete_transitions.png)
+
+Deletes transitions between selected NLA strips on the active NLA track.
+
+</details>
+
 
 </details>
 

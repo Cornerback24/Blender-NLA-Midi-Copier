@@ -516,24 +516,76 @@ class MidiPropertyBase:
 
 # region Other tools properties
 # note: would be nice to have these in another file but that seems to be causing issues with reloading the script
+INTERPOLATIONS = [("CONSTANT", i18n.get_key(i18n.CONSTANT), i18n.get_key(i18n.CONSTANT), "IPO_CONSTANT", 0),
+                  ("LINEAR", i18n.get_key(i18n.LINEAR), i18n.get_key(i18n.LINEAR), "IPO_LINEAR", 1),
+                  ("BEZIER", i18n.get_key(i18n.BEZIER), i18n.get_key(i18n.BEZIER), "IPO_BEZIER", 2),
+                  ("SINE", i18n.get_key(i18n.SINUSOIDAL), i18n.get_key(i18n.SINUSOIDAL), "IPO_SINE", 3),
+                  ("QUAD", i18n.get_key(i18n.QUADRATIC), i18n.get_key(i18n.QUADRATIC), "IPO_QUAD", 4),
+                  ("CUBIC", i18n.get_key(i18n.CUBIC), i18n.get_key(i18n.CUBIC), "IPO_CUBIC", 5),
+                  ("QUART", i18n.get_key(i18n.QUARTIC), i18n.get_key(i18n.QUARTIC), "IPO_QUART", 6),
+                  ("QUINT", i18n.get_key(i18n.QUINTIC), i18n.get_key(i18n.QUINTIC), "IPO_QUINT", 7),
+                  ("EXPO", i18n.get_key(i18n.EXPONENTIAL), i18n.get_key(i18n.EXPONENTIAL), "IPO_EXPO", 8),
+                  ("CIRC", i18n.get_key(i18n.CIRCULAR), i18n.get_key(i18n.CIRCULAR), "IPO_CIRC", 9),
+                  ("BACK", i18n.get_key(i18n.BACK), i18n.get_key(i18n.BACK), "IPO_BACK", 10),
+                  ("BOUNCE", i18n.get_key(i18n.BOUNCE), i18n.get_key(i18n.BOUNCE), "IPO_BOUNCE", 11),
+                  ("ELASTIC", i18n.get_key(i18n.ELASTIC), i18n.get_key(i18n.ELASTIC), "IPO_ELASTIC", 12)]
+EASING_ENUMS = [
+    ("AUTO", i18n.get_key(i18n.AUTOMATIC_EASING), i18n.get_key(i18n.AUTOMATIC_EASING), "IPO_EASE_IN_OUT", 0),
+    ("EASE_IN", i18n.get_key(i18n.EASE_IN), i18n.get_key(i18n.EASE_IN), "IPO_EASE_IN", 1),
+    ("EASE_OUT", i18n.get_key(i18n.EASE_OUT), i18n.get_key(i18n.EASE_OUT), "IPO_EASE_OUT", 2),
+    ("EASE_IN_OUT", i18n.get_key(i18n.EASE_IN_AND_OUT), i18n.get_key(i18n.EASE_IN_AND_OUT), "IPO_EASE_IN_OUT", 3)]
 
-OTHER_TOOLS = [("rename_action", i18n.get_key(i18n.RENAME_ACTION), i18n.get_key(i18n.RENAME_ACTION), 0)]
+
+class KeyframeProperties(PropertyGroup):
+    interpolation: EnumProperty(items=INTERPOLATIONS, default="BEZIER", name=i18n.get_key(i18n.INTERPOLATION),
+                                description=i18n.get_key(i18n.INTERPOLATION))
+    easing: EnumProperty(items=EASING_ENUMS, default="AUTO", name=i18n.get_key(i18n.EASING),
+                         description=i18n.get_key(i18n.EASING))
+
+
+OTHER_TOOLS = [("rename_action", i18n.get_key(i18n.RENAME_ACTION), i18n.get_key(i18n.RENAME_ACTION), 0),
+               ("generate_transitions", i18n.get_key(i18n.GENERATE_TRANSITIONS),
+                i18n.get_key(i18n.GENERATE_TRANSITIONS_DESCRIPTION), 1),
+               ("delete_transitions", i18n.get_key(i18n.DELETE_TRANSITIONS),
+                i18n.get_key(i18n.DELETE_TRANSITIONS_DESCRIPTIONS), 2)]
 RENAME_ACTION_SOURCE = \
     [("nla_midi_panel", i18n.get_key(i18n.MIDI_PANEL), i18n.get_key(i18n.RENAME_MIDI_PANEL_ACTION_DESCRIPTION), 0),
      ("selected_nla_strip", i18n.get_key(i18n.SELECTED_NLA_STRIP),
       i18n.get_key(i18n.RENAME_SELECTED_NLA_STRIP_ACTION_DESCRIPTION), 1),
      ("selected", i18n.get_key(i18n.SELECT_ACTION), i18n.get_key(i18n.SELECT_THE_ACTION_TO_RENAME), 2)]
+TRANSITION_PLACEMENT = [("start", i18n.get_key(i18n.START), i18n.get_key(i18n.TRANSITION_START_DESCRIPTION), 0),
+                        ("end", i18n.get_key(i18n.END), i18n.get_key(i18n.TRANSITION_END_DESCRIPTION), 1)]
 
 
 class OtherToolsPropertyGroup(PropertyGroup):
     selected_tool: EnumProperty(name=i18n.get_key(i18n.TOOL),
                                 description=i18n.get_key(i18n.TOOL), items=OTHER_TOOLS,
                                 default="rename_action")
-    rename_action_source: EnumProperty(name="Action source",
-                                       description="Where to get the action to rename", items=RENAME_ACTION_SOURCE,
+    # rename action
+    rename_action_source: EnumProperty(name=i18n.get_key(i18n.ACTION_SOURCE),
+                                       description=i18n.get_key(i18n.ACTION_SOURCE_DESCRIPTION),
+                                       items=RENAME_ACTION_SOURCE,
                                        default="nla_midi_panel")
     selected_rename_action: PointerProperty(type=bpy.types.Action, name=i18n.get_key(i18n.ACTION),
-                                            description="The action to rename")
+                                            description=i18n.get_key(i18n.THE_ACTION_TO_RENAME))
+    # generate transitions
+    keyframe_properties: PointerProperty(type=KeyframeProperties)
+    limit_transition_length: BoolProperty(name=i18n.get_key(i18n.LIMIT_TRANSITION_LENGTH),
+                                          description=i18n.get_key(i18n.LIMIT_TRANSITION_LENGTH),
+                                          default=False)
+    transition_limit_frames: IntProperty(name=i18n.get_key(i18n.TRANSITION_LENGTH_FRAMES),
+                                         description=i18n.get_key(i18n.TRANSITION_LIMIT_FRAMES_DESCRIPTION),
+                                         default=10,
+                                         min=1)
+    transition_offset_frames: IntProperty(name=i18n.get_key(i18n.get_key(i18n.TRANSITION_OFFSET_FRAMES)),
+                                          description=i18n.get_key(i18n.TRANSITION_OFFSET_FRAMES_DESCRIPTION),
+                                          default=0,
+                                          min=0)
+    transition_placement: EnumProperty(items=TRANSITION_PLACEMENT, name=i18n.get_key(i18n.PLACEMENT),
+                                       description=i18n.get_key(i18n.TRANSITION_PLACEMENT))
+    replace_transition_strips: BoolProperty(name=i18n.get_key(i18n.REPLACE_TRANSITION_STRIPS),
+                                            description=i18n.get_key(i18n.REPLACE_TRANSITION_STRIPS_DESCRIPTION),
+                                            default=False)
 
 
 # endregion

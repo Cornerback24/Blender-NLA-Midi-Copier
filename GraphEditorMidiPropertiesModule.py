@@ -87,6 +87,14 @@ OVERLAP_OPTIONS = [("REPLACE", i18n.get_key(i18n.REPLACE), i18n.get_key(i18n.REP
 ON_NOTE_OVERLAP = [("include", i18n.get_key(i18n.INCLUDE),
                     i18n.get_key(i18n.NOTE_OVERLAP_INCLUDE_KEYFRAME_DESCRIPTION), 0),
                    ("skip", i18n.get_key(i18n.SKIP), i18n.get_key(i18n.NOTE_OVERLAP_SKIP_KEYFRAME_DESCRIPTION), 1)]
+KEYFRAME_PLACEMENT = [
+    ("note_start", i18n.get_key(i18n.NOTE_START), i18n.get_key(i18n.KEYFRAME_NOTE_START_DESCRIPTION), 0),
+    ("note_end", i18n.get_key(i18n.NOTE_END), i18n.get_key(i18n.KEYFRAME_NOTE_END_DESCRIPTION), 1),
+    ("note_start_and_end", i18n.get_key(i18n.NOTE_START_AND_END),
+     i18n.get_key(i18n.KEYFRAME_NOTE_START_AND_END_DESCRIPTION), 2)]
+TRANSITION_PLACEMENT = [
+    ("start", i18n.get_key(i18n.START), i18n.get_key(i18n.GRAPH_EDITOR_TRANSITION_START_DESCRIPTION), 0),
+    ("end", i18n.get_key(i18n.END), i18n.get_key(i18n.GRAPH_EDITOR_TRANSITION_END_DESCRIPTION), 1)]
 
 
 class GraphEditorKeyframeGenerationProperty(PropertyGroup):
@@ -132,11 +140,22 @@ class GraphEditorKeyframeGenerationProperty(PropertyGroup):
     unit_type: EnumProperty(items=unit_type_enums, name=i18n.get_key(i18n.UNIT_TYPE), default="NONE")
     on_keyframe_overlap: EnumProperty(items=OVERLAP_OPTIONS, name=i18n.get_key(i18n.KEYFRAME_OVERLAP),
                                       description=i18n.get_key(i18n.KEYFRAME_OVERLAP_HANDLING_MODE))
-    generate_at_note_end: \
-        BoolProperty(name=i18n.get_key(i18n.GENERATE_AT_NOTE_END),
-                     description=i18n.get_key(i18n.GENERATE_AT_NOTE_END_DESCRIPTION),
-                     default=False)
+    keyframe_placement: EnumProperty(items=KEYFRAME_PLACEMENT, name=i18n.get_key(i18n.KEYFRAME_PLACEMENT),
+                                     description=i18n.get_key(i18n.KEYFRAME_PLACEMENT))
     on_note_overlap: EnumProperty(name=i18n.get_key(i18n.NOTE_OVERLAP), items=ON_NOTE_OVERLAP)
+    limit_transition_length: BoolProperty(
+        name=i18n.get_key(i18n.LIMIT_TRANSITION_LENGTH), default=False,
+        description=i18n.get_key(i18n.GRAPH_EDITOR_LIMIT_TRANSITION_DESCRIPTION))
+    transition_limit_frames: IntProperty(name=i18n.get_key(i18n.TRANSITION_LENGTH_FRAMES),
+                                         description=i18n.get_key(i18n.GRAPH_EDITOR_TRANSITION_LENGTH_DESCRIPTION),
+                                         default=10,
+                                         min=1)
+    transition_offset_frames: IntProperty(name=i18n.get_key(i18n.get_key(i18n.TRANSITION_OFFSET_FRAMES)),
+                                          description=i18n.get_key(i18n.TRANSITION_OFFSET_FRAMES_DESCRIPTION),
+                                          default=0,
+                                          min=0)
+    transition_placement: EnumProperty(items=TRANSITION_PLACEMENT, name=i18n.get_key(i18n.PLACEMENT),
+                                       description=i18n.get_key(i18n.TRANSITION_PLACEMENT))
     scale_filter_type: EnumProperty(items=MidiPropertiesModule.scale_filter_options,
                                     name=i18n.get_key(i18n.FILTER_BY_SCALE),
                                     description=i18n.get_key(i18n.FILTER_BY_SCALE))

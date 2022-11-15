@@ -18,6 +18,8 @@ if "bpy" in locals():
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(OperatorUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(ActionUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(i18n)
 else:
     from . import midi_data
@@ -27,6 +29,7 @@ else:
     from . import NoteFilterImplementations
     from . import NoteCollectionModule
     from . import OperatorUtils
+    from . import ActionUtils
     from .i18n import i18n
 
 import bpy
@@ -64,9 +67,7 @@ class ActionToCopy:
         true_action_length = self.action.frame_range[1] - self.action.frame_range[0]
         if len(self.strips_to_shift) > 0:
             shift_amount_frames = true_action_length
-            for strip in reversed(self.strips_to_shift):
-                strip.frame_end = strip.frame_end + shift_amount_frames
-                strip.frame_start = strip.frame_start + shift_amount_frames
+            ActionUtils.shift_action_strips(self.strips_to_shift, shift_amount_frames)
 
         nla_strips = self.nla_track.strips
         copied_strip = nla_strips.new(str(self.first_frame) + ' ' + self.action.name, self.first_frame, self.action)
@@ -81,29 +82,20 @@ class ActionToCopy:
 
         # moved shifted strips back
         if shift_amount_frames > 0:
-            for strip in self.strips_to_shift:
-                strip.frame_start = strip.frame_start - shift_amount_frames
-                strip.frame_end = strip.frame_end - shift_amount_frames
+            ActionUtils.shift_action_strips(self.strips_to_shift, -shift_amount_frames)
 
 
 class NlaTrackInfo:
     def __init__(self, nla_track, blend_type: Optional[str]):
         self.blend_type = blend_type
         self.nla_track = nla_track
-        self.nla_strips = nla_track.strips
 
     def actions_to_shift_when_copy(self, action_first_frame: int):
         """
         :param action_first_frame: copied action's first frame
         :return: list of actions that would need to be shifted to the right in order to make room for the copied action
         """
-        index = 0
-        nla_strip_count = len(self.nla_track.strips)
-        while index < nla_strip_count:
-            if self.nla_strips[index].frame_start > action_first_frame:
-                return self.nla_strips[index:]
-            index += 1
-        return []
+        return ActionUtils.actions_starting_after_frame(self.nla_track, action_first_frame)
 
     def create_action_to_copy(self, action, first_frame: int, last_frame: int, repeat_action: bool,
                               actions_to_shift) -> ActionToCopy:

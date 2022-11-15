@@ -1,3 +1,8 @@
+- 0.15.0 2022-11-14
+  * Add generate transitions tool to generate nonlinear transitions in the Nonlinear Animation view
+  * Add delete transitions tool to delete transition strips in the Nonlinear Animation view
+  * Add limit transition length option to Graph Editor keyframe generation
+  * Add Note Start and End keyframe placement to Graph Editor keyframe generation
 - 0.14.0 2022-10-27
   * Fix Sync Length with Notes repeating the action instead of scaling action length in Blender 3.3
   * Add repeat action option to Sync Length with notes

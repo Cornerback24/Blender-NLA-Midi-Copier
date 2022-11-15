@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 14, 0),
+        "version": (0, 15, 0),
         "blender": (2, 80, 0),
         "location": "View NLA Editor > Tool Shelf",
         "description": "Copy actions to action strips based on midi file input",
@@ -44,6 +44,8 @@ if "bpy" in locals():
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PanelUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(OtherToolsModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(es_strings)
 else:
     # noinspection PyUnresolvedReferences
@@ -77,6 +79,8 @@ else:
     # noinspection PyUnresolvedReferences
     from . import PanelUtils
     # noinspection PyUnresolvedReferences
+    from . import OtherToolsModule
+    # noinspection PyUnresolvedReferences
     from bpy.app.handlers import persistent
     # noinspection PyUnresolvedReferences
     from .i18n import es_strings
@@ -93,13 +97,14 @@ from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToIn
     TransposeInstrument
 from .OperatorUtils import CopyMidiFileData
 from .PanelUtils import MidiFileSelector
+from .OtherToolsModule import GenerateTransitionsOperator, DeleteTransitionsOperator
 from .MidiPanelModule import MidiPanel, MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel, \
     OtherToolsPanel, MIDI_TRACK_PROPERTIES_UL_list
 from .GraphEditorMidiPanelModule import GraphEditorMidiPanel, GraphEditorMidiSettingsPanel
 from .DopeSheetMidiPanelModule import DopeSheetMidiPanel, DopeSheetMidiSettingsPanel
 from .MidiPropertiesModule import MidiTrackProperty, MidiPropertyGroup, NoteActionProperty, InstrumentNoteProperty, \
     InstrumentProperty, NoteFilterGroup, NoteFilterProperty, BulkCopyPropertyGroup, TempoPropertyGroup, \
-    MidiCopierVersion, OtherToolsPropertyGroup
+    MidiCopierVersion, KeyframeProperties, OtherToolsPropertyGroup
 from .DopeSheetMidiPropertiesModule import DopeSheetMidiPropertyGroup, DopeSheetNoteActionProperty, \
     DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup, DopeSheetTempoPropertyGroup
 from .GraphEditorMidiPropertiesModule import GraphEditorTempoPropertyGroup, GraphEditorNoteActionProperty, \
@@ -118,8 +123,8 @@ classes = [
     AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter,
     CopyMidiFileData,
     TempoPropertyGroup, MidiCopierVersion, MidiTrackProperty,
-    OtherToolsPropertyGroup, MidiPropertyGroup,
-    MIDI_TRACK_PROPERTIES_UL_list, MidiPanel, MidiFileSelector,
+    KeyframeProperties, OtherToolsPropertyGroup, MidiPropertyGroup,
+    MIDI_TRACK_PROPERTIES_UL_list, MidiPanel, MidiFileSelector, GenerateTransitionsOperator, DeleteTransitionsOperator,
     MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel, OtherToolsPanel]
 dope_sheet_classes = [DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup,
                       DopeSheetNoteActionProperty, DopeSheetTempoPropertyGroup,

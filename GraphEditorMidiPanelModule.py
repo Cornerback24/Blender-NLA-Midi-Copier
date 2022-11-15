@@ -99,13 +99,18 @@ class GraphEditorMidiPanel(bpy.types.Panel):
 
         col.separator()
         col = self.layout.column(align=True)
-        col.prop(keyframe_generator, "generate_at_note_end")
+        col.prop(keyframe_generator, "keyframe_placement")
+        col.prop(keyframe_generator, "on_keyframe_overlap")
+        col.prop(keyframe_generator, "on_note_overlap")
+        col.prop(keyframe_generator, "limit_transition_length")
+        if keyframe_generator.limit_transition_length:
+            PanelUtils.indented_row(col).prop(keyframe_generator, "transition_limit_frames")
+            PanelUtils.indented_row(col).prop(keyframe_generator, "transition_offset_frames")
+            PanelUtils.indented_row(col).prop(keyframe_generator, "transition_placement")
         col.prop(graph_editor_note_action_property, "add_filters")
         if graph_editor_note_action_property.add_filters:
             PanelUtils.draw_filter_box(col, graph_editor_note_action_property, False, None,
                                        MidiDataType.GRAPH_EDITOR)
-        col.prop(keyframe_generator, "on_keyframe_overlap")
-        col.prop(keyframe_generator, "on_note_overlap")
         col.prop(midi_data_property, "midi_frame_start")
         col.prop(graph_editor_note_action_property, "midi_frame_offset")
         col.separator()
