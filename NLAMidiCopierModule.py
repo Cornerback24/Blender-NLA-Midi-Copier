@@ -162,10 +162,10 @@ class NlaTracksManager:
                 return None
             # the original object should already have a track for the actions, look for the duplicated track
             duplicated_nla_track = None
-            if duplicated_object.animation_data is not None:
+            animation_data = self.get_existing_animation_data(duplicated_object)
+            if animation_data is not None:
                 # find a track with a name matching track_name
-                duplicated_nla_track = next((x for x in duplicated_object.animation_data.nla_tracks if
-                                             x.name == self.track_name), None)
+                duplicated_nla_track = next((x for x in animation_data.nla_tracks if x.name == self.track_name), None)
             # create a new track if the duplicated track wasn't found
             if duplicated_nla_track is None:
                 duplicated_nla_track = self.get_or_create_nla_track(duplicated_object, self.track_name)
@@ -183,9 +183,9 @@ class NlaTracksManager:
     def existing_tracks_list(self):
         name_plus_number_regex = re.compile(re.escape(self.track_name) + " [0-9]+$")
         existing_track_names = {}
-        if self.animated_object.animation_data is not None \
-                and self.animated_object.animation_data.nla_tracks is not None:
-            existing_track_names = {nla_track.name for nla_track in self.animated_object.animation_data.nla_tracks if
+        animation_data = self.get_existing_animation_data(self.animated_object)
+        if animation_data is not None and animation_data.nla_tracks is not None:
+            existing_track_names = {nla_track.name for nla_track in animation_data.nla_tracks if
                                     nla_track.name == self.track_name or name_plus_number_regex.match(nla_track.name)}
 
         track_number = 0  # first track is track 1
@@ -197,6 +197,12 @@ class NlaTracksManager:
                 existing_track_names.remove(track_name)
             existing_tracks.append(self.get_or_create_nla_track(self.animated_object, track_name, False))
         return existing_tracks
+
+    def get_existing_animation_data(self, animated_object):
+        if self.action.id_root == "NODETREE" and not isinstance(animated_object, bpy.types.NodeTree):
+            return animated_object.node_tree.animation_data
+        else:
+            return animated_object.animation_data
 
     def get_or_create_nla_track(self, animated_object, track_name: str, create_track_if_not_exists: bool = True):
         if self.action.id_root == "NODETREE" and not isinstance(animated_object, bpy.types.NodeTree):

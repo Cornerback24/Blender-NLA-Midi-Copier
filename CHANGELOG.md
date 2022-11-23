@@ -1,3 +1,5 @@
+- 0.15.1 2022-11-23
+  * Fix no room for action error when copying actions to a material's nodetree
 - 0.15.0 2022-11-14
   * Add generate transitions tool to generate nonlinear transitions in the Nonlinear Animation view
   * Add delete transitions tool to delete transition strips in the Nonlinear Animation view
