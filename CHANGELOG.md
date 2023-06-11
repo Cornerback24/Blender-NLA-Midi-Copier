@@ -1,4 +1,4 @@
-- 0.16.0 2022-11-6
+- 0.16.0 2023-6-11
   * Add keyframe generation from CC data to the graph editor
   * Replace graph editor keyframe placement dropdown with checkboxes
 - 0.15.1 2022-11-23
