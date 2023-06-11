@@ -177,9 +177,6 @@ def get_blend_modes(note_action_property, context):
         else midi_data.BLEND_MODES_DEPRECATED
 
 
-def dynamic_enum_default(default: int):
-    # Blender versions before 2.90 don't support defaults on dynamic enums
-    return default if blender_version >= (2, 90, 0) else None
 
 
 SYNC_LENGTH_ACTION_TIMING_MODES = \
@@ -213,12 +210,12 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
 
     on_overlap: EnumProperty(items=get_overlap_options, name=i18n.get_key(i18n.OVERLAP),
                              description=i18n.get_key(i18n.HOW_TO_HANDLE_OVERLAPPING_ACTIONS),
-                             default=dynamic_enum_default(1))  # default to Blend
+                             default=PropertyUtils.dynamic_enum_default(1))  # default to Blend
 
     blend_mode: \
         EnumProperty(items=get_blend_modes, name=i18n.get_key(i18n.BLENDING),
                      description=i18n.get_key(i18n.BLENDING_FOR_OVERLAPPING_STRIPS),
-                     default=dynamic_enum_default(1))  # default to Replace
+                     default=PropertyUtils.dynamic_enum_default(1))  # default to Replace
 
     sync_length_with_notes: \
         BoolProperty(name=i18n.get_key(i18n.SYNC_LENGTH_WITH_NOTES),

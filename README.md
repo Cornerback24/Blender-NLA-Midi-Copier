@@ -5,8 +5,8 @@ Animation view that allows for copying an action to each instance of a note in a
 for a selected action could be generated to line up with all the C4 notes played by a piano. To access the panel, expand
 the right-side panel in the Nonlinear Action View and select the Midi tab.
 
-This add-on is written for Blender 3.3 and is compatible back to Blender 2.80.
-Add-on Version 0.15.1. [Changelog here](CHANGELOG.md). 
+This add-on is written for Blender 3.5 and is compatible back to Blender 2.80.
+Add-on Version 0.16.0. [Changelog here](CHANGELOG.md). 
 
 
 <details>
@@ -373,6 +373,8 @@ high pitch, choose a min and max keyframe value, and generate keyframes with val
 * Selected F-Curve
     * Displays the data path of the selected F-Curve in the graph editor. This is the F-Curve keyframes will be
       generated on.
+* Note Property / CC Data
+  * Generate keyframes based on either note properties or continuous controller data
 * Note Property:
     * The note property to use for keyframe generation.
     * Pitch
@@ -381,6 +383,8 @@ high pitch, choose a min and max keyframe value, and generate keyframes with val
         * Generate keyframes based on note length in frames
     * Velocity
         * Generate keyframes based on note velocity
+* CC Type:
+    * The CC Controller to generate keyframes from
 * Load min and max keyframe values:
     * Sets the Min and Max notes or Map to min and Map to max values to the minimum and maximum values found in the
       selected midi track. (This is the button next to note property.)
@@ -391,11 +395,11 @@ high pitch, choose a min and max keyframe value, and generate keyframes with val
       keyframes will be generated starting at the min note down to this note. Only used if Note Property is set to
       Pitch.
 * Map to min:
-    * Note property value to map to the Min value. For example if note Property is Length (frames) and Map to min is set
+    * Note property or CC value to map to the Min value. For example if note Property is Length (frames) and Map to min is set
       to 2, then keyframes for a note with a length of 2 frames will be generated with the Min value. Only used if Note
       Property is not set to Pitch.
 * Map to max:
-    * Note property value to map to the Max value. For example if note Property is Length (frames) and Map to max is set
+    * Note property or CC value to map to the Max value. For example if note Property is Length (frames) and Map to max is set
       to 10, then keyframes for a note with a length of 10 frames will be generated with the Max value. Only used if
       Note Property is not set to Pitch.
 * Filter by Scale:
@@ -415,8 +419,19 @@ high pitch, choose a min and max keyframe value, and generate keyframes with val
       keyframe values are in radians.) The selected unit type is converted to keyframe units. (For example, if the scene
       units are degrees, setting the unit type to Angle will change the min and max inputs to degrees. The values will
       be converted to keyframe units, in this case radians.)
-* Generate at Note End:
-    * Generate keyframes at the end of the note instead of the beginning.
+* Keyframe placement:
+    * Note Start: Place keyframes at note start
+    * Note End: Place keyframes at note end
+    * On CC change: Place keyframes at every midi CC controller event
+* Limit transition length:
+    * If selected, generate additional keyframes to limit the transition time between generated keyframes.
+    * Transition length:
+        * Maximum length of transition between generated keyframes
+    * Transition offset: 
+        * Space between the transition and either the keyframe before or keyframe after, depending on Placement
+    * Placement:
+        * Start: Place the transition directly after the leading keyframe
+        * End: Place the transition directly before the trailing keyframe
 * Add filters:
     * Adds filters. If selected, any defined filters will be applied when generating keyframes. No filters will be
       applied if this option is not selected. See the Filters section for more information about filters.

@@ -33,8 +33,8 @@ class AnalyzedNote:
         self.analyze_note(use_file_tempo, ms_per_tick, frames_per_second, frame_offset)
 
     def analyze_note(self, use_file_tempo: bool, ms_per_tick: float, frames_per_second: float, frame_offset: int):
-        start_time_ms = self.note.startTime if use_file_tempo else self.note.startTimeTicks * ms_per_tick
-        end_time_ms = self.note.endTime if use_file_tempo else self.note.endTimeTicks * ms_per_tick
+        start_time_ms = self.note.start_time if use_file_tempo else self.note.start_time_ticks * ms_per_tick
+        end_time_ms = self.note.end_time if use_file_tempo else self.note.end_time_ticks * ms_per_tick
 
         self.note_start_frame = int((start_time_ms / 1000) * frames_per_second + frame_offset)
         self.note_end_frame = int((end_time_ms / 1000) * frames_per_second + frame_offset)

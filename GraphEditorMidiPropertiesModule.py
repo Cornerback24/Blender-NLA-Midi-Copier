@@ -40,6 +40,10 @@ def get_all_notes(keyframe_generation_property, context):
     return midi_data.get_midi_data(MidiDataType.GRAPH_EDITOR).get_all_notes_list()
 
 
+def get_continuous_controllers(keyframe_generation_property, context):
+    return midi_data.get_midi_data(MidiDataType.GRAPH_EDITOR).get_cc_data_list(context)
+
+
 UNIT_TYPES = \
     {
         "NONE": (i18n.get_key(i18n.NONE), i18n.get_key(i18n.NONE), 0, "min_value", "max_value"),
@@ -78,6 +82,9 @@ NOTE_PROPERTIES = [("Pitch", i18n.get_key(i18n.PITCH), i18n.get_key(i18n.PITCH),
                    ("Length", i18n.get_key(i18n.LENGTH_FRAMES), i18n.get_key(i18n.NOTE_LENGTH_IN_FRAMES), 1),
                    ("Velocity", i18n.get_key(i18n.VELOCITY), i18n.get_key(i18n.VELOCITY), 2)]
 
+PROPERTY_TYPES = [("note", i18n.get_key(i18n.NOTE_PROPERTY), i18n.get_key(i18n.NOTE_PROPERTY), 0),
+                  ("cc_data", i18n.get_key(i18n.CC_DATA), i18n.get_key(i18n.CC_DATA), 1)]
+
 OVERLAP_OPTIONS = [("REPLACE", i18n.get_key(i18n.REPLACE), i18n.get_key(i18n.REPLACE_KEYFRAME_DESCRIPTION), 0),
                    ("SKIP", i18n.get_key(i18n.SKIP), i18n.get_key(i18n.SKIP_KEYFRAME_DESCRIPTION), 1),
                    ("PREVIOUS_FRAME", i18n.get_key(i18n.PREVIOUS_FRAME),
@@ -87,18 +94,16 @@ OVERLAP_OPTIONS = [("REPLACE", i18n.get_key(i18n.REPLACE), i18n.get_key(i18n.REP
 ON_NOTE_OVERLAP = [("include", i18n.get_key(i18n.INCLUDE),
                     i18n.get_key(i18n.NOTE_OVERLAP_INCLUDE_KEYFRAME_DESCRIPTION), 0),
                    ("skip", i18n.get_key(i18n.SKIP), i18n.get_key(i18n.NOTE_OVERLAP_SKIP_KEYFRAME_DESCRIPTION), 1)]
-KEYFRAME_PLACEMENT = [
-    ("note_start", i18n.get_key(i18n.NOTE_START), i18n.get_key(i18n.KEYFRAME_NOTE_START_DESCRIPTION), 0),
-    ("note_end", i18n.get_key(i18n.NOTE_END), i18n.get_key(i18n.KEYFRAME_NOTE_END_DESCRIPTION), 1),
-    ("note_start_and_end", i18n.get_key(i18n.NOTE_START_AND_END),
-     i18n.get_key(i18n.KEYFRAME_NOTE_START_AND_END_DESCRIPTION), 2)]
+
 TRANSITION_PLACEMENT = [
     ("start", i18n.get_key(i18n.START), i18n.get_key(i18n.GRAPH_EDITOR_TRANSITION_START_DESCRIPTION), 0),
     ("end", i18n.get_key(i18n.END), i18n.get_key(i18n.GRAPH_EDITOR_TRANSITION_END_DESCRIPTION), 1)]
 
 
 class GraphEditorKeyframeGenerationProperty(PropertyGroup):
+    property_type: EnumProperty(items=PROPERTY_TYPES, name=i18n.get_key(i18n.PROPERTY_TYPE), default="note")
     note_property: EnumProperty(items=NOTE_PROPERTIES, name=i18n.get_key(i18n.NOTE_PROPERTY), default="Pitch")
+    cc_type: EnumProperty(items=get_continuous_controllers, name=i18n.get_key(i18n.CC_TYPE))
     non_negative_min: FloatProperty(name=i18n.get_key(i18n.MAP_TO_MIN),
                                     description=i18n.get_key(i18n.MAP_TO_MIN_KEYFRAME_DESCRIPTION), min=0.0)
     non_negative_max: FloatProperty(name=i18n.get_key(i18n.MAP_TO_MAX),
@@ -140,8 +145,17 @@ class GraphEditorKeyframeGenerationProperty(PropertyGroup):
     unit_type: EnumProperty(items=unit_type_enums, name=i18n.get_key(i18n.UNIT_TYPE), default="NONE")
     on_keyframe_overlap: EnumProperty(items=OVERLAP_OPTIONS, name=i18n.get_key(i18n.KEYFRAME_OVERLAP),
                                       description=i18n.get_key(i18n.KEYFRAME_OVERLAP_HANDLING_MODE))
-    keyframe_placement: EnumProperty(items=KEYFRAME_PLACEMENT, name=i18n.get_key(i18n.KEYFRAME_PLACEMENT),
-                                     description=i18n.get_key(i18n.KEYFRAME_PLACEMENT))
+    # keyframe placement properties
+    keyframe_placement_note_start: BoolProperty(name=i18n.get_key(i18n.NOTE_START),
+                                                description=i18n.get_key(i18n.NOTE_START),
+                                                default=True)
+    keyframe_placement_note_end: BoolProperty(name=i18n.get_key(i18n.NOTE_END),
+                                              description=i18n.get_key(i18n.NOTE_END),
+                                              default=False)
+    keyframe_placement_cc_data_change: BoolProperty(name=i18n.get_key(i18n.ON_CC_CHANGE),
+                                                    description=i18n.get_key(i18n.ON_CC_CHANGE),
+                                                    default=False)
+
     on_note_overlap: EnumProperty(name=i18n.get_key(i18n.NOTE_OVERLAP), items=ON_NOTE_OVERLAP)
     limit_transition_length: BoolProperty(
         name=i18n.get_key(i18n.LIMIT_TRANSITION_LENGTH), default=False,

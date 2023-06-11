@@ -1,78 +1,78 @@
 class Util:
     # returns a hex value for use in bytes.fromhex
     @staticmethod
-    def paddedHex(sourceNum):
-        returnVal = hex(sourceNum)[2:]
-        if (len(returnVal) % 2) != 0:
-            returnVal = '0' + returnVal
-        return returnVal
+    def padded_hex(source_num):
+        return_val = hex(source_num)[2:]
+        if (len(return_val) % 2) != 0:
+            return_val = '0' + return_val
+        return return_val
 
-    # returns a bytes object shifted left by numBits bits
+    # returns a bytes object shifted left by num_bits bits
     @staticmethod
-    def lshiftBytes(sourceBytes, numBits):
-        return bytes.fromhex(Util.paddedHex(
-            int.from_bytes(sourceBytes, "big") << numBits))
+    def lshift_bytes(source_bytes, num_bits):
+        return bytes.fromhex(Util.padded_hex(
+            int.from_bytes(source_bytes, "big") << num_bits))
 
-    # returns a byte array shifted left by numBits bits
+    # returns a byte array shifted left by num_bits bits
     @staticmethod
-    def lshiftByteArray(sourceByteArray, numBits):
-        return bytearray.fromhex(Util.paddedHex(
-            int.from_bytes(sourceByteArray, "big") << numBits))
+    def lshift_byte_array(source_byte_array, num_bits):
+        return bytearray.fromhex(Util.padded_hex(
+            int.from_bytes(source_byte_array, "big") << num_bits))
 
     # takes a bytes object formatted in variable length and
     # returns the int value represented
     # does not check if the variable length value is valid, as
     # it ignores the msb of every byte
     @staticmethod
-    def varLenVal(varLenBytes):
-        if len(varLenBytes) == 0:
+    def var_len_val(var_len_bytes):
+        if len(var_len_bytes) == 0:
             return 0
-        varLenArray = bytearray(varLenBytes)
-        returnValBytes = bytearray.fromhex(
-            Util.paddedHex(varLenArray[0] & b'\x7f'[0]))
-        for i in range(len(varLenBytes) - 1):
-            nextByte = varLenArray[i+1] & b'\x7f'[0]
-            returnValBytes = Util.lshiftByteArray(returnValBytes, 7)
-            returnValBytes[len(returnValBytes)-1] = (
-                returnValBytes[len(returnValBytes)-1] | nextByte)
-        return int.from_bytes(returnValBytes, "big")        
+        var_len_array = bytearray(var_len_bytes)
+        return_val_bytes = bytearray.fromhex(
+            Util.padded_hex(var_len_array[0] & b'\x7f'[0]))
+        for i in range(len(var_len_bytes) - 1):
+            next_byte = var_len_array[i + 1] & b'\x7f'[0]
+            return_val_bytes = Util.lshift_byte_array(return_val_bytes, 7)
+            return_val_bytes[len(return_val_bytes) - 1] = (
+                    return_val_bytes[len(return_val_bytes) - 1] | next_byte)
+        return int.from_bytes(return_val_bytes, "big")
 
     @staticmethod
-    def msbIsOne(byte):  # returns true if the msb of a bytes object is 1
+    def msb_is_one(byte):  # returns true if the msb of a bytes object is 1
         return (byte[0] & int('80', 16)) > 0
 
     # strips a variable length quantity off of a byte array
     # and returns the rest
     @staticmethod
-    def stripLeadingVariableLength(byteArray):
-        varLenEndIndex = 0
-        while (varLenEndIndex < len(byteArray) and
-               Util.msbIsOne(byteArray[varLenEndIndex:varLenEndIndex + 1])):
-                    varLenEndIndex += 1
+    def strip_leading_variable_length(byte_array):
+        var_len_end_index = 0
+        while (var_len_end_index < len(byte_array) and
+               Util.msb_is_one(byte_array[var_len_end_index:var_len_end_index + 1])):
+            var_len_end_index += 1
         # the last byte of a variable length value has msb 0
-        varLenEndIndex += 1
-        return byteArray[varLenEndIndex:]
+        var_len_end_index += 1
+        return byte_array[var_len_end_index:]
 
     @staticmethod
-    def intFromBytes(byteArray, signed=False):
-        return int.from_bytes(byteArray, "big", signed=signed)
+    def int_from_bytes(byte_array, signed=False):
+        return int.from_bytes(byte_array, "big", signed=signed)
 
     # returns None if no controller Number Mapped
     @staticmethod
-    def controllerString(controllerNumber):
-        if controllerNumber in Util.CONTROLLER_DICTIONARY:
-            return Util.CONTROLLER_DICTIONARY[controllerNumber]
-        elif 16 <= controllerNumber <= 19:
-            return "General Purpose Controller " + str(controllerNumber - 15)
-        elif 32 <= controllerNumber <= 63:
-            controllerReferenceString = Util.controllerString(controllerNumber - 32)
-            if controllerReferenceString is None:
+    def controller_string(controller_number):
+        if controller_number in Util.CONTROLLER_DICTIONARY:
+            return Util.CONTROLLER_DICTIONARY[controller_number]
+        elif 16 <= controller_number <= 19:
+            return "General Purpose Controller " + str(controller_number - 15)
+        elif 32 <= controller_number <= 63:
+            controller_reference_string = Util.controller_string(controller_number - 32)
+            if controller_reference_string is None:
                 return None
-            return "LSB for " + controllerReferenceString
-        elif 75 <= controllerNumber <= 79:
-            return "Sound Controller " + str(controllerNumber - 74)
-        elif 80 <= controllerNumber <= 83:
-            return "General Purpose Controller " + str(controllerNumber - 79)        
+            return "LSB for " + controller_reference_string
+        elif 75 <= controller_number <= 79:
+            return "Sound Controller " + str(controller_number - 74)
+        elif 80 <= controller_number <= 83:
+            return "General Purpose Controller " + str(controller_number - 79)
         return None
 
     # maps [byte with event type and channel] & b'\xf0' to event type

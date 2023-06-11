@@ -2,45 +2,48 @@ from .Note import Note
 from .MidiEvents import *
 import bisect
 
+
 # contains data for a single track
 class TrackData:
-    def __init__(self, name=""):
+    def __init__(self, name="", middle_c="C4"):
         self.notes = []
         # maps pitches to notes without end times
-        self.incompleteNotes = {}
+        self.incomplete_notes = {}
         self.events = []
         self.name = name
-        self.deltaTimeTotal = 0
+        self.delta_time_total = 0
         # if false, time division is frames per second
-        self.isTicksPerBeat = True
+        self.is_ticks_per_beat = True
         self.debug = False
+        self.middle_c = middle_c
         return
 
     # Events need to be added in order, last event must be end of track
-    def addEvent(self, event):
+    def add_event(self, event):
         self.events.append(event)
         if isinstance(event, TrackNameEvent):
-            self.name = event.trackName
+            self.name = event.track_name
         elif (isinstance(event, NoteOnEvent) and
-              not(event.isNoteOff())):
-            if event.noteNumber in self.incompleteNotes and self.debug:
-                print("Note on event for note " + str(event.noteNumber)
+              not (event.is_note_off())):
+            if event.note_number in self.incomplete_notes and self.debug:
+                print("Note on event for note " + str(event.note_number)
                       + " already playing, skipping...")
             else:
-                self.incompleteNotes[event.noteNumber] = Note(event.startTime,
-                                                              event.startTimeTicks,
-                                                              event.noteNumber,
-                                                              event.velocity,
-                                                              event.channel)
+                self.incomplete_notes[event.note_number] = Note(event.start_time,
+                                                                event.start_time_ticks,
+                                                                event.note_number,
+                                                                event.velocity,
+                                                                event.channel,
+                                                                self.middle_c)
         elif (isinstance(event, NoteOffEvent) or
-              (isinstance(event, NoteOnEvent) and event.isNoteOff())):
-            if event.noteNumber in self.incompleteNotes:
-                self.incompleteNotes[event.noteNumber].setEndTime(event.startTime)
-                self.incompleteNotes[event.noteNumber].setEndTimeTicks(event.startTimeTicks)
-                self.notes.append(self.incompleteNotes[event.noteNumber])
-                del self.incompleteNotes[event.noteNumber]
+              (isinstance(event, NoteOnEvent) and event.is_note_off())):
+            if event.note_number in self.incomplete_notes:
+                self.incomplete_notes[event.note_number].set_end_time(event.start_time)
+                self.incomplete_notes[event.note_number].set_end_time_ticks(event.start_time_ticks)
+                self.notes.append(self.incomplete_notes[event.note_number])
+                del self.incomplete_notes[event.note_number]
             elif self.debug:
-                print("Note off event for note " + str(event.noteNumber)
+                print("Note off event for note " + str(event.note_number)
                       + " not playing, skipping...")
         elif isinstance(event, EndOfTrackEvent):
             self.notes.sort()
@@ -49,7 +52,7 @@ class TrackData:
 # this is kind of like an ordered dictionary
 class TempoChanges:
     def __init__(self):
-        self.tempoChanges = []
+        self.tempo_changes = []
         self.index = 0
         return
 
@@ -59,36 +62,36 @@ class TempoChanges:
     # All tempo changes should be defined in track 0 of a type one midi file
     # (or at least before any notes, FL Studio seems to put tempo changes in track 1...)
     # so the possible index change shouldn't be an issue for MidiData
-    def addTempoChange(self, deltaTimeTotal, tempo):
-        bisect.insort(self.tempoChanges,
-                      TempoChange(deltaTimeTotal, tempo))
+    def add_tempo_change(self, delta_time_total, tempo):
+        bisect.insort(self.tempo_changes,
+                      TempoChange(delta_time_total, tempo))
 
     # so that class can be used as a stream
-    def deltaTimeTotal(self):
-        return self.tempoChanges[self.index].deltaTimeTotal
+    def delta_time_total(self):
+        return self.tempo_changes[self.index].delta_time_total
 
-    def usPerQuarter(self):
-        return self.tempoChanges[self.index].tempo
+    def us_per_quarter(self):
+        return self.tempo_changes[self.index].tempo
 
-    def findNext(self):
+    def find_next(self):
         self.index += 1
 
     # returns true if the current index is a tempo change
-    # (will return true if findNext will go beyond end of
+    # (will return true if find_next will go beyond end of
     # list, this is intentional)
-    def hasMore(self):
-        return self.index < len(self.tempoChanges)
+    def has_more(self):
+        return self.index < len(self.tempo_changes)
 
     def reset(self):  # go back to first tempo change
         self.index = 0
 
 
 class TempoChange:
-    # deltaTimeTotal in ticks
+    # delta_time_total in ticks
     # tempo in microseconds per quarter note
-    def __init__(self, deltaTimeTotal, tempo):
-        self.deltaTimeTotal = deltaTimeTotal
+    def __init__(self, delta_time_total, tempo):
+        self.delta_time_total = delta_time_total
         self.tempo = tempo
 
     def __lt__(self, other):
-        return self.deltaTimeTotal < other.deltaTimeTotal
+        return self.delta_time_total < other.delta_time_total

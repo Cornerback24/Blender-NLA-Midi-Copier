@@ -79,13 +79,20 @@ class GraphEditorMidiPanel(bpy.types.Panel):
 
         col.separator()
         col = self.layout.column(align=True)
+        col.row().prop(keyframe_generator, "property_type", expand=True)
+
         left, right, row = PanelUtils.split_row(col, .2)
-        left.label(text=i18n.get_label(i18n.NOTE_PROPERTY))
-        right.prop(keyframe_generator, "note_property", text="")
+        if keyframe_generator.property_type == "cc_data":
+            left.label(text=i18n.get_key(i18n.CC_TYPE))
+            right.prop(keyframe_generator, "cc_type", text="")
+        else:
+            left.label(text=i18n.get_label(i18n.NOTE_PROPERTY))
+            right.prop(keyframe_generator, "note_property", text="")
         operator_row = right.row()
         operator_row.enabled = midi_file is not None and len(midi_file) > 0
         operator_row.operator(LoadMinMaxFromMidiTrack.bl_idname, text="", icon='IMPORT')
-        if keyframe_generator.note_property == "Pitch":
+
+        if keyframe_generator.property_type == "note" and keyframe_generator.note_property == "Pitch":
             self.draw_pitch(col, keyframe_generator)
         else:
             self.draw_min_and_max(col, keyframe_generator)
@@ -99,7 +106,12 @@ class GraphEditorMidiPanel(bpy.types.Panel):
 
         col.separator()
         col = self.layout.column(align=True)
-        col.prop(keyframe_generator, "keyframe_placement")
+        col.label(text=i18n.get_label(i18n.KEYFRAME_PLACEMENT))
+        row = PanelUtils.indented_row(col)
+        row.prop(keyframe_generator, "keyframe_placement_note_start")
+        row.prop(keyframe_generator, "keyframe_placement_note_end")
+        if keyframe_generator.property_type == "cc_data":
+            row.prop(keyframe_generator, "keyframe_placement_cc_data_change")
         col.prop(keyframe_generator, "on_keyframe_overlap")
         col.prop(keyframe_generator, "on_note_overlap")
         col.prop(keyframe_generator, "limit_transition_length")
@@ -130,11 +142,15 @@ class GraphEditorMidiPanel(bpy.types.Panel):
 
     def draw_min_and_max(self, col, keyframe_generator):
         min_max_map_row = col.row()
-        note_property = keyframe_generator.note_property
-        min_max_map_row.prop(keyframe_generator,
-                             GraphEditorKeyframeGeneratorModule.note_property_definitions[note_property][1])
-        min_max_map_row.prop(keyframe_generator,
-                             GraphEditorKeyframeGeneratorModule.note_property_definitions[note_property][2])
+        if keyframe_generator.property_type == "cc_data":
+            min_max_map_row.prop(keyframe_generator, "int_0_to_127_min")
+            min_max_map_row.prop(keyframe_generator, "int_0_to_127_max")
+        else:
+            note_property = keyframe_generator.note_property
+            min_max_map_row.prop(keyframe_generator,
+                                 GraphEditorKeyframeGeneratorModule.note_property_definitions[note_property][1])
+            min_max_map_row.prop(keyframe_generator,
+                                 GraphEditorKeyframeGeneratorModule.note_property_definitions[note_property][2])
 
     def draw_pitch(self, col, keyframe_generator):
         PanelUtils.draw_note_with_search(col, keyframe_generator, "pitch_min", "pitch_min_search_string",

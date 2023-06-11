@@ -1,3 +1,6 @@
+- 0.16.0 2022-11-6
+  * Add keyframe generation from CC data to the graph editor
+  * Replace graph editor keyframe placement dropdown with checkboxes
 - 0.15.1 2022-11-23
   * Fix no room for action error when copying actions to a material's nodetree
 - 0.15.0 2022-11-14

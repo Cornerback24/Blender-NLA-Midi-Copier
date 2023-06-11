@@ -176,6 +176,11 @@ def note_search_updated_function(note_attribute, note_search_attribute, get_note
     return lambda data, context: note_search_updated(data, context)
 
 
+def dynamic_enum_default(default: int):
+    # Blender versions before 2.90 don't support defaults on dynamic enums
+    return default if blender_version >= (2, 90, 0) else None
+
+
 def note_property(name: str, description: str, get_notes_list, note_attribute: str, note_search_attribute: str,
                   default_pitch=0):
     """
@@ -187,10 +192,8 @@ def note_property(name: str, description: str, get_notes_list, note_attribute: s
     :param default_pitch: default pitch for property
     :return:
     """
-    # Blender versions before 2.90 don't support defaults on dynamic enums
-    if blender_version < (2, 90, 0):
-        default_pitch = None
-    return EnumProperty(items=get_notes_list, name=name, description=description, default=default_pitch,
+    return EnumProperty(items=get_notes_list, name=name, description=description,
+                        default=dynamic_enum_default(default_pitch),
                         update=note_updated_function(note_attribute, note_search_attribute, get_notes_list))
 
 

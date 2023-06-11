@@ -1,6 +1,8 @@
 from typing import Optional
 
 from .midi_analysis.MidiData import MidiData
+from .midi_analysis.MidiEvents import ControllerEvent
+from .midi_analysis.Util import Util
 
 if "bpy" in locals():
     import importlib
@@ -11,12 +13,16 @@ if "bpy" in locals():
     importlib.reload(PropertyUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(i18n)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(CCDataModule)
 else:
     from .i18n import i18n
     from . import PitchUtils
     from . import PropertyUtils
+    from . import CCDataModule
 
 import bpy
+from .CCDataModule import CCData
 
 # key is display name, value is (NoteActionProperty field name, Action id_root, enum number)
 ID_PROPERTIES_DICTIONARY = {"Armature": ("armature", "ARMATURE", "ARMATURE_DATA", 0),
@@ -144,6 +150,11 @@ class MidiDataUtil:
         notes.sort()
         return notes
 
+    @staticmethod
+    def get_cc_data(track_id: str, loaded_midi_data, context, frame_offset: int):
+        track = loaded_midi_data.tracks_dict[track_id]
+        return CCData(track, context.scene.render.fps, frame_offset)
+
 
 class LoadedMidiData:
     def __init__(self, get_midi_data_property, midi_data_type: int):
@@ -152,22 +163,30 @@ class LoadedMidiData:
         """
         self.midi_data = None  # the MidiData object representing the midi file
         self.midi_data_type = midi_data_type
-        # api documentation says that references to the values returned by callbacks need to be kept around to prevent issues
+        # api documentation says that references to the values returned by callbacks need to be kept around to
+        # prevent issues
         self.track_list = []  # list of tracks in the midi file
         self.tracks_dict = {}  # map track name to midi track
         self.notes_list = []  # list of notes for the selected midi track
+        self.cc_data_list = []  # list of continuous controllers for the selected midi track
         self.all_notes = []  # enum property list of all notes (0 to 127), enum key is note id
         self.all_notes_for_pitch_filter = []  # enum property list of all notes (0 to 127), enum key is note id
         self.instruments_list = []  # list of defined instruments
         self.instrument_notes_list = []  # list of notes for the selected instrument
-        self.instrument_notes_list2 = []  # list of notes for the selected instruments, used for copy to instrument action
+        self.instrument_notes_list2 = []  # list of notes for the selected instruments, used for copy to instrument
+        # action
         self.instrument_note_actions_list = []  # list of actions for the selected note of the selected instrument
         self.all_notes_list = []  # list of all notes (midi pitches 0 to 127)
-        self.notes_list_dict = {}  # key is track id String, value is list of note properties (where enum property id is note id)
+        self.notes_list_dict = {}  # key is track id String, value is list of note properties (where enum property id
+        # is note id)
+        # key is track id String, value is list of cc data properties (where enum property id is cc number)
+        self.cc_data_list_dict = {}
         self.current_midi_filename = None  # name of the loaded midi file
         self.middle_c_id = None  # note id being used for middle c
-        self.middle_c_on_last_tracks_update = None  # value of the middle_c_id property when the tracks were updated last
-        self.middle_c_on_last_all_notes_update = None  # value of the middle_c_id property when the list of all notes updated last
+        self.middle_c_on_last_tracks_update = None  # value of the middle_c_id property when the tracks were updated
+        # last
+        self.middle_c_on_last_all_notes_update = None  # value of the middle_c_id property when the list of all notes
+        # updated last
         self.get_midi_data_property = get_midi_data_property
         self.ms_per_tick = None  # ms per tick, used if not using file tempo
         self.use_file_tempo = True  # whether to use the file tempo or the tempo property
@@ -191,18 +210,19 @@ class LoadedMidiData:
         self.current_midi_filename = midi_filename
         self.midi_data = MidiData(midi_filename)
         if not called_on_script_reload:
-            if self.midi_data.isTicksPerBeat:
+            if self.midi_data.is_ticks_per_beat:
                 # need to access properties with dictionary style because they are read-only
                 self.get_midi_data_property(context).tempo_settings["file_beats_per_minute"] = \
-                    60000 / self.midi_data.msPerBeat
-                self.get_midi_data_property(context).tempo_settings["file_ticks_per_beat"] = self.midi_data.ticksPerBeat
+                    60000 / self.midi_data.ms_per_beat
+                self.get_midi_data_property(context).tempo_settings[
+                    "file_ticks_per_beat"] = self.midi_data.ticks_per_beat
             else:
                 # midi file is in frames per second instead of beats per minute
                 # for simplicity, display values in ticks per second using one beat per second
                 # (most midi files will be in beats per minute, not frames per second)
                 self.get_midi_data_property(context).tempo_settings["file_beats_per_minute"] = 60
                 self.get_midi_data_property(context).tempo_settings[
-                    "file_ticks_per_beat"] = self.midi_data.ticksPerSecond
+                    "file_ticks_per_beat"] = self.midi_data.ticks_per_second
 
         # reloading track names involves updating properties which is not allowed in context if called on script reload
         self.__create_track_list(context, not called_on_script_reload)
@@ -240,6 +260,12 @@ class LoadedMidiData:
                                                      PitchUtils.note_description_from_pitch(pitch, self.middle_c_id),
                                                      pitch)
                                                     for pitch in note_pitches_ordered]
+                cc_numbers = sorted(
+                    {event.controller_type for event in track.events if isinstance(event, ControllerEvent)})
+                self.cc_data_list_dict[track_name] = [(str(cc_number),
+                                                       str(cc_number) + ": " + Util.controller_string(cc_number),
+                                                       Util.controller_string(cc_number),
+                                                       cc_number) for cc_number in cc_numbers]
                 tracks.append(track_name)
                 self.tracks_dict[track_name] = track
         tracks.sort()
@@ -292,6 +318,14 @@ class LoadedMidiData:
         track_id = self.get_midi_data_property(context).track_list
         self.notes_list = self.notes_list_dict.get(track_id, [])
         return self.notes_list
+
+    def get_cc_data_list(self, context):
+        """
+        :return: list of defined cc data enum properties for the selected track
+        """
+        track_id = self.get_midi_data_property(context).track_list
+        self.cc_data_list = self.cc_data_list_dict.get(track_id, [])
+        return self.cc_data_list
 
     def get_track_id(self, context):
         """
