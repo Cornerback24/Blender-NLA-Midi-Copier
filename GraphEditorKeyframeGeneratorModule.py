@@ -233,7 +233,8 @@ class FcurveKeyframeGenerator:
         if len(value_range_list) == 0:
             return []
         values_map = {}
-        interval = (self.max_keyframe_value - self.min_keyframe_value) / len(value_range_list)
+        interval = 0 if len(value_range_list) < 2 else (self.max_keyframe_value - self.min_keyframe_value) / (
+                len(value_range_list) - 1)
         mapped_keyframe_value = self.min_keyframe_value
         for value in value_range_list:
             values_map[value] = mapped_keyframe_value

@@ -1,3 +1,5 @@
+- 0.16.1 2023-6-24
+  * Fix graph editor pitch max value mapping
 - 0.16.0 2023-6-11
   * Add keyframe generation from CC data to the graph editor
   * Replace graph editor keyframe placement dropdown with checkboxes
