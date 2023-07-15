@@ -1,3 +1,9 @@
+- 0.17.0 2023-7-14
+  * Add filter presets
+  * Add overlap filter
+  * Fix add-on not remembering selected track and note when opening project
+  * Hide internal use only properties on operators
+  * Fix error coping grease pencil keyframes when sync length with notes is selected
 - 0.16.1 2023-6-24
   * Fix graph editor pitch max value mapping
 - 0.16.0 2023-6-11

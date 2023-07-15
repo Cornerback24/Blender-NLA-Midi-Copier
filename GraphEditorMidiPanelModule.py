@@ -122,7 +122,7 @@ class GraphEditorMidiPanel(bpy.types.Panel):
         col.prop(graph_editor_note_action_property, "add_filters")
         if graph_editor_note_action_property.add_filters:
             PanelUtils.draw_filter_box(col, graph_editor_note_action_property, False, None,
-                                       MidiDataType.GRAPH_EDITOR)
+                                       MidiDataType.GRAPH_EDITOR, context)
         col.prop(midi_data_property, "midi_frame_start")
         col.prop(graph_editor_note_action_property, "midi_frame_offset")
         col.separator()

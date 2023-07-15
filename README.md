@@ -5,8 +5,8 @@ Animation view that allows for copying an action to each instance of a note in a
 for a selected action could be generated to line up with all the C4 notes played by a piano. To access the panel, expand
 the right-side panel in the Nonlinear Action View and select the Midi tab.
 
-This add-on is written for Blender 3.5 and is compatible back to Blender 2.80.
-Add-on Version 0.16.1. [Changelog here](CHANGELOG.md). 
+This add-on is written for Blender 3.6 and is compatible back to Blender 2.80.
+Add-on Version 0.17.0. [Changelog here](CHANGELOG.md).
 
 
 <details>
@@ -207,7 +207,7 @@ applied from top to bottom.
 
 Pitch filters overwrite instrument notes and the note selected in the midi panel.
 
-### Filters
+### Filter Descriptions
 
 * Every
     * Includes every nth note starting with a specified index. For example, "Every 2 notes, starting with note 1" will
@@ -215,18 +215,41 @@ Pitch filters overwrite instrument notes and the note selected in the midi panel
 * Note Length
     * Filters notes by length. For example, "Note Length < 10 frames" will include only notes that have a length less
       than 10 frames.
-* Relative Start Time
-    * Filters notes by their start time (time is based on the beginning of the midi file). For example, "Relative Start
-      Time > 5 Seconds" will include only notes that start after 5 seconds into the midi file.
+* Overlap
+  * <details>
+    <summary>
+    Filters notes by overlaps. Overlaps are calculated by action length in the nla editor. 
+    Overlaps are calculated by note length in the graph editor and dope sheet. If "By frames" is selected, then overlaps
+    are calculated based on a set number of frames instead of note or action length.
+    </summary>
+    
+    ![Overlap visual](images/overlap_visual.png)
+    </details>
 * Pitch
     * Filters notes by pitch. For example, "Pitch > B3" will include all pitches above B3 (so C3 and higher). If a pitch
       filter is present, it will overwrite the note selected in the midi panel or in the instrument (only affects the
       filter group the filter is defined in). If the pitch is "Selected" it will match the selected pitch in the midi
       panel, or the pitch of the instrument note if the filter is part of an instrument.
+* Relative Start Time
+    * Filters notes by their start time (time is based on the beginning of the midi file). For example, "Relative Start
+      Time > 5 Seconds" will include only notes that start after 5 seconds into the midi file.
+* Start Time
+  * Filters notes by their start time in the scene.
 * Velocity
-    * Filters notes by their midi velocity. For example, "Velocity = 127" will include only notes with a velocity of
-        127.
+    * Filters notes by their midi velocity. For example, "Velocity = 127" will include only notes with a velocity 
+      of 127.
 
+### Filter Presets
+
+![Filter presets](images/filter_presets_box.png)
+
+Filters can be stored to presets. Saved presets can be access from the Nonlinear Animation view,
+Graph editor, or Dope Sheet.
+* Preset: Select a preset. Preset will be loaded on selection.
+* New: Create a new preset from the current filter.
+* Name: Rename the preset here.
+* Save: Save the preset. Presets are _not_ saved automatically when changes are made.
+* Delete: Delete the selected preset.
 </details>
 
 <details>

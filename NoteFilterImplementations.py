@@ -7,21 +7,21 @@ if "bpy" in locals():
     importlib.reload(PitchUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(i18n)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(NoteCollectionUtils)
 else:
     from . import PropertyUtils
     from . import PitchUtils
+    from . import NoteCollectionUtils
     from .i18n import i18n
 
 import bpy
 from abc import abstractmethod, ABC
 from typing import List, Tuple, Callable
 
+from .NoteCollectionUtils import NotesLayer, OverlapChecker, AnalyzedNote
 from .midi_analysis.Note import Note
 from collections import OrderedDict
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from .NoteCollectionModule import AnalyzedNote
 
 
 class NoteFilterBase(ABC):
@@ -46,18 +46,18 @@ class NoteFilterBase(ABC):
     def draw_ui(parent_layout, note_filter_property):
         pass
 
-    def compare_values(self, value1, value2):
-        return PropertyUtils.compare(self.note_filter.comparison_operator, value1, value2)
+    def compare_values(self, value1, value2, comparison_operator=None):
+        return PropertyUtils.compare(
+            comparison_operator if comparison_operator is not None else self.note_filter.comparison_operator,
+            value1, value2)
 
     def filter_by_callable(self, notes: List[Tuple[int, 'AnalyzedNote']],
                            filter_callable: Callable[['AnalyzedNote'], bool]) -> List[Tuple[int, 'AnalyzedNote']]:
         return [note_pair for note_pair in notes if filter_callable(note_pair[1])]
-        pass
 
     def filter_by_note_callable(self, notes: List[Tuple[int, 'AnalyzedNote']],
                                 filter_callable: Callable[[Note], bool]) -> List[Tuple[int, 'AnalyzedNote']]:
         return [note_pair for note_pair in notes if filter_callable(note_pair[1].note)]
-        pass
 
     @staticmethod
     def split_into_rows(parent_layout, factor: float):
@@ -83,8 +83,8 @@ class NoteFilterBase(ABC):
         return int_value_property if time_unit == "frames" else float_value_property
 
     @staticmethod
-    def draw_time_comparision(parent_layout, note_filter_property, int_value_property, float_value_property,
-                              time_unit_property):
+    def draw_time_comparison(parent_layout, note_filter_property, int_value_property, float_value_property,
+                             time_unit_property):
         row1, row2 = NoteFilterBase.split_into_rows(parent_layout, 0.35)
         row1.prop(note_filter_property, "comparison_operator", text='')
         value_property = NoteFilterBase.time_value_property(getattr(note_filter_property, time_unit_property),
@@ -133,8 +133,8 @@ class RelativeStartTime(NoteFilterBase):
 
     @staticmethod
     def draw_ui(parent_layout, note_filter_property):
-        NoteFilterBase.draw_time_comparision(parent_layout, note_filter_property, "non_negative_int",
-                                             "non_negative_number", "time_unit")
+        NoteFilterBase.draw_time_comparison(parent_layout, note_filter_property, "non_negative_int",
+                                            "non_negative_number", "time_unit")
 
 
 class StartTime(NoteFilterBase):
@@ -155,8 +155,8 @@ class StartTime(NoteFilterBase):
 
     @staticmethod
     def draw_ui(parent_layout, note_filter_property):
-        NoteFilterBase.draw_time_comparision(parent_layout, note_filter_property, "non_negative_int",
-                                             "non_negative_number", "time_unit")
+        NoteFilterBase.draw_time_comparison(parent_layout, note_filter_property, "non_negative_int",
+                                            "non_negative_number", "time_unit")
 
 
 class NoteLength(NoteFilterBase):
@@ -175,8 +175,8 @@ class NoteLength(NoteFilterBase):
 
     @staticmethod
     def draw_ui(parent_layout, note_filter_property):
-        NoteFilterBase.draw_time_comparision(parent_layout, note_filter_property, "non_negative_int",
-                                             "non_negative_number", "time_unit")
+        NoteFilterBase.draw_time_comparison(parent_layout, note_filter_property, "non_negative_int",
+                                            "non_negative_number", "time_unit")
 
 
 class NoteVelocity(NoteFilterBase):
@@ -220,7 +220,86 @@ class AlternationFilter(NoteFilterBase):
         row2_2.prop(note_filter_property, "positive_int_2", text='')
 
 
-FILTER_REGISTRY = [AlternationFilter, NoteLength, PitchFilter, RelativeStartTime, StartTime, NoteVelocity]
+class OverlapFilter(NoteFilterBase):
+    ID = "note_overlap_filter"
+    NAME = i18n.get_key(i18n.OVERLAP)
+    DESCRIPTION = i18n.get_key(i18n.OVERLAP_FILTER_DESCRIPTION)
+    NUMBER = 6
+
+    def filtered_notes(self, notes: List[Tuple[int, 'AnalyzedNote']], context) -> List[Tuple[int, 'AnalyzedNote']]:
+        notes_layers: List[NotesLayer] = []
+        # second int is overlap count, third list acts as mutable pair
+        calculated_layers: List[List[List[Tuple[int, AnalyzedNote], int]]] = []
+        # create note layers to determine overlaps
+        for note_index_pair in notes:
+            note_added = False
+            analyzed_note = note_index_pair[1]
+            for i in range(len(notes_layers)):
+                if not note_added:
+                    notes_layer = notes_layers[i]
+                    if notes_layer.has_room_for_note(analyzed_note):
+                        notes_layer.add_note(analyzed_note)
+                        calculated_layers[i].append([note_index_pair, i + 1])
+                        note_added = True
+            if not note_added:
+                notes_layer = NotesLayer(None, False,
+                                         frame_length_for_overlap=self.note_filter.positive_int_3 if
+                                         self.note_filter.calculate_overlap_by_frames else None)
+                notes_layer.add_note(analyzed_note)
+                notes_layers.append(notes_layer)
+                calculated_layers.append([[note_index_pair, len(calculated_layers) + 1]])
+
+        # count overlaps
+        overlap_checkers: List[OverlapChecker] = \
+            [OverlapChecker([(note.action_start_frame, note.action_end_frame) for note in notes_layer.notes]) for
+             notes_layer in notes_layers]
+        for i in range(len(calculated_layers)):
+            for overlap_checker in overlap_checkers:
+                overlap_checker.reset_index()
+            calculated_layer = calculated_layers[i]
+            for j in range(i + 1, len(calculated_layers)):
+                overlap_checker = overlap_checkers[j]
+                for calculated_overlap_count_pair in calculated_layer:
+                    analyzed_note = calculated_overlap_count_pair[0][1]
+                    if not overlap_checker.has_room_for_pair(
+                            (analyzed_note.action_start_frame, analyzed_note.action_end_frame), False):
+                        calculated_overlap_count_pair[1] += 1
+
+        note_index_pairs = []
+        # return result based on overlap layer
+        for i in range(len(calculated_layers)):
+            calculated_layer = calculated_layers[i]
+            for calculated_overlap_count_pair in calculated_layer:
+                # First layer is layer 1. Note with no overlaps has count 1.
+                if self.compare_values(i + 1, self.note_filter.positive_int) and \
+                        self.compare_values(calculated_overlap_count_pair[1], self.note_filter.positive_int_2,
+                                            self.note_filter.comparison_operator2):
+                    note_index_pairs.append(calculated_overlap_count_pair[0])
+
+        return note_index_pairs
+
+    @staticmethod
+    def draw_ui(parent_layout, note_filter_property):
+        col = parent_layout.column(align=True)
+        row1, row2 = NoteFilterBase.split_into_rows(col, .4)
+        row1.label(text=i18n.get_key(i18n.LAYER))
+        row2_1, row2_2 = NoteFilterBase.split_into_rows(row2, .6)
+        row2_1.prop(note_filter_property, "comparison_operator", text='')
+        row2_2.prop(note_filter_property, "positive_int", text='')
+        row1, row2 = NoteFilterBase.split_into_rows(col, .4)
+        row1.label(text=i18n.get_key(i18n.COUNT))
+        row2_1, row2_2 = NoteFilterBase.split_into_rows(row2, .6)
+        row2_1.prop(note_filter_property, "comparison_operator2", text='')
+        row2_2.prop(note_filter_property, "positive_int_2", text='')
+        row1, row2 = NoteFilterBase.split_into_rows(col, .6)
+        row2_1, row2_2 = NoteFilterBase.split_into_rows(row2, .4)
+        row1.prop(note_filter_property, "calculate_overlap_by_frames")
+        row2_2.enabled = note_filter_property.calculate_overlap_by_frames
+        row2_2.prop(note_filter_property, "positive_int_3", text='')
+
+
+FILTER_REGISTRY = [AlternationFilter, NoteLength, OverlapFilter, PitchFilter, RelativeStartTime, StartTime,
+                   NoteVelocity]
 # map id to filter class
 ID_TO_FILTER = {note_filter.ID: note_filter for note_filter in FILTER_REGISTRY}
 # notes filters for enum property
@@ -248,6 +327,7 @@ def __notes_passing_filter(notes: List['AnalyzedNote'], filter_group_property, d
                 note_filter.note_filter.note_pitch):
             note_filter.pitch = default_pitch
         notes_paired_to_index = note_filter.filtered_notes(notes_paired_to_index, context)
+    notes_paired_to_index.sort(key=lambda note_index_pair: note_index_pair[0])
     return notes_paired_to_index
 
 
@@ -273,4 +353,3 @@ def filter_notes(notes: List['AnalyzedNote'], filter_groups_list, default_pitch:
     else:
         return [analyzed_note for analyzed_note in notes if
                 (analyzed_note.note.pitch == default_pitch or not default_pitch_filter)]
-    pass

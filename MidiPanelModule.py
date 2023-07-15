@@ -60,7 +60,8 @@ class MidiPanel(bpy.types.Panel):
         PanelUtils.draw_midi_file_selections(col, midi_data_property, MidiDataType.NLA, context)
         note_action_property = midi_data_property.note_action_property
 
-        MidiPanel.draw_note_action_common(self.layout, col, note_action_property, midi_data_property=midi_data_property)
+        MidiPanel.draw_note_action_common(self.layout, col, note_action_property, context,
+                                          midi_data_property=midi_data_property)
 
         self.layout.separator()
 
@@ -76,8 +77,9 @@ class MidiPanel(bpy.types.Panel):
         addon_updater_ops.update_notice_box_ui(self, context)
 
     @staticmethod
-    def draw_note_action_common(parent_layout, col, note_action_property, midi_data_property=None, action_index=None):
-        is_main_property = midi_data_property is not None  # false if this is part of a instrument
+    def draw_note_action_common(parent_layout, col, note_action_property, context, midi_data_property=None,
+                                action_index=None):
+        is_main_property = midi_data_property is not None  # false if this is part of an instrument
         # draw_property_on_split_row if main property to visually align with note property
         MidiPanel.draw_property(col, note_action_property, "id_type", i18n.get_label(i18n.TYPE),
                                 is_main_property)
@@ -106,7 +108,8 @@ class MidiPanel(bpy.types.Panel):
 
         col.prop(note_action_property, "add_filters")
         if note_action_property.add_filters:
-            PanelUtils.draw_filter_box(col, note_action_property, not is_main_property, action_index, MidiDataType.NLA)
+            PanelUtils.draw_filter_box(col, note_action_property, not is_main_property, action_index, MidiDataType.NLA,
+                                       context)
 
         col = parent_layout.column(align=True)
         col.prop(note_action_property, "on_overlap")
@@ -143,7 +146,7 @@ class MidiInstrumentPanel(bpy.types.Panel):
         selected_instrument = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context)
         if selected_instrument is not None:
             self.draw_instrument_properties(selected_instrument)
-            self.draw_instrument_notes(selected_instrument)
+            self.draw_instrument_notes(selected_instrument, context)
             self.draw_transpose_instrument(selected_instrument)
             self.draw_animate_instrument(context, selected_instrument)
 
@@ -167,9 +170,9 @@ class MidiInstrumentPanel(bpy.types.Panel):
                 animate_box.operator(NLAMidiInstrumentCopier.bl_idname,
                                      text=i18n.concat(i18n.get_text(i18n.ANIMATE), instrument.name))
 
-    def draw_instrument_notes(self, instrument):
+    def draw_instrument_notes(self, instrument, context):
         notes_box = \
-            PanelUtils.draw_collapsible_box(self.layout, i18n.concat(instrument.name + i18n.get_text(i18n.NOTES)),
+            PanelUtils.draw_collapsible_box(self.layout, i18n.concat(instrument.name, i18n.get_text(i18n.NOTES)),
                                             instrument, "notes_expanded")[0]
         if instrument.notes_expanded:
             PanelUtils.draw_note_with_search(notes_box, instrument, "selected_note_id", "note_search_string")
@@ -177,11 +180,11 @@ class MidiInstrumentPanel(bpy.types.Panel):
             instrument_note_property = PropertyUtils.instrument_selected_note_property(instrument)
             if instrument_note_property is not None:
                 for i in range(len(instrument_note_property.actions)):
-                    self.draw_action(instrument_note_property.actions[i], i, notes_box)
+                    self.draw_action(instrument_note_property.actions[i], i, notes_box, context)
 
     def draw_instrument_properties(self, instrument):
         box = \
-            PanelUtils.draw_collapsible_box(self.layout, i18n.concat(instrument.name + i18n.get_text(i18n.PROPERTIES)),
+            PanelUtils.draw_collapsible_box(self.layout, i18n.concat(instrument.name, i18n.get_text(i18n.PROPERTIES)),
                                             instrument, "properties_expanded")[0]
 
         if instrument.properties_expanded:
@@ -246,7 +249,7 @@ class MidiInstrumentPanel(bpy.types.Panel):
                                         return False
         return True
 
-    def draw_action(self, action, action_index: int, parent: bpy.types.UILayout) -> None:
+    def draw_action(self, action, action_index: int, parent: bpy.types.UILayout, context) -> None:
         collapsible_box = PanelUtils.draw_collapsible_box(parent, action.name, action, "expanded",
                                                           RemoveActionFromInstrument.bl_idname)
         box = collapsible_box[0]
@@ -255,7 +258,7 @@ class MidiInstrumentPanel(bpy.types.Panel):
 
         if action.expanded:
             box.prop(action, "name")
-            MidiPanel.draw_note_action_common(box, box.column(align=True), action, action_index=action_index)
+            MidiPanel.draw_note_action_common(box, box.column(align=True), action, context, action_index=action_index)
 
 
 class QuickCopyPanel(bpy.types.Panel):
@@ -348,7 +351,7 @@ class QuickCopyPanel(bpy.types.Panel):
 
         if copy_to_instrument:
             if midi_data_property.copy_to_instrument_selected_instrument is None or \
-                    midi_data_property.copy_to_instrument_selected_instrument == midi_data.NO_INSTRUMENT_SELECTED:
+                    midi_data_property.copy_to_instrument_selected_instrument == PropertyUtils.NO_SELECTION:
                 tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.NO_INSTRUMENT_SELECTED))
         else:
             midi_file = midi_data_property.midi_file

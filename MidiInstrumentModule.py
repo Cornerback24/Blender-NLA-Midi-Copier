@@ -9,10 +9,13 @@ if "bpy" in locals():
     importlib.reload(PitchUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(i18n)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(CollectionUtils)
 else:
     from . import midi_data
     from . import PropertyUtils
     from . import PitchUtils
+    from . import CollectionUtils
     from .i18n import i18n
 
 import bpy
@@ -34,10 +37,8 @@ class AddInstrument(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        instruments = context.scene.midi_data_property.instruments
-        new_instrument = instruments.add()
-        new_instrument.name = i18n.concat(i18n.get_text(i18n.INSTRUMENT), str(len(instruments)))
-        context.scene.midi_data_property.selected_instrument_id = str(len(instruments) - 1)
+        CollectionUtils.add_to_collection(context.scene.midi_data_property.instruments, i18n.get_text(i18n.INSTRUMENT),
+                                          context.scene.midi_data_property, "selected_instrument_id")
 
 
 class DeleteInstrument(bpy.types.Operator):
@@ -56,15 +57,12 @@ class DeleteInstrument(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return midi_data.get_midi_data(MidiDataType.NLA).selected_instrument_id(context) is not None
+        return midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context) is not None
 
     def action_common(self, context):
-        instruments = context.scene.midi_data_property.instruments
-        selected_instrument_id = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument_id(context)
-        if selected_instrument_id is not None:
-            instrument_index = int(selected_instrument_id)
-            context.scene.midi_data_property.selected_instrument_id = midi_data.NO_INSTRUMENT_SELECTED
-            instruments.remove(instrument_index)
+        CollectionUtils.remove_from_collection(
+            context.scene.midi_data_property.instruments, midi_data.get_midi_data_property(MidiDataType.NLA, context),
+            "selected_instrument_id")
 
 
 class AddActionToInstrument(bpy.types.Operator):
@@ -94,7 +92,7 @@ class RemoveActionFromInstrument(bpy.types.Operator):
     bl_description = i18n.get_key(i18n.DELETE_ACTION)
     bl_options = {"REGISTER", "UNDO"}
 
-    action_index: bpy.props.IntProperty(name="Index")
+    action_index: bpy.props.IntProperty(name="Index", options={'HIDDEN'})
 
     def execute(self, context):
         self.action_common(context)

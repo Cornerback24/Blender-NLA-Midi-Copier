@@ -8,6 +8,10 @@ if "bpy" in locals():
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(OperatorUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(CollectionUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PropertyUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(midi_data)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(i18n)
@@ -15,11 +19,14 @@ else:
     from . import NoteFilterImplementations
     from . import NoteFilterModule
     from . import OperatorUtils
+    from . import CollectionUtils
+    from . import PropertyUtils
     from . import midi_data
     from .i18n import i18n
 
 import bpy
-from .NoteFilterModule import ReorderFilter, RemoveNoteFilter, RemoveFilterGroup, AddNoteFilter, AddNoteFilterGroup
+from .NoteFilterModule import ReorderFilter, RemoveNoteFilter, RemoveFilterGroup, AddNoteFilter, AddNoteFilterGroup, \
+    AddFilterPreset, SaveFilterPreset, DeleteFilterPreset
 from .midi_data import MidiDataType
 
 
@@ -97,7 +104,28 @@ def draw_collapsible_box(parent: bpy.types.UILayout, text: str, object_with_expa
     return box, remove_operator
 
 
-def draw_filter_box(parent_layout, note_action_property, is_instrument_property, action_index, midi_data_type):
+def set_operator_lookup_properties(operator, midi_data_type, is_part_of_instrument, action_index=None,
+                                   filter_group_index=None, filter_index=None):
+    """
+    Set properties on an operator that the operator uses to look up data
+    :param operator: the operator
+    :param midi_data_type: midi data type
+    :param is_part_of_instrument: True if data is part of an instrument
+    :param action_index: action index used if data is part of an instrument
+    :param filter_group_index: filter group index
+    :param filter_index: filter index
+    """
+    operator.midi_data_type = midi_data_type
+    operator.is_part_of_instrument = is_part_of_instrument
+    if is_part_of_instrument:
+        operator.action_index = action_index
+    if filter_group_index is not None:
+        operator.filter_group_index = filter_group_index
+    if filter_index is not None:
+        operator.filter_index = filter_index
+
+
+def draw_filter_box(parent_layout, note_action_property, is_instrument_property, action_index, midi_data_type, context):
     box = draw_collapsible_box(parent_layout, i18n.get_key(i18n.FILTERS), note_action_property, "filters_expanded")[0]
     if note_action_property.filters_expanded:
         filter_group_index = 0
@@ -108,10 +136,31 @@ def draw_filter_box(parent_layout, note_action_property, is_instrument_property,
 
         col = box.column(align=True)
         add_filter_group_operator = col.operator(AddNoteFilterGroup.bl_idname)
-        add_filter_group_operator.is_part_of_instrument = is_instrument_property
-        add_filter_group_operator.midi_data_type = midi_data_type
-        if is_instrument_property:
-            add_filter_group_operator.action_index = action_index
+        set_operator_lookup_properties(add_filter_group_operator, midi_data_type, is_instrument_property, action_index)
+
+    presets_box = draw_collapsible_box(box, i18n.get_key(i18n.FILTER_PRESETS),
+                                       note_action_property, "filter_presets_box_expanded")[0]
+    if note_action_property.filter_presets_box_expanded:
+        row = presets_box.row()
+        row.prop(note_action_property, "selected_note_filter_preset")
+        add_preset_operator = row.operator(AddFilterPreset.bl_idname)
+        set_operator_lookup_properties(add_preset_operator, midi_data_type, is_instrument_property, action_index)
+        selected_filter_preset = CollectionUtils.get_selected_object(
+            note_action_property.selected_note_filter_preset,
+            context.scene.midi_copier_data_common.filter_presets)
+        if selected_filter_preset is not None:
+            row = presets_box.row()
+            row.prop(selected_filter_preset, "name")
+            preset_equals_current_filter = PropertyUtils.compare_filters(
+                selected_filter_preset.note_filter_groups,
+                note_action_property.note_filter_groups)
+            save_operator_text = i18n.get_key(i18n.SAVE)
+            if not preset_equals_current_filter:
+                save_operator_text = "* " + save_operator_text
+            save_preset_operator = row.operator(SaveFilterPreset.bl_idname, text=save_operator_text)
+            set_operator_lookup_properties(save_preset_operator, midi_data_type, is_instrument_property, action_index)
+            delete_preset_operator = row.operator(DeleteFilterPreset.bl_idname)
+            set_operator_lookup_properties(delete_preset_operator, midi_data_type, is_instrument_property, action_index)
 
 
 def draw_filter_group(parent_layout, filter_group_property, is_instrument_property, action_index,
@@ -121,11 +170,8 @@ def draw_filter_group(parent_layout, filter_group_property, is_instrument_proper
         filter_group_property, "expanded", RemoveFilterGroup.bl_idname)
     box = collapsible_box[0]
     remove_operator = collapsible_box[1]
-    remove_operator.is_part_of_instrument = is_instrument_property
-    remove_operator.midi_data_type = midi_data_type
-    if is_instrument_property:
-        remove_operator.action_index = action_index
-    remove_operator.filter_group_index = filter_group_index
+    set_operator_lookup_properties(remove_operator, midi_data_type, is_instrument_property, action_index,
+                                   filter_group_index)
 
     if filter_group_property.expanded:
         draw_filters_list(action_index, box, filter_group_index, filter_group_property, is_instrument_property,
@@ -142,11 +188,8 @@ def draw_filters_list(action_index, box, filter_group_index, filter_group_proper
         filter_index = filter_index + 1
     final_row = box.row()
     add_filter_operator = final_row.operator(AddNoteFilter.bl_idname, text=i18n.get_key(i18n.ADD_FILTER_OP))
-    add_filter_operator.is_part_of_instrument = is_instrument_property
-    add_filter_operator.midi_data_type = midi_data_type
-    if is_instrument_property:
-        add_filter_operator.action_index = action_index
-    add_filter_operator.filter_group_index = filter_group_index
+    set_operator_lookup_properties(add_filter_operator, midi_data_type, is_instrument_property, action_index,
+                                   filter_group_index)
 
 
 def draw_filter(parent_layout, filter_property, is_instrument_property, action_index, filter_group_index,
@@ -160,31 +203,19 @@ def draw_filter(parent_layout, filter_property, is_instrument_property, action_i
 
     if filter_index > 0:
         move_up_operator = filter_row.operator(ReorderFilter.bl_idname, text='', icon='SORT_DESC')
-        move_up_operator.is_part_of_instrument = is_instrument_property
-        move_up_operator.midi_data_type = midi_data_type
-        if is_instrument_property:
-            move_up_operator.action_index = action_index
-        move_up_operator.filter_group_index = filter_group_index
-        move_up_operator.filter_index = filter_index
+        set_operator_lookup_properties(move_up_operator, midi_data_type, is_instrument_property, action_index,
+                                       filter_group_index, filter_index)
         move_up_operator.reorder_factor = -1
 
     if filter_index + 1 < filter_count:
         move_down_operator = filter_row.operator(ReorderFilter.bl_idname, text='', icon='SORT_ASC')
-        move_down_operator.is_part_of_instrument = is_instrument_property
-        move_down_operator.midi_data_type = midi_data_type
-        if is_instrument_property:
-            move_down_operator.action_index = action_index
-        move_down_operator.filter_group_index = filter_group_index
-        move_down_operator.filter_index = filter_index
+        set_operator_lookup_properties(move_down_operator, midi_data_type, is_instrument_property, action_index,
+                                       filter_group_index, filter_index)
         move_down_operator.reorder_factor = 1
 
     remove_filter_operator = filter_row.operator(RemoveNoteFilter.bl_idname, text='', icon='CANCEL')
-    remove_filter_operator.is_part_of_instrument = is_instrument_property
-    remove_filter_operator.midi_data_type = midi_data_type
-    if is_instrument_property:
-        remove_filter_operator.action_index = action_index
-    remove_filter_operator.filter_group_index = filter_group_index
-    remove_filter_operator.filter_index = filter_index
+    set_operator_lookup_properties(remove_filter_operator, midi_data_type, is_instrument_property, action_index,
+                                   filter_group_index, filter_index)
 
 
 def indented_row(parent_layout):

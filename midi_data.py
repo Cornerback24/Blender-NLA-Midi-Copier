@@ -12,6 +12,8 @@ if "bpy" in locals():
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PropertyUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(CollectionUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(i18n)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(CCDataModule)
@@ -19,9 +21,8 @@ else:
     from .i18n import i18n
     from . import PitchUtils
     from . import PropertyUtils
-    from . import CCDataModule
+    from . import CollectionUtils
 
-import bpy
 from .CCDataModule import CCData
 
 # key is display name, value is (NoteActionProperty field name, Action id_root, enum number)
@@ -99,8 +100,6 @@ def can_resolve_data_from_selected_objects(midi_data_id_type: str):
 # node trees don't show up in the selector,
 # so applying an action is done by selecting the object the node tree belongs to
 node_tree_types = "MATERIAL, TEXTURE, WORLD, SCENE, LIGHT"
-
-NO_INSTRUMENT_SELECTED = "[No Instrument Selected]"
 
 # "None" is deprecated, replaced with Skip overlap option
 BLEND_MODES_DEPRECATED = [("None", "None (skip overlaps)", "No blending. Overlapping strips are not copied", 0),
@@ -228,8 +227,9 @@ class LoadedMidiData:
         self.__create_track_list(context, not called_on_script_reload)
         if not called_on_script_reload:
             # call update track list function to update selected note
-            if len(self.track_list) > 0:
-                self.get_midi_data_property(context).track_list = self.track_list[0][0]
+            if not (self.get_midi_data_property(context).track_list in [x[0] for x in self.track_list]):
+                if len(self.track_list) > 0:
+                    self.get_midi_data_property(context).track_list = self.track_list[0][0]
         self.update_tempo(context)
 
     def update_tempo(self, context):
@@ -346,16 +346,8 @@ class LoadedMidiData:
         """
         :return: The list of instruments for the selected_instrument_id EnumProperty
         """
-        self.instruments_list.clear()
-        for i in range(len(midi_data_property.instruments)):
-            instrument = midi_data_property.instruments[i]
-            # identifier is the index of the instrument in midi_data_property.instruments
-            # explicitly define the number so that if a rename changes the position in the returned list,
-            # the selected instrument is preserved
-            self.instruments_list.append((str(i), instrument.name, instrument.name, i + 1))
-        self.instruments_list.sort(key=lambda x: x[1].lower())
-        self.instruments_list.insert(0, (NO_INSTRUMENT_SELECTED, "", i18n.get_key(i18n.NO_INSTRUMENT_SELECTED), 0))
-
+        CollectionUtils.populate_collection_id_enum_properties(
+            self.instruments_list, midi_data_property.instruments, i18n.get_key(i18n.NO_INSTRUMENT_SELECTED))
         return self.instruments_list
 
     def get_instrument_notes(self, instrument_property, store_and_return_list):
@@ -483,32 +475,17 @@ class LoadedMidiData:
         :param context: the context
         :return: the selected instrument (None if no instrument is selected)
         """
-        instrument_id = self.selected_instrument_id(context)
-        if instrument_id is not None:
-            return self.get_midi_data_property(context).instruments[int(instrument_id)]
-        return None
-
-    def selected_instrument_id(self, context):
-        """
-        :param context: the context
-        :return: the id of the selected instrument (None if no instrument selected)
-        """
-        instrument_id = self.get_midi_data_property(context).selected_instrument_id
-        if instrument_id is not None and len(instrument_id) > 0 \
-                and instrument_id != NO_INSTRUMENT_SELECTED:
-            return instrument_id
-        return None
+        return CollectionUtils.get_selected_object(self.get_midi_data_property(context).selected_instrument_id,
+                                                   self.get_midi_data_property(context).instruments)
 
     def selected_instrument_for_copy_to_id(self, context):
         """
         :param context: the context
         :return: the instrument to copy the action to (None if no instrument selected)
         """
-        instrument_id = self.get_midi_data_property(context).copy_to_instrument_selected_instrument
-        if instrument_id is not None and len(instrument_id) > 0 \
-                and instrument_id != NO_INSTRUMENT_SELECTED:
-            return self.get_midi_data_property(context).instruments[int(instrument_id)]
-        return None
+        return CollectionUtils.get_selected_object(
+            self.get_midi_data_property(context).copy_to_instrument_selected_instrument,
+            self.get_midi_data_property(context).instruments)
 
 
 # Effectively an Enum. Doesn't extend Enum because if scripts are reloaded,

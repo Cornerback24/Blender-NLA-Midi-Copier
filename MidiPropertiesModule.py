@@ -10,6 +10,8 @@ if "bpy" in locals():
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PropertyUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(CollectionUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(CompatibilityModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(i18n)
@@ -18,6 +20,7 @@ else:
     from . import NoteFilterImplementations
     from . import PitchUtils
     from . import PropertyUtils
+    from . import CollectionUtils
     from . import CompatibilityModule
     from .i18n import i18n
 
@@ -111,6 +114,9 @@ class NoteFilterPropertyBase:
                               default="note_pitch_filter")
     comparison_operator: EnumProperty(items=COMPARISON_ENUM_PROPERTY_ITEMS, name=i18n.get_key(i18n.COMPARISON_OPERATOR),
                                       description=i18n.get_key(i18n.COMPARISON_OPERATOR), default="equal_to")
+    comparison_operator2: EnumProperty(items=COMPARISON_ENUM_PROPERTY_ITEMS,
+                                       name=i18n.get_key(i18n.COMPARISON_OPERATOR),
+                                       description=i18n.get_key(i18n.COMPARISON_OPERATOR), default="equal_to")
     note_pitch: PropertyUtils.note_property(i18n.get_key(i18n.PITCH), i18n.get_key(i18n.PITCH),
                                             get_all_notes_for_pitch_filter,
                                             "note_pitch", "note_pitch_search_string")
@@ -122,12 +128,16 @@ class NoteFilterPropertyBase:
                               min=1, default=1)
     positive_int_2: IntProperty(name=i18n.get_key(i18n.POSITIVE_INT), description=i18n.get_key(i18n.POSITIVE_INTEGER),
                                 min=1, default=1)
+    positive_int_3: IntProperty(name=i18n.get_key(i18n.POSITIVE_INT), description=i18n.get_key(i18n.POSITIVE_INTEGER),
+                                min=1, default=1)
     int_0_to_127: IntProperty(name=i18n.get_key(i18n.INTEGER),
                               description=i18n.get_key(i18n.INTEGER_0_TO_127_INCLUSIVE), min=0, max=127)
     non_negative_number: FloatProperty(name=i18n.get_key(i18n.NON_NEGATIVE_NUMBER),
                                        description=i18n.get_key(i18n.NON_NEGATIVE_NUMBER), min=0.0)
     time_unit: EnumProperty(items=TIME_UNITS, name=i18n.get_key(i18n.TIME_UNIT),
                             description=i18n.get_key(i18n.TIME_UNIT), default="frames")
+    calculate_overlap_by_frames: BoolProperty(name=i18n.get_label(i18n.BY_FRAMES), default=False,
+                                              description=i18n.get_key(i18n.OVERLAP_BY_FRAMES_DESCRIPTION))
 
 
 class NoteFilterProperty(PropertyGroup, NoteFilterPropertyBase):
@@ -137,6 +147,37 @@ class NoteFilterProperty(PropertyGroup, NoteFilterPropertyBase):
 class NoteFilterGroup(PropertyGroup):
     note_filters: CollectionProperty(type=NoteFilterProperty, name=i18n.get_key(i18n.NOTE_FILTERS))
     expanded: BoolProperty(name="Expanded", default=True)
+
+
+class GenericNoteFilterProperty(PropertyGroup, NoteFilterPropertyBase):
+    # set data type so that there is a LoadedMidiData for get_all_notes_for_pitch_filter
+    # any data type works because only the pitch matters (not the displayed note)
+    data_type = MidiDataType.NLA
+
+
+class GenericNoteFilterGroup(PropertyGroup):
+    note_filters: CollectionProperty(type=GenericNoteFilterProperty)
+
+
+class NoteFilterPreset(PropertyGroup):
+    note_filter_groups: CollectionProperty(type=GenericNoteFilterGroup)
+
+
+note_filter_preset_enums = []
+
+
+def get_note_filter_preset_enums(note_action_property, context):
+    CollectionUtils.populate_collection_id_enum_properties(note_filter_preset_enums,
+                                                           context.scene.midi_copier_data_common.filter_presets,
+                                                           i18n.get_key(i18n.NO_PRESET_SELECTED))
+    return note_filter_preset_enums
+
+
+def on_note_filter_preset_updated(note_action_property, context):
+    selected_preset = CollectionUtils.get_selected_object(note_action_property.selected_note_filter_preset,
+                                                          context.scene.midi_copier_data_common.filter_presets)
+    if selected_preset is not None:
+        PropertyUtils.copy_filters(selected_preset.note_filter_groups, note_action_property.note_filter_groups)
 
 
 class NoteActionPropertyBase:
@@ -156,6 +197,10 @@ class NoteActionPropertyBase:
         BoolProperty(name=i18n.get_key(i18n.COPY_TO_NOTE_END),
                      description=i18n.get_key(i18n.COPY_TO_NOTE_END_DESCRIPTION),
                      default=False)
+    filter_presets_box_expanded: BoolProperty(name="Expanded", default=False)
+    selected_note_filter_preset: EnumProperty(items=get_note_filter_preset_enums, name=i18n.get_key(i18n.PRESET),
+                                              description=i18n.get_key(i18n.SELECT_A_FILTER_PRESET),
+                                              update=on_note_filter_preset_updated)
 
 
 OVERLAP_OPTIONS = [("SKIP", i18n.get_key(i18n.SKIP), i18n.get_key(i18n.OVERLAP_SKIP_DESCRIPTION), 0),
@@ -175,8 +220,6 @@ def get_overlap_options(note_action_property, context):
 def get_blend_modes(note_action_property, context):
     return midi_data.BLEND_MODES if CompatibilityModule.compatibility_updates_complete \
         else midi_data.BLEND_MODES_DEPRECATED
-
-
 
 
 SYNC_LENGTH_ACTION_TIMING_MODES = \
@@ -303,7 +346,6 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
 
 
 class InstrumentNoteProperty(PropertyGroup):
-    name: StringProperty(name=i18n.get_key(i18n.NAME))
     note_id: IntProperty(name=i18n.get_key(i18n.NOTE))
     actions: CollectionProperty(type=NoteActionProperty, name=i18n.get_key(i18n.ACTIONS))
 
@@ -321,7 +363,6 @@ TRANSPOSE_FILTER_ITEMS = \
 
 class InstrumentProperty(PropertyGroup):
     data_type = MidiDataType.NLA
-    name: StringProperty(name=i18n.get_key(i18n.NAME))
     instrument_midi_frame_offset: IntProperty(name=i18n.get_key(i18n.INSTRUMENT_FRAME_OFFSET),
                                               description=i18n.get_key(i18n.FRAME_OFFSET_WHEN_COPYING_STRIPS))
     notes: CollectionProperty(type=InstrumentNoteProperty, name=i18n.get_key(i18n.NOTES))
@@ -631,3 +672,7 @@ class MidiCopierVersion(PropertyGroup):
     major: IntProperty()
     minor: IntProperty()
     revision: IntProperty()
+
+
+class MidiDataCommon(PropertyGroup):
+    filter_presets: CollectionProperty(type=NoteFilterPreset)

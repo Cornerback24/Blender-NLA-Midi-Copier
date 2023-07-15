@@ -1,6 +1,3 @@
-from typing import Any
-import math
-
 if "bpy" in locals():
     import importlib
 
@@ -12,6 +9,8 @@ else:
 import bpy
 from bpy.props import StringProperty, EnumProperty
 from bpy.app import version as blender_version
+from typing import Any
+import math
 
 
 def instrument_selected_note_property(instrument):
@@ -72,21 +71,61 @@ def copy_note_action_property(copy_from, copy_to, id_properties_dictionary):
     copy_to.action_length = copy_from.action_length
     copy_to.scale_factor = copy_from.scale_factor
     copy_to.sync_length_action_timing_mode = copy_from.sync_length_action_timing_mode
-    for copy_from_filter_group in copy_from.note_filter_groups:
-        copy_to_filter_group = copy_to.note_filter_groups.add()
+    copy_from_note_filter_groups = copy_from.note_filter_groups
+    copy_to_note_filter_groups = copy_to.note_filter_groups
+    copy_filters(copy_from_note_filter_groups, copy_to_note_filter_groups)
+    animated_object_property = id_properties_dictionary[copy_from.id_type][0]
+    setattr(copy_to, animated_object_property, getattr(copy_from, animated_object_property))
+
+
+def copy_filters(copy_from_note_filter_groups, copy_to_note_filter_groups):
+    copy_to_note_filter_groups.clear()
+    for copy_from_filter_group in copy_from_note_filter_groups:
+        copy_to_filter_group = copy_to_note_filter_groups.add()
         for copy_from_filter in copy_from_filter_group.note_filters:
             copy_to_filter = copy_to_filter_group.note_filters.add()
             copy_to_filter.filter_type = copy_from_filter.filter_type
             copy_to_filter.comparison_operator = copy_from_filter.comparison_operator
+            copy_to_filter.comparison_operator2 = copy_from_filter.comparison_operator2
             copy_to_filter.note_pitch = copy_from_filter.note_pitch
             copy_to_filter.non_negative_int = copy_from_filter.non_negative_int
             copy_to_filter.positive_int = copy_from_filter.positive_int
             copy_to_filter.positive_int_2 = copy_from_filter.positive_int_2
+            copy_to_filter.positive_int_3 = copy_from_filter.positive_int_3
             copy_to_filter.int_0_to_127 = copy_from_filter.int_0_to_127
             copy_to_filter.non_negative_number = copy_from_filter.non_negative_number
             copy_to_filter.time_unit = copy_from_filter.time_unit
-    animated_object_property = id_properties_dictionary[copy_from.id_type][0]
-    setattr(copy_to, animated_object_property, getattr(copy_from, animated_object_property))
+            copy_to_filter.calculate_overlap_by_frames = copy_from_filter.calculate_overlap_by_frames
+
+
+def compare_filters(filter_groups_1, filter_groups_2):
+    if len(filter_groups_1) != len(filter_groups_2):
+        return False
+    for i in range(len(filter_groups_1)):
+        filter_group_1 = filter_groups_1[i]
+        filter_group_2 = filter_groups_2[i]
+        if len(filter_group_1.note_filters) != len(filter_group_2.note_filters):
+            return False
+        for j in range(len(filter_group_1.note_filters)):
+            note_filter_1 = filter_group_1.note_filters[j]
+            note_filter_2 = filter_group_2.note_filters[j]
+
+            filters_equal = \
+                note_filter_1.filter_type == note_filter_2.filter_type and \
+                note_filter_1.comparison_operator == note_filter_2.comparison_operator and \
+                note_filter_1.comparison_operator2 == note_filter_2.comparison_operator2 and \
+                note_filter_1.note_pitch == note_filter_2.note_pitch and \
+                note_filter_1.non_negative_int == note_filter_2.non_negative_int and \
+                note_filter_1.positive_int == note_filter_2.positive_int and \
+                note_filter_1.positive_int_2 == note_filter_2.positive_int_2 and \
+                note_filter_1.positive_int_3 == note_filter_2.positive_int_3 and \
+                note_filter_1.int_0_to_127 == note_filter_2.int_0_to_127 and \
+                note_filter_1.non_negative_number == note_filter_2.non_negative_number and \
+                note_filter_1.time_unit == note_filter_2.time_unit and \
+                note_filter_1.calculate_overlap_by_frames == note_filter_2.calculate_overlap_by_frames
+            if not filters_equal:
+                return False
+    return True
 
 
 def compare(comparison_operator: str, a: Any, b: Any) -> bool:
@@ -200,3 +239,6 @@ def note_property(name: str, description: str, get_notes_list, note_attribute: s
 def note_search_property(note_attribute, note_search_attribute, get_notes_list):
     return StringProperty(name=i18n.get_key(i18n.SEARCH), description=i18n.get_key(i18n.NOTE_SEARCH_DESCRIPTION),
                           update=note_search_updated_function(note_attribute, note_search_attribute, get_notes_list))
+
+
+NO_SELECTION = "[No Selection]"

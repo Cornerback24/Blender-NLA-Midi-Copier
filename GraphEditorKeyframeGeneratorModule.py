@@ -29,7 +29,7 @@ from collections import defaultdict
 from typing import List, Tuple, Optional, Dict, Any
 from .midi_data import MidiDataType
 from .NoteCollectionModule import NoteCollection, NoteCollectionMetaData, NoteCollectionOverlapStrategy, \
-    NoteCollectionFilter, AnalyzedNote
+    NoteCollectionFilter
 
 
 class KeyframeData:

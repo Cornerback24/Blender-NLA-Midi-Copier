@@ -66,7 +66,7 @@ class DopeSheetMidiPanel(bpy.types.Panel):
 
         if dope_sheet_note_action_property.add_filters:
             PanelUtils.draw_filter_box(col, dope_sheet_note_action_property, False, None,
-                                       MidiDataType.DOPESHEET)
+                                       MidiDataType.DOPESHEET, context)
 
         col.prop(midi_data_property, "midi_frame_start")
         col.prop(dope_sheet_note_action_property, "midi_frame_offset")
