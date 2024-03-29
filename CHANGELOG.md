@@ -1,3 +1,6 @@
+- 0.18.0 2024-3-28
+  * Add option to midi file selector for relative paths
+  * Fixed parsing repeated notes when a Note On is listed before a Note Off at the same time
 - 0.17.0 2023-7-14
   * Add filter presets
   * Add overlap filter

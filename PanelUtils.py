@@ -38,7 +38,10 @@ class MidiFileSelector(bpy.types.Operator):
     # noinspection PyArgumentList,PyUnresolvedReferences
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.mid;*.midi", options={'HIDDEN'})
-    midi_data_type: bpy.props.IntProperty(name="MidiDataType")
+    # blender handles getting the path based on this behind the scenes
+    relative_path: bpy.props.BoolProperty(name=i18n.get_key(i18n.RELATIVE_PATH),
+                                          description=i18n.get_key(i18n.USE_RELATIVE_PATH_TO_MIDI_FILE))
+    midi_data_type: bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
 
     def execute(self, context):
         OperatorUtils.load_midi_file(self, context, self.midi_data_type, self.filepath)

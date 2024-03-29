@@ -9,6 +9,10 @@ class TrackData:
         self.notes = []
         # maps pitches to notes without end times
         self.incomplete_notes = {}
+        # for handling a note on followed by a note off at the same time
+        # note on - - - note on, note off - - - note off treated as two notes:
+        # first note on to first note off, second note on to second note off
+        self.skipped_note_on_events = {}
         self.events = []
         self.name = name
         self.delta_time_total = 0
@@ -18,6 +22,14 @@ class TrackData:
         self.middle_c = middle_c
         return
 
+    def note_from_note_on_event(self, note_on_event):
+        return Note(note_on_event.start_time,
+                    note_on_event.start_time_ticks,
+                    note_on_event.note_number,
+                    note_on_event.velocity,
+                    note_on_event.channel,
+                    self.middle_c)
+
     # Events need to be added in order, last event must be end of track
     def add_event(self, event):
         self.events.append(event)
@@ -25,16 +37,14 @@ class TrackData:
             self.name = event.track_name
         elif (isinstance(event, NoteOnEvent) and
               not (event.is_note_off())):
-            if event.note_number in self.incomplete_notes and self.debug:
-                print("Note on event for note " + str(event.note_number)
-                      + " already playing, skipping...")
+            if event.note_number in self.incomplete_notes:
+                self.skipped_note_on_events[event.note_number] = self.note_from_note_on_event(event)
+                # note will be skipped unless there is a note off event at the same time
+                if self.debug:
+                    print("Note on event for note " + str(event.note_number)
+                          + " already playing, potentially skipping...")
             else:
-                self.incomplete_notes[event.note_number] = Note(event.start_time,
-                                                                event.start_time_ticks,
-                                                                event.note_number,
-                                                                event.velocity,
-                                                                event.channel,
-                                                                self.middle_c)
+                self.incomplete_notes[event.note_number] = self.note_from_note_on_event(event)
         elif (isinstance(event, NoteOffEvent) or
               (isinstance(event, NoteOnEvent) and event.is_note_off())):
             if event.note_number in self.incomplete_notes:
@@ -42,6 +52,17 @@ class TrackData:
                 self.incomplete_notes[event.note_number].set_end_time_ticks(event.start_time_ticks)
                 self.notes.append(self.incomplete_notes[event.note_number])
                 del self.incomplete_notes[event.note_number]
+
+                # check if there was a note on event for the next note at the same time in case it was listed before
+                # this note off event
+                if event.note_number in self.skipped_note_on_events:
+                    skipped_note = self.skipped_note_on_events[event.note_number]
+                    if skipped_note.start_time == event.start_time:
+                        # add the note back so it can be completed by the next note off
+                        if self.debug:
+                            print("Note off at same time as note on for " + str(event.note_number) +
+                                  ". Un-skipping note-on event")
+                        self.incomplete_notes[event.note_number] = skipped_note
             elif self.debug:
                 print("Note off event for note " + str(event.note_number)
                       + " not playing, skipping...")

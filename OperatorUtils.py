@@ -14,12 +14,18 @@ import bpy
 import traceback
 
 
-def load_midi_file(operator, context, data_type, filepath):
+def path_is_relative(path: str):
+    return path.startswith("//")
+
+
+def load_midi_file(operator, context, data_type: int, filepath: str):
     loaded_midi_data = midi_data.get_midi_data(data_type)
     midi_data_property = midi_data.get_midi_data_property(data_type, context)
+    # need to set with array notation because the property is defined to be read-only
     midi_data_property["midi_file"] = filepath
+    absolute_path = bpy.path.abspath(filepath) if path_is_relative(filepath) else filepath
     try:
-        loaded_midi_data.update_midi_file(filepath, True, context)
+        loaded_midi_data.update_midi_file(absolute_path, True, context)
     except Exception as e:
         # noinspection PyArgumentList,PyUnresolvedReferences
         operator.report({"WARNING"}, i18n.concat(i18n.get_text(i18n.COULD_NOT_LOAD_MIDI_FILE), str(e)))
@@ -29,8 +35,11 @@ def load_midi_file(operator, context, data_type, filepath):
 
 
 class CopyMidiFileData(bpy.types.Operator):
-    # Operator to load midi file data form another view
-    # (load the midi file from the NLA editor into the graph editor, for example)
+    """
+    Operator to load midi file data form another view
+    (load the midi file from the NLA editor into the graph editor, for example)
+    """
+
     bl_idname = "ops.midi_file_copy_data"
     bl_label = i18n.get_key(i18n.COPY_MIDI_FILE_DATA_OP)
     bl_description = i18n.get_key(i18n.COPY_MIDI_FILE_DATA)
