@@ -24,16 +24,16 @@ from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, P
     FloatProperty
 from bpy.types import PropertyGroup
 from .midi_data import MidiDataType
-from .MidiPropertiesModule import MidiPropertyBase, TempoPropertyBase, NoteActionPropertyBase, NoteFilterPropertyBase
+from .MidiPropertiesModule import MidiPropertyBase, TempoPropertyBase, NoteActionPropertyBase, NoteFilterPropertyBase, \
+    NoteFilterGroupPropertyBase
 
 
 class GraphEditorNoteFilterProperty(PropertyGroup, NoteFilterPropertyBase):
     data_type = MidiDataType.GRAPH_EDITOR
 
 
-class GraphEditorNoteFilterGroup(PropertyGroup):
+class GraphEditorNoteFilterGroup(PropertyGroup, NoteFilterGroupPropertyBase):
     note_filters: CollectionProperty(type=GraphEditorNoteFilterProperty, name="Note Filters")
-    expanded: BoolProperty(name="Expanded", default=True)
 
 
 def get_all_notes(keyframe_generation_property, context):

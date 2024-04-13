@@ -20,16 +20,16 @@ from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, P
     FloatProperty
 from bpy.types import PropertyGroup
 from .midi_data import MidiDataType
-from .MidiPropertiesModule import MidiPropertyBase, TempoPropertyBase, NoteActionPropertyBase, NoteFilterPropertyBase
+from .MidiPropertiesModule import MidiPropertyBase, TempoPropertyBase, NoteActionPropertyBase, NoteFilterPropertyBase, \
+    NoteFilterGroupPropertyBase
 
 
 class DopeSheetNoteFilterProperty(PropertyGroup, NoteFilterPropertyBase):
     data_type = MidiDataType.DOPESHEET
 
 
-class DopeSheetNoteFilterGroup(PropertyGroup):
+class DopeSheetNoteFilterGroup(PropertyGroup, NoteFilterGroupPropertyBase):
     note_filters: CollectionProperty(type=DopeSheetNoteFilterProperty, name=i18n.get_key(i18n.NOTE_FILTERS))
-    expanded: BoolProperty(name="Expanded", default=True)
 
 
 class DopeSheetNoteActionProperty(PropertyGroup, NoteActionPropertyBase):

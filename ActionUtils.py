@@ -87,3 +87,9 @@ def shift_action_strips(action_strips, shift_amount_frames: float):
         for strip in action_strips:
             strip.frame_start = strip.frame_start + shift_amount_frames
             strip.frame_end = strip.frame_end + shift_amount_frames
+
+
+def action_length(action):
+    # return action length (return minimum length of 1 even if the frame range
+    # is less than one for an action that only has one keyframe)
+    return max(action.frame_range[1] - action.frame_range[0], 1)

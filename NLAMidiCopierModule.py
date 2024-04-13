@@ -64,7 +64,7 @@ class ActionToCopy:
     def copy_action(self):
         # shift strips to the right if adding the non-scaled action will cause an overlap
         shift_amount_frames = 0
-        true_action_length = self.action.frame_range[1] - self.action.frame_range[0]
+        true_action_length = ActionUtils.action_length(self.action)
         if len(self.strips_to_shift) > 0:
             shift_amount_frames = true_action_length
             ActionUtils.shift_action_strips(self.strips_to_shift, shift_amount_frames)
@@ -279,7 +279,7 @@ class NoteActionCopier:
 
         loaded_midi_data = midi_data.get_midi_data(MidiDataType.NLA)
         action = self.note_action_property.action
-        non_scaled_action_length = None if action is None else action.frame_range[1] - action.frame_range[0]
+        non_scaled_action_length = None if action is None else ActionUtils.action_length(action)
 
         note_overlap_strategy = NoteCollectionOverlapStrategy(not self.duplicate_on_overlap, self.duplicate_on_overlap,
                                                               False)

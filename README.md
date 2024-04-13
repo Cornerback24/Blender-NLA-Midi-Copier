@@ -3,10 +3,11 @@
 Blender add-on for creating midi-driven animations from the Nonlinear Animation view. Adds a panel to the Nonlinear
 Animation view that allows for copying an action to each instance of a note in a midi file. For example, actions strips
 for a selected action could be generated to line up with all the C4 notes played by a piano. To access the panel, expand
-the right-side panel in the Nonlinear Action View and select the Midi tab.
+the right-side panel in the Nonlinear Action View and select the Midi tab.  
+This add-on also adds a panel in the Graph Editor to generate keyframes on existing F-Curves based on midi file data.
 
 This add-on is written for Blender 4.1 and is compatible back to Blender 2.80.
-Add-on Version 0.18.0. [Changelog here](CHANGELOG.md).
+Add-on Version 0.19.0. [Changelog here](CHANGELOG.md).
 
 
 <details>
@@ -205,7 +206,9 @@ Click "Add Filter" to add a filter within the group. Click the x next to the fil
 If more than one filter is defined in a group, the arrows can be used to move the filters up and down. The filters are
 applied from top to bottom.
 
-Pitch filters overwrite instrument notes and the note selected in the midi panel.
+If "All Pitches" is selected in a filter group, the group will act on all pitches (ignoring the note selected in the 
+midi panel or ignoring the instrument note if part of an instrument). It is always selected if any of the filters in 
+the list are a Pitch filter.
 
 ### Filter Descriptions
 
@@ -226,9 +229,8 @@ Pitch filters overwrite instrument notes and the note selected in the midi panel
     ![Overlap visual](images/overlap_visual.png)
     </details>
 * Pitch
-    * Filters notes by pitch. For example, "Pitch > B3" will include all pitches above B3 (so C3 and higher). If a pitch
-      filter is present, it will overwrite the note selected in the midi panel or in the instrument (only affects the
-      filter group the filter is defined in). If the pitch is "Selected" it will match the selected pitch in the midi
+    * Filters notes by pitch. For example, "Pitch > B3" will include all pitches above B3 (so C3 and higher). 
+      If the pitch is "Selected" it will match the selected pitch in the midi
       panel, or the pitch of the instrument note if the filter is part of an instrument.
 * Relative Start Time
     * Filters notes by their start time (time is based on the beginning of the midi file). For example, "Relative Start

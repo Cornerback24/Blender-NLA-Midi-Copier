@@ -1,3 +1,8 @@
+- 0.19.0 2024-4-13
+  * Add All Pitches checkbox to filter groups
+  * Update the Copy midi file data buttons to be available when midi file settings are different between the views  
+  * Update CC Data in graph editor to always use selected pitch (unless there are pitch filters)
+  * Fix single keyframe actions not generating a full frame length action strip when copied
 - 0.18.0 2024-3-28
   * Add option to midi file selector for relative paths
   * Fixed parsing repeated notes when a Note On is listed before a Note Off at the same time

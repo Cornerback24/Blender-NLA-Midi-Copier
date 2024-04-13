@@ -319,7 +319,8 @@ def __notes_passing_filter(notes: List['AnalyzedNote'], filter_group_property, d
     note_filters = [ID_TO_FILTER[note_filter_property.filter_type](note_filter_property) for
                     note_filter_property in filter_group_property.note_filters]
     # apply default pitch as pitch filter if no pitch filters are part of the filter groups
-    if default_pitch_filter and not any(isinstance(note_filter, PitchFilter) for note_filter in note_filters):
+    if not filter_group_property.all_pitches and default_pitch_filter and not any(
+            isinstance(note_filter, PitchFilter) for note_filter in note_filters):
         notes_paired_to_index = [note_index_pair for note_index_pair in notes_paired_to_index if
                                  note_index_pair[1].note.pitch == default_pitch]
     for note_filter in note_filters:

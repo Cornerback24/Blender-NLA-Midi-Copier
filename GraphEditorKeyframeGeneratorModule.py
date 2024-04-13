@@ -107,6 +107,7 @@ def get_note_collection(loaded_midi_data, context, graph_editor_note_action_prop
     note_id = loaded_midi_data.get_note_id(context)
     note_collection_filter = NoteCollectionFilter(graph_editor_note_action_property.note_filter_groups,
                                                   PitchUtils.note_pitch_from_id(note_id),
+                                                  keyframe_generator_property.property_type != "note" or
                                                   keyframe_generator_property.note_property != "Pitch",
                                                   graph_editor_note_action_property.add_filters, context)
     return NoteCollection(notes, note_collection_meta_data, overlap_strategy, note_collection_filter)

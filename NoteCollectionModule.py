@@ -90,7 +90,7 @@ class NoteCollectionFilter:
         """
         :param filter_groups_list: list of filter group properties
         :param default_pitch: default pitch to use if no pitch filters
-        :param default_pitch_filter: if true, filters by default pitch of no pitch filters
+        :param default_pitch_filter: if true, filters by default pitch if no pitch filters
         :param include_custom_filters: if false, does not filter by filter groups
         :param context: blender Context
         """

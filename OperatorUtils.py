@@ -75,7 +75,6 @@ class CopyMidiFileData(bpy.types.Operator):
         tempo_settings_to.beats_per_minute = tempo_settings_from.beats_per_minute
         tempo_settings_to.use_file_ticks_per_beat = tempo_settings_from.use_file_ticks_per_beat
         tempo_settings_to.ticks_per_beat = tempo_settings_from.ticks_per_beat
-        tempo_settings_to.ticks_per_beat = tempo_settings_from.ticks_per_beat
 
         midi_track_properties_from = midi_data_property_from.midi_track_properties
         midi_track_properties_to = midi_data_property_to.midi_track_properties
@@ -85,6 +84,34 @@ class CopyMidiFileData(bpy.types.Operator):
             midi_track_property_to.midi_data_type = self.copy_to_data_type
             midi_track_property_to.midi_track_name = midi_track_property_from.midi_track_name
             midi_track_property_to.displayed_track_name = midi_track_property_from.displayed_track_name
+
+    @staticmethod
+    def compare_midi_file_data(context, data_type_1, data_type_2) -> bool:
+        midi_data_property_1 = midi_data.get_midi_data_property(data_type_1, context)
+        midi_data_property_2 = midi_data.get_midi_data_property(data_type_2, context)
+
+        if midi_data_property_1.midi_file != midi_data_property_2.midi_file or \
+                midi_data_property_1.midi_frame_start != midi_data_property_2.midi_frame_start or \
+                midi_data_property_1.middle_c_note != midi_data_property_2.middle_c_note:
+            return False
+
+        tempo_settings_1 = midi_data_property_1.tempo_settings
+        tempo_settings_2 = midi_data_property_2.tempo_settings
+        if tempo_settings_1.use_file_tempo != tempo_settings_2.use_file_tempo or \
+                tempo_settings_1.beats_per_minute != tempo_settings_2.beats_per_minute or \
+                tempo_settings_1.use_file_ticks_per_beat != tempo_settings_2.use_file_ticks_per_beat or \
+                tempo_settings_1.ticks_per_beat != tempo_settings_2.ticks_per_beat:
+            return False
+
+        midi_track_properties_1 = midi_data_property_1.midi_track_properties
+        midi_track_properties_2 = midi_data_property_2.midi_track_properties
+        if len(midi_track_properties_1) != len(midi_track_properties_2):
+            return False
+        for (midi_track_property_1, midi_track_property_2) in zip(midi_track_properties_1, midi_track_properties_2):
+            if midi_track_property_1.midi_track_name != midi_track_property_2.midi_track_name or \
+                    midi_track_property_1.displayed_track_name != midi_track_property_2.displayed_track_name:
+                return False
+        return True
 
 
 class DynamicTooltipOperator:

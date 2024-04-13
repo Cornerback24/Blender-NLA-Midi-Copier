@@ -128,13 +128,14 @@ def set_operator_lookup_properties(operator, midi_data_type, is_part_of_instrume
         operator.filter_index = filter_index
 
 
-def draw_filter_box(parent_layout, note_action_property, is_instrument_property, action_index, midi_data_type, context):
+def draw_filter_box(parent_layout, note_action_property, is_instrument_property, action_index, midi_data_type, context,
+                    draw_all_pitches_checkbox: bool = True):
     box = draw_collapsible_box(parent_layout, i18n.get_key(i18n.FILTERS), note_action_property, "filters_expanded")[0]
     if note_action_property.filters_expanded:
         filter_group_index = 0
         for filter_group in note_action_property.note_filter_groups:
             draw_filter_group(box, filter_group, is_instrument_property, action_index, filter_group_index,
-                              midi_data_type)
+                              midi_data_type, draw_all_pitches_checkbox)
             filter_group_index += 1
 
         col = box.column(align=True)
@@ -167,7 +168,7 @@ def draw_filter_box(parent_layout, note_action_property, is_instrument_property,
 
 
 def draw_filter_group(parent_layout, filter_group_property, is_instrument_property, action_index,
-                      filter_group_index, midi_data_type):
+                      filter_group_index, midi_data_type, draw_all_pitches_checkbox: bool):
     collapsible_box = draw_collapsible_box(
         parent_layout, i18n.concat(i18n.get_text(i18n.FILTER_GROUP), str(filter_group_index + 1)),
         filter_group_property, "expanded", RemoveFilterGroup.bl_idname)
@@ -178,17 +179,26 @@ def draw_filter_group(parent_layout, filter_group_property, is_instrument_proper
 
     if filter_group_property.expanded:
         draw_filters_list(action_index, box, filter_group_index, filter_group_property, is_instrument_property,
-                          midi_data_type)
+                          midi_data_type, draw_all_pitches_checkbox)
 
 
 def draw_filters_list(action_index, box, filter_group_index, filter_group_property, is_instrument_property,
-                      midi_data_type):
+                      midi_data_type, draw_all_pitches_checkbox: bool):
     filter_index = 0
     filter_count = len(filter_group_property.note_filters)
+    all_pitches_row = box.row() if draw_all_pitches_checkbox else None
+    pitch_filter_exists = False
     for filter_property in filter_group_property.note_filters:
         draw_filter(box, filter_property, is_instrument_property, action_index, filter_group_index,
                     filter_index, filter_count, midi_data_type)
         filter_index = filter_index + 1
+        if filter_property.filter_type == NoteFilterImplementations.PitchFilter.ID:
+            pitch_filter_exists = True
+    # draw the All Pitches checkbox above the filters
+    if draw_all_pitches_checkbox:
+        all_pitches_row.enabled = not pitch_filter_exists
+        all_pitches_row.prop(filter_group_property,
+                             "all_pitches_selected_read_only" if pitch_filter_exists else "all_pitches")
     final_row = box.row()
     add_filter_operator = final_row.operator(AddNoteFilter.bl_idname, text=i18n.get_key(i18n.ADD_FILTER_OP))
     set_operator_lookup_properties(add_filter_operator, midi_data_type, is_instrument_property, action_index,
@@ -285,16 +295,15 @@ COPY_MIDI_FILE_DICTIONARY = {MidiDataType.NLA: ("NLA", i18n.get_key(i18n.COPY_FI
 def draw_midi_file_selections(parent_layout, midi_data_property, midi_data_type: int, context,
                               note_property_text=i18n.get_label(i18n.NOTE)):
     def draw_copy_to_operator(copy_to_parent_layout, data_type_from, data_type_to):
-        if data_type_from != data_type_to:
-            copy_from_midi_file = midi_data.get_midi_data_property(data_type_from, context).midi_file
-            if copy_from_midi_file is not None and len(copy_from_midi_file) > 0:
-                icon = COPY_MIDI_FILE_DICTIONARY[data_type_from][0]
-                tooltip = i18n.get_text_tip(COPY_MIDI_FILE_DICTIONARY[data_type_from][1])
-                copy_to_operator = copy_to_parent_layout.operator(OperatorUtils.CopyMidiFileData.bl_idname, text="",
-                                                                  icon=icon)
-                copy_to_operator.copy_from_data_type = data_type_from
-                copy_to_operator.copy_to_data_type = data_type_to
-                copy_to_operator.tooltip = tooltip
+        copy_from_midi_file = midi_data.get_midi_data_property(data_type_from, context).midi_file
+        if copy_from_midi_file is not None and len(copy_from_midi_file) > 0:
+            icon = COPY_MIDI_FILE_DICTIONARY[data_type_from][0]
+            tooltip = i18n.get_text_tip(COPY_MIDI_FILE_DICTIONARY[data_type_from][1])
+            copy_to_operator = copy_to_parent_layout.operator(OperatorUtils.CopyMidiFileData.bl_idname, text="",
+                                                              icon=icon)
+            copy_to_operator.copy_from_data_type = data_type_from
+            copy_to_operator.copy_to_data_type = data_type_to
+            copy_to_operator.tooltip = tooltip
 
     load_file_row = parent_layout.row()
     file_selector_operator = load_file_row.operator(MidiFileSelector.bl_idname,
@@ -302,8 +311,10 @@ def draw_midi_file_selections(parent_layout, midi_data_property, midi_data_type:
     file_selector_operator.midi_data_type = midi_data_type
 
     # draw options to copy midi file data from other views
-    if midi_data_property.midi_file is None or len(midi_data_property.midi_file) == 0:
-        for data_type in midi_data.MidiDataType.values():
+    for data_type in midi_data.MidiDataType.values():
+        if data_type != midi_data_property.data_type and not (
+                OperatorUtils.CopyMidiFileData.compare_midi_file_data(context, data_type,
+                                                                      midi_data_property.data_type)):
             draw_copy_to_operator(load_file_row, data_type, midi_data_property.data_type)
 
     if midi_data_property.midi_file:

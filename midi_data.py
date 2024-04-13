@@ -434,6 +434,8 @@ class LoadedMidiData:
                         filter_pitch = PitchUtils.note_pitch_from_id(pitch_filter.note_pitch)
                     if not PropertyUtils.compare(pitch_filter.comparison_operator, pitch, filter_pitch):
                         return True
+            elif filter_group.all_pitches:
+                return True
         return False
 
     @staticmethod

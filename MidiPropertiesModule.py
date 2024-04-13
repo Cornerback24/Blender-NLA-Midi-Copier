@@ -15,6 +15,8 @@ if "bpy" in locals():
     importlib.reload(CompatibilityModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(i18n)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(ActionUtils)
 else:
     from . import midi_data
     from . import NoteFilterImplementations
@@ -22,6 +24,7 @@ else:
     from . import PropertyUtils
     from . import CollectionUtils
     from . import CompatibilityModule
+    from . import ActionUtils
     from .i18n import i18n
 
 import bpy
@@ -95,7 +98,7 @@ def on_action_updated(note_action_property, context):
     action = note_action_property.action
     # update the action length property to match the actual length of the action
     if action is not None:
-        note_action_property.action_length = int(action.frame_range[1]) - int(action.frame_range[0])
+        note_action_property.action_length = int(ActionUtils.action_length(action))
 
 
 COMPARISON_ENUM_PROPERTY_ITEMS = [("less_than", "<", i18n.get_key(i18n.LESS_THAN), 0),
@@ -106,6 +109,17 @@ COMPARISON_ENUM_PROPERTY_ITEMS = [("less_than", "<", i18n.get_key(i18n.LESS_THAN
 
 TIME_UNITS = [("frames", i18n.get_key(i18n.FRAMES), i18n.get_key(i18n.FRAMES), 0),
               ("seconds", i18n.get_key(i18n.SECONDS), i18n.get_key(i18n.SECONDS), 1)]
+
+
+class NoteFilterGroupPropertyBase:
+    expanded: BoolProperty(name="Expanded", default=True)
+    all_pitches: BoolProperty(name="All Pitches", description=i18n.get_key(i18n.ALL_PITCHES_FILTER_DESCRIPTION),
+                              default=False)
+    # this property is only used for display when there is a pitch filter in the list
+    # (all pitches is always treated as selected in that case)
+    all_pitches_selected_read_only: BoolProperty(name=i18n.get_key(i18n.ALL_PITCHES),
+                                                 description=i18n.get_key(i18n.ALL_PITCHES_FILTER_DESCRIPTION),
+                                                 default=True)
 
 
 class NoteFilterPropertyBase:
@@ -144,18 +158,19 @@ class NoteFilterProperty(PropertyGroup, NoteFilterPropertyBase):
     data_type = MidiDataType.NLA
 
 
-class NoteFilterGroup(PropertyGroup):
+class NoteFilterGroup(PropertyGroup, NoteFilterGroupPropertyBase):
     note_filters: CollectionProperty(type=NoteFilterProperty, name=i18n.get_key(i18n.NOTE_FILTERS))
-    expanded: BoolProperty(name="Expanded", default=True)
 
 
+# class is used for storing note filters in the presets (not specific to any view like nla or graph editor)
 class GenericNoteFilterProperty(PropertyGroup, NoteFilterPropertyBase):
     # set data type so that there is a LoadedMidiData for get_all_notes_for_pitch_filter
     # any data type works because only the pitch matters (not the displayed note)
     data_type = MidiDataType.NLA
 
 
-class GenericNoteFilterGroup(PropertyGroup):
+# class is used for storing note filter groups in the presets (not specific to any view like nla or graph editor)
+class GenericNoteFilterGroup(PropertyGroup, NoteFilterGroupPropertyBase):
     note_filters: CollectionProperty(type=GenericNoteFilterProperty)
 
 

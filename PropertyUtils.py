@@ -82,6 +82,7 @@ def copy_filters(copy_from_note_filter_groups, copy_to_note_filter_groups):
     copy_to_note_filter_groups.clear()
     for copy_from_filter_group in copy_from_note_filter_groups:
         copy_to_filter_group = copy_to_note_filter_groups.add()
+        copy_to_filter_group.all_pitches = copy_from_filter_group.all_pitches
         for copy_from_filter in copy_from_filter_group.note_filters:
             copy_to_filter = copy_to_filter_group.note_filters.add()
             copy_to_filter.filter_type = copy_from_filter.filter_type
@@ -101,15 +102,11 @@ def copy_filters(copy_from_note_filter_groups, copy_to_note_filter_groups):
 def compare_filters(filter_groups_1, filter_groups_2):
     if len(filter_groups_1) != len(filter_groups_2):
         return False
-    for i in range(len(filter_groups_1)):
-        filter_group_1 = filter_groups_1[i]
-        filter_group_2 = filter_groups_2[i]
-        if len(filter_group_1.note_filters) != len(filter_group_2.note_filters):
+    for (filter_group_1, filter_group_2) in zip(filter_groups_1, filter_groups_2):
+        if len(filter_group_1.note_filters) != len(filter_group_2.note_filters) or \
+                filter_group_1.all_pitches != filter_group_2.all_pitches:
             return False
-        for j in range(len(filter_group_1.note_filters)):
-            note_filter_1 = filter_group_1.note_filters[j]
-            note_filter_2 = filter_group_2.note_filters[j]
-
+        for (note_filter_1, note_filter_2) in zip(filter_group_1.note_filters, filter_group_2.note_filters):
             filters_equal = \
                 note_filter_1.filter_type == note_filter_2.filter_type and \
                 note_filter_1.comparison_operator == note_filter_2.comparison_operator and \
