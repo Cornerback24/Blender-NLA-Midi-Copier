@@ -53,7 +53,8 @@ class GraphEditorMidiPanel(bpy.types.Panel):
         keyframe_generator = graph_editor_note_action_property.keyframe_generators[0]
 
         # only one keyframe generator for now
-        draw_notes_in_track_label = keyframe_generator.note_property == "Pitch"
+        draw_notes_in_track_label = (keyframe_generator.property_type == "note" and keyframe_generator.note_property
+                                     == "Pitch")
         PanelUtils.draw_midi_file_selections(
             col, midi_data_property, MidiDataType.GRAPH_EDITOR, context,
             note_property_text=i18n.get_label(i18n.NOTES_IN_TRACK) if draw_notes_in_track_label else i18n.get_label(
@@ -124,8 +125,8 @@ class GraphEditorMidiPanel(bpy.types.Panel):
             PanelUtils.draw_filter_box(col, graph_editor_note_action_property, False, None,
                                        MidiDataType.GRAPH_EDITOR, context,
                                        draw_all_pitches_checkbox=(
-                                                   keyframe_generator.property_type != "note" or
-                                                   keyframe_generator.note_property != "Pitch"))
+                                               keyframe_generator.property_type != "note" or
+                                               keyframe_generator.note_property != "Pitch"))
         col.prop(midi_data_property, "midi_frame_start")
         col.prop(graph_editor_note_action_property, "midi_frame_offset")
         col.separator()
