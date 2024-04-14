@@ -59,7 +59,7 @@ def closest_segment(obj, segments) -> Tuple[int, int]:
     :return: (closest segment number, relative position (before, on, after))
     """
     object_point = point_3d(obj.location)
-    segment_number: int = 0
+    segment_number = 0
 
     distance_to_nearest_segment = (float("inf"), ON_SEGMENT)
     for i in range(len(segments)):
@@ -164,11 +164,11 @@ def duplicate_object(object_to_duplicate, context, linked=False):
     :param linked: linked duplicate if True
     :return: the duplicated object
     """
-    object_to_duplicate.select_set(True)
+    object_to_duplicate.select = True
     bpy.ops.object.duplicate(linked=linked)
     duplicated_object = context.selected_objects[0]
-    duplicated_object.select_set(False)
-    object_to_duplicate.select_set(False)
+    duplicated_object.select = False
+    object_to_duplicate.select = False
     return duplicated_object
 
 

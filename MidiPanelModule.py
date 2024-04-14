@@ -32,7 +32,6 @@ else:
 
 import bpy
 from typing import Callable, Tuple
-from . import addon_updater_ops
 from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier
 from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToInstrument, RemoveActionFromInstrument, \
     TransposeInstrument
@@ -50,9 +49,6 @@ class MidiPanel(bpy.types.Panel):
     bl_idname = "ANIMATION_PT_midi_panel"
 
     def draw(self, context):
-        # Check for addon update in the background
-        addon_updater_ops.check_for_update_background()
-
         col = self.layout.column(align=True)
         midi_data_property = context.scene.midi_data_property
         midi_file = midi_data_property.midi_file
@@ -72,9 +68,6 @@ class MidiPanel(bpy.types.Panel):
         if note_action_property.action is None:
             tooltip_creator.add_disable_description(i18n.get_key(i18n.NO_ACTION_SELECTED))
         tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
-
-        # notify update if available
-        addon_updater_ops.update_notice_box_ui(self, context)
 
     @staticmethod
     def draw_note_action_common(parent_layout, col, note_action_property, context, midi_data_property=None,
@@ -381,10 +374,6 @@ class OtherToolsPanel(bpy.types.Panel):
     bl_label = i18n.get_key(i18n.OTHER_TOOLS)
     bl_idname = "ANIMATION_PT_midi_other_tools_panel"
 
-    @classmethod
-    def poll(cls, context):
-        return context.preferences.addons[__package__].preferences.show_nla_midi_other_tools_panel
-
     def draw(self, context):
         midi_data_property = context.scene.midi_data_property
         col = self.layout.column(align=True)
@@ -426,8 +415,10 @@ class OtherToolsPanel(bpy.types.Panel):
         else:
             right.label(text=i18n.get_key(i18n.get_key(i18n.NO_NLA_TRACK_SELECTED)))
 
+
     def draw_generate_transitions(self, context, col, midi_data_property):
-        self.draw_active_nla_track(context, col)
+        # active_nla_track not added until blender 2.80. not going to iterate over every single animation data here
+        # self.draw_active_nla_track(context, col)
         other_tool_property = midi_data_property.other_tool_property
         keframe_properties = other_tool_property.keyframe_properties
         col.prop(keframe_properties, "interpolation")
@@ -442,15 +433,18 @@ class OtherToolsPanel(bpy.types.Panel):
 
         col.separator()
         tooltip_creator = PanelUtils.OperatorTooltipCreator(GenerateTransitionsOperator)
-        if context.active_nla_track is None:
-            tooltip_creator.add_disable_description(i18n.get_key(i18n.NO_NLA_TRACK_SELECTED))
+        # active_nla_track not added until blender 2.80. not going to iterate over every single animation data here
+        # if context.active_nla_track is None:
+        #     tooltip_creator.add_disable_description(i18n.get_key(i18n.NO_NLA_TRACK_SELECTED))
         tooltip_creator.draw_operator_row(col)
 
     def draw_delete_transitions(self, context, col):
-        self.draw_active_nla_track(context, col)
+        # active_nla_track not added until blender 2.80. not going to iterate over every single animation data here
+        # self.draw_active_nla_track(context, col)
         tooltip_creator = PanelUtils.OperatorTooltipCreator(DeleteTransitionsOperator)
-        if context.active_nla_track is None:
-            tooltip_creator.add_disable_description(i18n.get_key(i18n.NO_NLA_TRACK_SELECTED))
+        # active_nla_track not added until blender 2.80. not going to iterate over every single animation data here
+        # if context.active_nla_track is None:
+        #     tooltip_creator.add_disable_description(i18n.get_key(i18n.NO_NLA_TRACK_SELECTED))
         tooltip_creator.draw_operator_row(col)
 
 
@@ -461,7 +455,7 @@ class MIDI_TRACK_PROPERTIES_UL_list(bpy.types.UIList):
             text = item.midi_track_name
             if len(item.displayed_track_name.strip()) > 0:
                 text = text + " (" + item.displayed_track_name + ")"
-            layout.label(text=text, translate=False, icon='OUTLINER_DATA_GP_LAYER')
+            layout.label(text=text, translate=False, icon='GREASEPENCIL')
         elif self.layout_type == 'GRID':
             layout.alignment = 'CENTER'
             layout.label(text="", icon='OUTLINER_DATA_GP_LAYER')

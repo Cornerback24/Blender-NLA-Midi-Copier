@@ -45,9 +45,9 @@ class CopyMidiFileData(bpy.types.Operator):
     bl_description = i18n.get_key(i18n.COPY_MIDI_FILE_DATA)
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
-    copy_from_data_type: bpy.props.IntProperty(name="From", options={'HIDDEN'})
-    copy_to_data_type: bpy.props.IntProperty(name="To", options={'HIDDEN'})
-    tooltip: bpy.props.StringProperty(options={'HIDDEN'})
+    copy_from_data_type = bpy.props.IntProperty(name="From", options={'HIDDEN'})
+    copy_to_data_type = bpy.props.IntProperty(name="To", options={'HIDDEN'})
+    tooltip = bpy.props.StringProperty(options={'HIDDEN'})
 
     @classmethod
     def description(cls, context, properties):
@@ -115,7 +115,7 @@ class CopyMidiFileData(bpy.types.Operator):
 
 
 class DynamicTooltipOperator:
-    tooltip: bpy.props.StringProperty(options={'HIDDEN'})
+    tooltip = bpy.props.StringProperty(options={'HIDDEN'})
 
     @classmethod
     def description(cls, context, properties):

@@ -22,7 +22,6 @@ else:
     from .i18n import i18n
 
 import bpy
-from . import addon_updater_ops
 from .midi_data import MidiDataType
 from .GraphEditorKeyframeGeneratorModule import GraphEditorMidiKeyframeGenerator, LoadMinMaxFromMidiTrack
 
@@ -35,9 +34,6 @@ class GraphEditorMidiPanel(bpy.types.Panel):
     bl_idname = "ANIMATION_PT_graph_editor_midi_panel"
 
     def draw(self, context):
-        # Check for addon update in the background
-        addon_updater_ops.check_for_update_background()
-
         midi_data_property = context.scene.graph_editor_midi_data_property
         midi_file = midi_data_property.midi_file
         graph_editor_note_action_property = midi_data_property.note_action_property
@@ -62,7 +58,8 @@ class GraphEditorMidiPanel(bpy.types.Panel):
 
         left, right, data_path_row = PanelUtils.split_row(col, .2)
         right.enabled = False
-        fcurves = context.selected_editable_fcurves
+        fcurves = [fcurve for action in context.blend_data.actions for fcurve in action.fcurves if
+                   fcurve.select and not fcurve.lock]
         if len(fcurves) == 1:
             # label instead of text argument so that label is not greyed out
             left.label(text=i18n.get_label(i18n.SELECTED_F_CURVE))
@@ -140,9 +137,6 @@ class GraphEditorMidiPanel(bpy.types.Panel):
             tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.SELECT_AN_F_CURVE_IN_THE_GRAPH_EDITOR))
 
         tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
-
-        # notify update if available
-        addon_updater_ops.update_notice_box_ui(self, context)
 
     def draw_min_and_max(self, col, keyframe_generator):
         min_max_map_row = col.row()

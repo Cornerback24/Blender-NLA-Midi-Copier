@@ -24,10 +24,10 @@ class AddNoteFilter(bpy.types.Operator):
     bl_description = i18n.get_key(i18n.ADD_A_FILTER)
     bl_options = {"REGISTER", "UNDO"}
 
-    is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
-    action_index: bpy.props.IntProperty(name="ActionIndex", options={'HIDDEN'})
-    filter_group_index: bpy.props.IntProperty(name="FilterGroupIndex", options={'HIDDEN'})
-    midi_data_type: bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
+    is_part_of_instrument = bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
+    action_index = bpy.props.IntProperty(name="ActionIndex", options={'HIDDEN'})
+    filter_group_index = bpy.props.IntProperty(name="FilterGroupIndex", options={'HIDDEN'})
+    midi_data_type = bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
 
     def execute(self, context):
         self.action_common(context)
@@ -52,11 +52,11 @@ class RemoveNoteFilter(bpy.types.Operator):
     bl_description = i18n.get_key(i18n.REMOVE_FILTER)
     bl_options = {"REGISTER", "UNDO"}
 
-    is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
-    action_index: bpy.props.IntProperty(name="ActionIndex", options={'HIDDEN'})
-    filter_group_index: bpy.props.IntProperty(name="FilterGroupIndex", options={'HIDDEN'})
-    filter_index: bpy.props.IntProperty(name="FilterIndex", options={'HIDDEN'})
-    midi_data_type: bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
+    is_part_of_instrument = bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
+    action_index = bpy.props.IntProperty(name="ActionIndex", options={'HIDDEN'})
+    filter_group_index = bpy.props.IntProperty(name="FilterGroupIndex", options={'HIDDEN'})
+    filter_index = bpy.props.IntProperty(name="FilterIndex", options={'HIDDEN'})
+    midi_data_type = bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
 
     def execute(self, context):
         self.action_common(context)
@@ -81,12 +81,12 @@ class ReorderFilter(bpy.types.Operator):
     bl_description = i18n.get_key(i18n.CHANGE_FILTER_ORDER)
     bl_options = {"REGISTER", "UNDO"}
 
-    is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
-    action_index: bpy.props.IntProperty(name="ActionIndex", options={'HIDDEN'})
-    filter_group_index: bpy.props.IntProperty(name="FilterGroupIndex", options={'HIDDEN'})
-    filter_index: bpy.props.IntProperty(name="FilterIndex", options={'HIDDEN'})
-    reorder_factor: bpy.props.IntProperty(name="ReorderFactor", options={'HIDDEN'})
-    midi_data_type: bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
+    is_part_of_instrument = bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
+    action_index = bpy.props.IntProperty(name="ActionIndex", options={'HIDDEN'})
+    filter_group_index = bpy.props.IntProperty(name="FilterGroupIndex", options={'HIDDEN'})
+    filter_index = bpy.props.IntProperty(name="FilterIndex", options={'HIDDEN'})
+    reorder_factor = bpy.props.IntProperty(name="ReorderFactor", options={'HIDDEN'})
+    midi_data_type = bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
 
     def execute(self, context):
         self.action_common(context)
@@ -111,9 +111,9 @@ class AddNoteFilterGroup(bpy.types.Operator):
     bl_description = i18n.get_key(i18n.ADD_FILTER_GROUP_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
 
-    is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
-    action_index: bpy.props.IntProperty(name="Index", options={'HIDDEN'})
-    midi_data_type: bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
+    is_part_of_instrument = bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
+    action_index = bpy.props.IntProperty(name="Index", options={'HIDDEN'})
+    midi_data_type = bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
 
     def execute(self, context):
         self.action_common(context)
@@ -138,10 +138,10 @@ class RemoveFilterGroup(bpy.types.Operator):
     bl_description = i18n.get_key(i18n.DELETE_FILTER_GROUP)
     bl_options = {"REGISTER", "UNDO"}
 
-    is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
-    action_index: bpy.props.IntProperty(name="ActionIndex", options={'HIDDEN'})
-    filter_group_index: bpy.props.IntProperty(name="FilterGroupIndex", options={'HIDDEN'})
-    midi_data_type: bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
+    is_part_of_instrument = bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
+    action_index = bpy.props.IntProperty(name="ActionIndex", options={'HIDDEN'})
+    filter_group_index = bpy.props.IntProperty(name="FilterGroupIndex", options={'HIDDEN'})
+    midi_data_type = bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
 
     def execute(self, context):
         self.action_common(context)
@@ -165,9 +165,9 @@ class AddFilterPreset(bpy.types.Operator):
     bl_description = i18n.get_key(i18n.NEW_FILTER_PRESET)
     bl_options = {"REGISTER", "UNDO"}
 
-    is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
-    action_index: bpy.props.IntProperty(name="Index", options={'HIDDEN'})
-    midi_data_type: bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
+    is_part_of_instrument = bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
+    action_index = bpy.props.IntProperty(name="Index", options={'HIDDEN'})
+    midi_data_type = bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
 
     def execute(self, context):
         self.action_common(context)
@@ -199,9 +199,9 @@ class SaveFilterPreset(bpy.types.Operator):
     bl_description = i18n.get_key(i18n.SAVE_FILTER_PRESET)
     bl_options = {"REGISTER", "UNDO"}
 
-    is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
-    action_index: bpy.props.IntProperty(name="ActionIndex", options={'HIDDEN'})
-    midi_data_type: bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
+    is_part_of_instrument = bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
+    action_index = bpy.props.IntProperty(name="ActionIndex", options={'HIDDEN'})
+    midi_data_type = bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
 
     def execute(self, context):
         self.action_common(context)
@@ -228,9 +228,9 @@ class DeleteFilterPreset(bpy.types.Operator):
     bl_description = i18n.get_key(i18n.DELETE_FILTER_PRESET)
     bl_options = {"REGISTER", "UNDO"}
 
-    is_part_of_instrument: bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
-    action_index: bpy.props.IntProperty(name="Index", options={'HIDDEN'})
-    midi_data_type: bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
+    is_part_of_instrument = bpy.props.BoolProperty(name="IsPartOfInstrument", options={'HIDDEN'})
+    action_index = bpy.props.IntProperty(name="Index", options={'HIDDEN'})
+    midi_data_type = bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
 
     def execute(self, context):
         self.action_common(context)

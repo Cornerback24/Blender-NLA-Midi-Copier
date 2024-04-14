@@ -3,7 +3,7 @@ bl_info = \
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
         "version": (0, 19, 0),
-        "blender": (2, 80, 0),
+        "blender": (2, 79, 0),
         "location": "NLA Editor and Graph Editor Sidebar",
         "description": "Copy actions to action strips and generate graph editor keyframes based on midi file input",
         "doc_url": "https://github.com/Cornerback24/Blender-NLA-Midi-Copier#blender-nla-midi-copier",
@@ -87,7 +87,6 @@ else:
 
 import bpy
 import traceback
-from . import addon_updater_ops
 from bpy.props import PointerProperty
 from bpy.types import NlaStrip
 from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier
@@ -187,8 +186,7 @@ def updates_from_previous_version(context):
 
 # noinspection PyArgumentList
 def register():
-    bpy.app.translations.register(__name__, translations)
-    addon_updater_ops.register(bl_info)
+    # bpy.app.translations.register(__name__, translations)
     for clazz in classes:
         bpy.utils.register_class(clazz)
     bpy.types.Scene.midi_data_property = PointerProperty(type=MidiPropertyGroup)
@@ -196,6 +194,7 @@ def register():
     bpy.types.Scene.graph_editor_midi_data_property = PointerProperty(type=GraphEditorMidiPropertyGroup)
     bpy.types.Scene.midi_copier_version = PointerProperty(type=MidiCopierVersion)
     bpy.types.Scene.midi_copier_data_common = PointerProperty(type=MidiDataCommon)
+    print("adding nla midi copier lost post handler")
     bpy.app.handlers.load_post.append(on_load)
 
 
@@ -206,8 +205,7 @@ def unregister():
     del bpy.types.Scene.midi_data_property
     for clazz in reversed(classes):
         bpy.utils.unregister_class(clazz)
-    addon_updater_ops.unregister()
-    bpy.app.translations.unregister(__name__)
+    # bpy.app.translations.unregister(__name__)
 
 
 if __name__ == "__main__":

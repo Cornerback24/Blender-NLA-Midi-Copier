@@ -137,7 +137,7 @@ def compare(comparison_operator: str, a: Any, b: Any) -> bool:
     elif comparison_operator == "greater_than":
         return a > b
     else:
-        raise ValueError(f"{comparison_operator} comparison operator not supported")
+        raise ValueError(comparison_operator + " comparison operator not supported")
 
 
 def time_in_frames(time, time_unit: str, context) -> int:
@@ -147,7 +147,7 @@ def time_in_frames(time, time_unit: str, context) -> int:
         frames_per_second = context.scene.render.fps
         return math.floor(time * frames_per_second)
     else:
-        raise ValueError(f"{time_unit} time unit not supported")
+        raise ValueError(time_unit + " time unit not supported")
 
 
 def ms_to_frames(ms: float, context) -> int:
@@ -157,7 +157,7 @@ def ms_to_frames(ms: float, context) -> int:
 
 def note_updated_function(note_attribute, note_filter_attribute, get_notes_list):
     def note_updated(data, context):
-        note: str = getattr(data, note_attribute)
+        note = getattr(data, note_attribute)
         current_note_filter = getattr(data, note_filter_attribute)
         if note is not None:
             # Set to midi note number if current filter is blank or number. If current filter is non-numeric (note name)

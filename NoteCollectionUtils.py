@@ -9,10 +9,10 @@ class AnalyzedNote:
                  frame_offset: int, scale_factor: Optional[float], start_at_note_end: bool,
                  non_scaled_action_length: Optional[int]):
         self.note = note
-        self.note_start_frame: int = 0
-        self.note_end_frame: int = 0  # the last frame of the note (does not account for action scaling)
-        self.note_length_frames: int = 0
-        self.action_length_frames: int = 0
+        self.note_start_frame = 0
+        self.note_end_frame = 0  # the last frame of the note (does not account for action scaling)
+        self.note_length_frames = 0
+        self.action_length_frames = 0
         self.action_start_frame = 0
         self.action_end_frame = 0  # the last frame of the action
         self.start_at_note_end = start_at_note_end
@@ -73,8 +73,8 @@ class NotesLayer:
 
     def __init__(self, existing_note_overlaps_layer: Optional[ExistingNoteOverlapsLayer], same_frame_is_overlap: bool,
                  frame_length_for_overlap: Optional[int] = None):
-        self.notes: List[AnalyzedNote] = []
-        self.last_note_added: Optional[AnalyzedNote] = None
+        self.notes = []
+        self.last_note_added = None
         self.existing_note_overlaps_layer = existing_note_overlaps_layer
         self.same_frame_is_overlap = same_frame_is_overlap
         self.frame_length_for_overlap = frame_length_for_overlap

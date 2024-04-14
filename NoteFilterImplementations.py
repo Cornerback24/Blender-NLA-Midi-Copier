@@ -61,7 +61,7 @@ class NoteFilterBase(ABC):
 
     @staticmethod
     def split_into_rows(parent_layout, factor: float):
-        split = parent_layout.row().split(factor=factor)
+        split = parent_layout.row().split(percentage=factor)
         return split.row(), split.row()
 
     @staticmethod
@@ -227,9 +227,9 @@ class OverlapFilter(NoteFilterBase):
     NUMBER = 6
 
     def filtered_notes(self, notes: List[Tuple[int, 'AnalyzedNote']], context) -> List[Tuple[int, 'AnalyzedNote']]:
-        notes_layers: List[NotesLayer] = []
+        notes_layers = []
         # second int is overlap count, third list acts as mutable pair
-        calculated_layers: List[List[List[Tuple[int, AnalyzedNote], int]]] = []
+        calculated_layers = []
         # create note layers to determine overlaps
         for note_index_pair in notes:
             note_added = False
@@ -250,7 +250,7 @@ class OverlapFilter(NoteFilterBase):
                 calculated_layers.append([[note_index_pair, len(calculated_layers) + 1]])
 
         # count overlaps
-        overlap_checkers: List[OverlapChecker] = \
+        overlap_checkers = \
             [OverlapChecker([(note.action_start_frame, note.action_end_frame) for note in notes_layer.notes]) for
              notes_layer in notes_layers]
         for i in range(len(calculated_layers)):

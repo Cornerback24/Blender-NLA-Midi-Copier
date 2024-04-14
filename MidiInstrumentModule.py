@@ -92,7 +92,7 @@ class RemoveActionFromInstrument(bpy.types.Operator):
     bl_description = i18n.get_key(i18n.DELETE_ACTION)
     bl_options = {"REGISTER", "UNDO"}
 
-    action_index: bpy.props.IntProperty(name="Index", options={'HIDDEN'})
+    action_index = bpy.props.IntProperty(name="Index", options={'HIDDEN'})
 
     def execute(self, context):
         self.action_common(context)
@@ -125,7 +125,7 @@ class TransposeInstrument(bpy.types.Operator):
     bl_description = i18n.get_key(i18n.TRANSPOSE_INSTRUMENT)
     bl_options = {"REGISTER", "UNDO"}
 
-    transpose_steps: bpy.props.IntProperty(name=i18n.get_key(i18n.TRANSPOSE_STEPS))
+    transpose_steps = bpy.props.IntProperty(name=i18n.get_key(i18n.TRANSPOSE_STEPS))
 
     def execute(self, context):
         self.action_common(context)

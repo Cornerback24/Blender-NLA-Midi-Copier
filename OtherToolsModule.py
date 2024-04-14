@@ -35,10 +35,45 @@ class GenerateTransitionsOperator(bpy.types.Operator, OperatorUtils.DynamicToolt
         return {'FINISHED'}
 
     @staticmethod
+    def all_animation_data_from_collection(data_collection):
+        return [x.animation_data for x in data_collection if x.animation_data is not None]
+
+    @staticmethod
+    def all_animation_data():
+        return GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.armatures) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.cache_files) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.cameras) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.curves) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.grease_pencil) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.lamps) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.lattices) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.linestyles) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.masks) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.materials) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.meshes) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.metaballs) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.movieclips) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.node_groups) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.objects) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.particles) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.scenes) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.shape_keys) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.speakers) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.textures) + \
+            GenerateTransitionsOperator.all_animation_data_from_collection(bpy.data.worlds)
+
+    @staticmethod
+    def active_nla_track():
+        for anim_data in GenerateTransitionsOperator.all_animation_data():
+            for nla_track in anim_data.nla_tracks:
+                if nla_track.select and not nla_track.lock:
+                    return nla_track
+
+    @staticmethod
     def selected_nla_strip_groups(context):
         selected_strip_groups = []
         previous_selected = False
-        active_nla_track_strips = context.active_nla_track.strips
+        active_nla_track_strips = GenerateTransitionsOperator.active_nla_track().strips
         for nla_strip in active_nla_track_strips:
             if nla_strip.select:
                 if not previous_selected:
@@ -65,6 +100,7 @@ class GenerateTransitionsOperator(bpy.types.Operator, OperatorUtils.DynamicToolt
             GenerateTransitionsOperator.delete_transition_strips(active_nla_track_strips, selected_strip_groups)
 
         # TODO handle META strips
+        active_nla_track = GenerateTransitionsOperator.active_nla_track()
         for nla_strip_group in selected_strip_groups:
             previous_strip = None
             for nla_strip in nla_strip_group:
@@ -72,13 +108,13 @@ class GenerateTransitionsOperator(bpy.types.Operator, OperatorUtils.DynamicToolt
                     keyframe_properties = other_tool_property.keyframe_properties
                     if other_tool_property.limit_transition_length:
                         ActionUtils.generate_transition_strip(
-                            context, previous_strip, nla_strip, context.active_nla_track,
+                            context, previous_strip, nla_strip, active_nla_track,
                             keyframe_properties.interpolation, keyframe_properties.easing,
                             other_tool_property.transition_offset_frames, other_tool_property.transition_limit_frames,
                             other_tool_property.transition_placement == "end")
                     else:
                         ActionUtils.generate_transition_strip(
-                            context, previous_strip, nla_strip, context.active_nla_track,
+                            context, previous_strip, nla_strip, active_nla_track,
                             keyframe_properties.interpolation, keyframe_properties.easing)
                 previous_strip = nla_strip
 

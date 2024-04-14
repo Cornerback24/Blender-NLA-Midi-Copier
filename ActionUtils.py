@@ -38,7 +38,7 @@ def generate_transition_strip(context, strip1, strip2, nla_track, interpolation:
     if len(fcurves_to_generate) > 0:
         # Note: 'Transition' is not translated here because Blender does not translate the names of it's generated
         # transition strips
-        action = new_action(f"{strip1.action.name} Transition", context)
+        action = new_action(strip1.action.name + " Transition", context)
         for fcurve_data in fcurves_to_generate:
             fcurve = action.fcurves.new(fcurve_data[0], index=fcurve_data[1])
             fcurve.keyframe_points.insert(1, first_frame_values[fcurve_data])

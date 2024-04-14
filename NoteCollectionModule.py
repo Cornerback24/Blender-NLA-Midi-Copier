@@ -113,9 +113,9 @@ class NoteCollection:
                  overlap_strategy: NoteCollectionOverlapStrategy,
                  note_collection_filter: Optional[NoteCollectionFilter],
                  existing_note_overlaps: Optional[ExistingNoteOverlaps] = None):
-        self.notes_layers: List[NotesLayer] = []
-        self.all_notes: List[AnalyzedNote] = []  # all notes before applying filters
-        self.filtered_notes: List[AnalyzedNote] = []  # all notes after applying filters
+        self.notes_layers = []
+        self.all_notes = []  # all notes before applying filters
+        self.filtered_notes = []  # all notes after applying filters
         self.frames_per_second = note_collection_meta_data.frames_per_second
         self.frame_offset = note_collection_meta_data.frame_offset
         self.scale_factor = note_collection_meta_data.scale_factor
@@ -152,7 +152,7 @@ class NoteCollection:
     def add_note_to_layer(self, analyzed_note: AnalyzedNote, layers: List[NotesLayer], top_down_overlap: bool,
                           skip_existing_overlaps: bool):
         iterator = reversed(layers) if top_down_overlap else layers
-        first_layer: Optional[NotesLayer] = layers[0] if len(layers) > 0 else None
+        first_layer = layers[0] if len(layers) > 0 else None
         if skip_existing_overlaps and first_layer is not None and first_layer.overlaps_existing(analyzed_note):
             return
 

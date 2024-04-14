@@ -107,15 +107,15 @@ class NlaTracksManager:
     def __init__(self, action, track_name: str, animated_object, context, duplicate_on_overlap: bool, blend_mode: str,
                  repeat_action: bool, skip_overlaps: bool):
         self.action = action
-        self.track_name: str = track_name
+        self.track_name = track_name
         self.animated_object = animated_object
         self.context = context
-        self.duplicate_on_overlap: bool = duplicate_on_overlap
-        self.blend_mode: str = blend_mode
-        self.repeat_action: bool = repeat_action
+        self.duplicate_on_overlap = duplicate_on_overlap
+        self.blend_mode = blend_mode
+        self.repeat_action = repeat_action
 
-        self.nla_track_infos: List[NlaTrackInfo] = []
-        self.skip_overlaps: bool = skip_overlaps
+        self.nla_track_infos = []
+        self.skip_overlaps = skip_overlaps
         self.objects_using_data = None
         pass
 
@@ -220,7 +220,7 @@ class NlaTracksManager:
             return nla_track
 
     def get_track_name(self, track_number: int):
-        return self.track_name if track_number == 1 else f"{self.track_name} {track_number}"
+        return self.track_name if track_number == 1 else self.track_name + " " + str(track_number)
 
     def duplicated_object(self):
         # this method assumes no objects are selected when called
@@ -254,10 +254,10 @@ class NoteActionCopier:
         self.action = note_action_property.action
         self.filter_groups_property = note_action_property.note_filter_groups
         self.add_filters = note_action_property.add_filters
-        self.blend_mode: str = note_action_property.blend_mode
-        self.repeat_action: bool = note_action_property.sync_length_action_timing_mode == "repeat_action"
-        self.skip_overlaps: bool = note_action_property.on_overlap == "SKIP"
-        self.note_action_track_name: str = note_action_property.nla_track_name
+        self.blend_mode = note_action_property.blend_mode
+        self.repeat_action = note_action_property.sync_length_action_timing_mode == "repeat_action"
+        self.skip_overlaps = note_action_property.on_overlap == "SKIP"
+        self.note_action_track_name = note_action_property.nla_track_name
         self.instrument_track_name = instrument_track_name
 
         self.id_type = note_action_property.id_type
@@ -353,7 +353,7 @@ class NLAMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
 
         selected_objects = context.selected_objects if midi_data.can_resolve_data_from_selected_objects(id_type) else []
         for x in selected_objects:
-            x.select_set(False)
+            x.select = False
         note_action_copier = NoteActionCopier(note_action_property, context, None)
 
         if note_action_property.copy_to_selected_objects and midi_data.can_resolve_data_from_selected_objects(id_type):
@@ -369,7 +369,7 @@ class NLAMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
 
         # preserve state of which objects were selected
         for x in selected_objects:
-            x.select_set(True)
+            x.select = True
 
 
 class NLAMidiInstrumentCopier(bpy.types.Operator):
@@ -455,7 +455,7 @@ class NLABulkMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator
     @staticmethod
     def single_note_to_instrument(context):
         midi_panel_note_action_property = context.scene.midi_data_property.note_action_property
-        note_pitch: int = int(context.scene.midi_data_property.copy_to_instrument_selected_note_id)
+        note_pitch = int(context.scene.midi_data_property.copy_to_instrument_selected_note_id)
         NLABulkMidiCopier.animate_or_copy_to_instrument(True,
                                                         PitchUtils.note_id_from_pitch(note_pitch),
                                                         midi_panel_note_action_property, context)
@@ -489,7 +489,7 @@ class NLABulkMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator
 
     @staticmethod
     def animate_note_object_paris(note_object_pairs, note_action_property, copy_to_instrument: bool, context):
-        note_action_object_field: str = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][0]
+        note_action_object_field = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][0]
         original_object_value = getattr(note_action_property, note_action_object_field)
 
         note_action_object_field = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][0]
@@ -531,14 +531,14 @@ class NLABulkMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator
     def note_matches_object_name(note_enum, object_name: str, displayed_track_name: str = None):
         if displayed_track_name is not None and displayed_track_name not in object_name:
             return False
-        object_name_lower: str = object_name.strip().lower()
-        note_name: str = note_enum[1].lower()
+        object_name_lower = object_name.strip().lower()
+        note_name = note_enum[1].lower()
         return object_name_lower.startswith(note_name) or object_name_lower.endswith(note_name)
 
     @staticmethod
     def notes_to_copy(bulk_copy_property, loaded_midi_data) -> List[str]:
         notes_to_copy_list = []
-        note_pitch: int = int(bulk_copy_property.bulk_copy_starting_note)
+        note_pitch = int(bulk_copy_property.bulk_copy_starting_note)
 
         filter_by_active_track = bulk_copy_property.only_notes_in_selected_track
         filter_by_scale = False
@@ -557,7 +557,7 @@ class NLABulkMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator
             scale_pitch = PitchUtils.SCALE_TO_PITCH_MAP[bulk_copy_property.scale_filter_scale]
 
         while note_pitch <= 127:
-            note_id: str = PitchUtils.note_id_from_pitch(note_pitch)
+            note_id = PitchUtils.note_id_from_pitch(note_pitch)
             passes_scale_filter = PitchUtils.note_in_scale(note_pitch, scale_pitch) == in_scale \
                 if filter_by_scale else True
             passes_track_filter = note_id in notes_in_active_track if filter_by_active_track else True

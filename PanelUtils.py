@@ -36,12 +36,12 @@ class MidiFileSelector(bpy.types.Operator):
     bl_description = i18n.get_key(i18n.SELECT_MIDI_FILE_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
     # noinspection PyArgumentList,PyUnresolvedReferences
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    filter_glob: bpy.props.StringProperty(default="*.mid;*.midi", options={'HIDDEN'})
+    filepath = bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob = bpy.props.StringProperty(default="*.mid;*.midi", options={'HIDDEN'})
     # blender handles getting the path based on this behind the scenes
-    relative_path: bpy.props.BoolProperty(name=i18n.get_key(i18n.RELATIVE_PATH),
+    relative_path = bpy.props.BoolProperty(name=i18n.get_key(i18n.RELATIVE_PATH),
                                           description=i18n.get_key(i18n.USE_RELATIVE_PATH_TO_MIDI_FILE))
-    midi_data_type: bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
+    midi_data_type = bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
 
     def execute(self, context):
         OperatorUtils.load_midi_file(self, context, self.midi_data_type, self.filepath)
@@ -209,7 +209,7 @@ def draw_filter(parent_layout, filter_property, is_instrument_property, action_i
                 filter_index, filter_count, midi_data_type):
     filter_class = NoteFilterImplementations.ID_TO_FILTER[filter_property.filter_type]
 
-    filter_row_container = parent_layout.row().split(factor=filter_class.NAME_DISPLAY_WEIGHT)
+    filter_row_container = parent_layout.row().split(percentage=filter_class.NAME_DISPLAY_WEIGHT)
     left, filter_row = (filter_row_container.row(), filter_row_container.row())
     left.prop(filter_property, "filter_type", text="")
     filter_class.draw_ui(filter_row, filter_property)
@@ -232,7 +232,7 @@ def draw_filter(parent_layout, filter_property, is_instrument_property, action_i
 
 
 def indented_row(parent_layout):
-    split = parent_layout.row().split(factor=0.05)
+    split = parent_layout.row().split(percentage=0.05)
     split1, row = split.row(), split.row()
     return row
 
@@ -243,7 +243,7 @@ def split_row(parent_layout, factor):
     :param factor: spilt factor
     :return: (left row, right row, split row)
     """
-    split = parent_layout.row().split(factor=factor)
+    split = parent_layout.row().split(percentage=factor)
     return split.row(), split.row(), split
 
 

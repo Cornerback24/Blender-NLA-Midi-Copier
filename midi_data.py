@@ -39,7 +39,7 @@ ID_PROPERTIES_DICTIONARY = {"Armature": ("armature", "ARMATURE", "ARMATURE_DATA"
                             "Key": ("key", "KEY", "SHAPEKEY_DATA", 4),
                             "Lattice": ("lattice", "LATTICE", "LATTICE_DATA", 5),
                             # "Library": ("library", "LIBRARY"),
-                            "Light": ("light", "LIGHT", "LIGHT", 6),
+                            "Light": ("light", "LAMP", "LAMP", 6),
                             "Light Probe": ("light_probe", "LIGHT_PROBE", "LIGHTPROBE_CUBEMAP", 7),
                             # "Linestyle": ("linestyle", "LINESTYLE"),
                             "Mask": ("mask", "MASK", "MOD_MASK", 8),

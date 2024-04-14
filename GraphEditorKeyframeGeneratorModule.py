@@ -36,7 +36,7 @@ class KeyframeData:
     def __init__(self, keyframe_points):
         self.keyframe_points = keyframe_points
         # map frame number to list of keyframes
-        self.frames_to_keyframes: Dict[int, List[Any]] = defaultdict(list)
+        self.frames_to_keyframes = defaultdict(list)
         for keyframe in keyframe_points:
             self.frames_to_keyframes[keyframe.co[0]].append(keyframe)
         self.frames_existing_before_additions = {x.co[0] for x in self.keyframe_points}
@@ -127,13 +127,13 @@ class FcurveKeyframeGenerator:
         self.min_keyframe_value = min_keyframe_value
         self.max_keyframe_value = max_keyframe_value
         self.keyframe_generator_property = keyframe_generator_property
-        self.on_keyframe_overlap: str = keyframe_generator_property.on_keyframe_overlap
+        self.on_keyframe_overlap = keyframe_generator_property.on_keyframe_overlap
         self.operator = operator  # blender operator that can be used for report
-        self.note_property: str = keyframe_generator_property.note_property
-        self.limit_transition_length: bool = keyframe_generator_property.limit_transition_length
-        self.transition_limit_frames: int = keyframe_generator_property.transition_limit_frames
-        self.transition_offset_frames: int = keyframe_generator_property.transition_offset_frames
-        self.transition_placement: str = keyframe_generator_property.transition_placement
+        self.note_property = keyframe_generator_property.note_property
+        self.limit_transition_length = keyframe_generator_property.limit_transition_length
+        self.transition_limit_frames = keyframe_generator_property.transition_limit_frames
+        self.transition_offset_frames = keyframe_generator_property.transition_offset_frames
+        self.transition_placement = keyframe_generator_property.transition_placement
 
     def add_transition_frames(self, keyframe_points,
                               transition_ranges: List[Tuple[Tuple[int, float], Tuple[int, float]]]):
@@ -296,7 +296,8 @@ class GraphEditorMidiKeyframeGenerator(bpy.types.Operator, OperatorUtils.Dynamic
                                          4])
         analyzed_notes = note_collection.notes_on_first_layer() if keyframe_generator_property.on_note_overlap == \
                                                                    "skip" else note_collection.filtered_notes
-        for fcurve in context.selected_editable_fcurves:
+        for fcurve in [fcurve for action in context.blend_data.actions for fcurve in action.fcurves if
+                       fcurve.select and not fcurve.lock]:
             self.generate_keyframes(fcurve, analyzed_notes, keyframe_generator_property, loaded_midi_data,
                                     max_keyframe_value, min_keyframe_value, context)
 
@@ -431,7 +432,7 @@ class GraphEditorMidiKeyframeGenerator(bpy.types.Operator, OperatorUtils.Dynamic
         passes_scale_filter = PitchUtils.note_in_scale(pitch, scale_pitch) == in_scale if filter_by_scale else True
 
         filter_by_active_track = keyframe_generator_property.only_notes_in_selected_track
-        note_id: str = PitchUtils.note_id_from_pitch(pitch)
+        note_id = PitchUtils.note_id_from_pitch(pitch)
         passes_track_filter = note_id in notes_in_active_track if filter_by_active_track else True
 
         return passes_scale_filter and passes_track_filter

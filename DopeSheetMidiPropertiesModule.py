@@ -29,27 +29,27 @@ class DopeSheetNoteFilterProperty(PropertyGroup, NoteFilterPropertyBase):
 
 
 class DopeSheetNoteFilterGroup(PropertyGroup, NoteFilterGroupPropertyBase):
-    note_filters: CollectionProperty(type=DopeSheetNoteFilterProperty, name=i18n.get_key(i18n.NOTE_FILTERS))
+    note_filters = CollectionProperty(type=DopeSheetNoteFilterProperty, name=i18n.get_key(i18n.NOTE_FILTERS))
 
 
 class DopeSheetNoteActionProperty(PropertyGroup, NoteActionPropertyBase):
     data_type = MidiDataType.DOPESHEET
 
-    delete_source_keyframes: \
+    delete_source_keyframes = \
         BoolProperty(name=i18n.get_key(i18n.DELETE_SOURCE_KEYFRAMES),
                      description=i18n.get_key(i18n.DELETE_SOURCE_KEYFRAMES_DESCRIPTION),
                      default=False)
-    skip_overlaps: \
+    skip_overlaps = \
         BoolProperty(name=i18n.get_key(i18n.SKIP_OVERLAPS),
                      description=i18n.get_key(i18n.GREASE_PENCIL_SKIP_OVERLAPS_DESCRIPTION),
                      default=False)
 
-    sync_length_with_notes: \
+    sync_length_with_notes = \
         BoolProperty(name=i18n.get_key(i18n.SYNC_LENGTH_WITH_NOTES),
                      description=i18n.get_key(i18n.GREASE_PENCIL_SYNC_LENGTH_DESCRIPTION),
                      default=False)
 
-    note_filter_groups: CollectionProperty(type=DopeSheetNoteFilterGroup, name=i18n.get_key(i18n.NOTE_FILTER_GROUPS))
+    note_filter_groups = CollectionProperty(type=DopeSheetNoteFilterGroup, name=i18n.get_key(i18n.NOTE_FILTER_GROUPS))
 
 
 class DopeSheetTempoPropertyGroup(PropertyGroup, TempoPropertyBase):
@@ -58,5 +58,5 @@ class DopeSheetTempoPropertyGroup(PropertyGroup, TempoPropertyBase):
 
 class DopeSheetMidiPropertyGroup(MidiPropertyBase, PropertyGroup):
     data_type = MidiDataType.DOPESHEET
-    note_action_property: PointerProperty(type=DopeSheetNoteActionProperty)
-    tempo_settings: PointerProperty(type=DopeSheetTempoPropertyGroup)
+    note_action_property = PointerProperty(type=DopeSheetNoteActionProperty)
+    tempo_settings = PointerProperty(type=DopeSheetTempoPropertyGroup)
