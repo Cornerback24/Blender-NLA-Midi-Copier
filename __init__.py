@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 19, 0),
+        "version": (0, 19, 1),
         "blender": (2, 80, 0),
         "location": "NLA Editor and Graph Editor Sidebar",
         "description": "Copy actions to action strips and generate graph editor keyframes based on midi file input",

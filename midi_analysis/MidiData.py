@@ -50,8 +50,6 @@ class MidiData:
             # add events
             while not (isinstance(event, EndOfTrackEvent)):
                 event = self.event_decoder.next_event()
-                if isinstance(event, SetTempoEvent):
-                    tempo_changes.add_tempo_change(delta_time_total, event.tempo)
                 next_total = delta_time_total + event.delta_time
                 # calculate absolute start time for event in ms
                 if self.is_ticks_per_beat:
@@ -66,6 +64,8 @@ class MidiData:
                     ms_total = (event.delta_time / self.ticks_per_second) * .001
                 # add event to track_data
                 delta_time_total = next_total
+                if isinstance(event, SetTempoEvent):
+                    tempo_changes.add_tempo_change(delta_time_total, event.tempo)
                 event.set_start_time_ms(ms_total)
                 event.set_start_time_ticks(delta_time_total)
                 track_data.add_event(event)
