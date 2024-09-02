@@ -22,6 +22,9 @@ else:
     from . import PitchUtils
     from . import PropertyUtils
     from . import CollectionUtils
+    from . import CCDataModule  # needed for reload scripts to work
+
+import bpy
 
 from .CCDataModule import CCData
 
@@ -95,6 +98,10 @@ def can_resolve_data_from_selected_objects(midi_data_id_type: str):
      object.data.)
     """
     return id_type_is_object(midi_data_id_type) or midi_data_id_type == "Material" or midi_data_id_type == "Key"
+
+
+def path_is_relative(path: str):
+    return path.startswith("//")
 
 
 # node trees don't show up in the selector,
@@ -207,7 +214,8 @@ class LoadedMidiData:
         elif midi_filename == self.current_midi_filename and not force_update:
             return
         self.current_midi_filename = midi_filename
-        self.midi_data = MidiData(midi_filename)
+        absolute_path = bpy.path.abspath(midi_filename) if path_is_relative(midi_filename) else midi_filename
+        self.midi_data = MidiData(absolute_path)
         if not called_on_script_reload:
             if self.midi_data.is_ticks_per_beat:
                 # need to access properties with dictionary style because they are read-only

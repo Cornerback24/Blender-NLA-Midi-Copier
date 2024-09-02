@@ -14,18 +14,13 @@ import bpy
 import traceback
 
 
-def path_is_relative(path: str):
-    return path.startswith("//")
-
-
 def load_midi_file(operator, context, data_type: int, filepath: str):
     loaded_midi_data = midi_data.get_midi_data(data_type)
     midi_data_property = midi_data.get_midi_data_property(data_type, context)
     # need to set with array notation because the property is defined to be read-only
     midi_data_property["midi_file"] = filepath
-    absolute_path = bpy.path.abspath(filepath) if path_is_relative(filepath) else filepath
     try:
-        loaded_midi_data.update_midi_file(absolute_path, True, context)
+        loaded_midi_data.update_midi_file(filepath, True, context)
     except Exception as e:
         # noinspection PyArgumentList,PyUnresolvedReferences
         operator.report({"WARNING"}, i18n.concat(i18n.get_text(i18n.COULD_NOT_LOAD_MIDI_FILE), str(e)))

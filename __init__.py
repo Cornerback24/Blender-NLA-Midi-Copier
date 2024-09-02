@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 19, 0),
+        "version": (0, 19, 1),
         "blender": (2, 79, 0),
         "location": "NLA Editor and Graph Editor Sidebar",
         "description": "Copy actions to action strips and generate graph editor keyframes based on midi file input",
@@ -194,7 +194,6 @@ def register():
     bpy.types.Scene.graph_editor_midi_data_property = PointerProperty(type=GraphEditorMidiPropertyGroup)
     bpy.types.Scene.midi_copier_version = PointerProperty(type=MidiCopierVersion)
     bpy.types.Scene.midi_copier_data_common = PointerProperty(type=MidiDataCommon)
-    print("adding nla midi copier lost post handler")
     bpy.app.handlers.load_post.append(on_load)
 
 

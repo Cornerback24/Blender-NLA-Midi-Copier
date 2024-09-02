@@ -1,3 +1,6 @@
+- 0.19.1 2024-9-1
+  * Fix tempo changes being applied at incorrect times
+  * Fix loading midi files with relative paths
 - 0.19.0 2024-4-13
   * Add All Pitches checkbox to filter groups
   * Update the Copy midi file data buttons to be available when midi file settings are different between the views  
