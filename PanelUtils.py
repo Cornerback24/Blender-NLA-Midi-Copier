@@ -25,13 +25,16 @@ else:
     from .i18n import i18n
 
 import bpy
-from .NoteFilterModule import ReorderFilter, RemoveNoteFilter, RemoveFilterGroup, AddNoteFilter, AddNoteFilterGroup, \
-    AddFilterPreset, SaveFilterPreset, DeleteFilterPreset
+from .NoteFilterModule import NLA_MIDI_COPIER_OT_reorder_note_filter, NLA_MIDI_COPIER_OT_remove_note_filter, \
+    NLA_MIDI_COPIER_OT_remove_note_filter_group, NLA_MIDI_COPIER_OT_add_note_filter, \
+    NLA_MIDI_COPIER_OT_add_note_filter_group, \
+    NLA_MIDI_COPIER_OT_add_note_filter_preset, NLA_MIDI_COPIER_OT_save_note_filter_preset, \
+    NLA_MIDI_COPIER_OT_delete_note_filter_preset
 from .midi_data import MidiDataType
 
 
 class MidiFileSelector(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_file_selector"
+    bl_idname = "nla_midi_copier.file_selector"
     bl_label = i18n.get_key(i18n.CHOOSE_MIDI_FILE_OP)
     bl_description = i18n.get_key(i18n.SELECT_MIDI_FILE_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
@@ -139,7 +142,7 @@ def draw_filter_box(parent_layout, note_action_property, is_instrument_property,
             filter_group_index += 1
 
         col = box.column(align=True)
-        add_filter_group_operator = col.operator(AddNoteFilterGroup.bl_idname)
+        add_filter_group_operator = col.operator(NLA_MIDI_COPIER_OT_add_note_filter_group.bl_idname)
         set_operator_lookup_properties(add_filter_group_operator, midi_data_type, is_instrument_property, action_index)
 
     presets_box = draw_collapsible_box(box, i18n.get_key(i18n.FILTER_PRESETS),
@@ -147,7 +150,7 @@ def draw_filter_box(parent_layout, note_action_property, is_instrument_property,
     if note_action_property.filter_presets_box_expanded:
         row = presets_box.row()
         row.prop(note_action_property, "selected_note_filter_preset")
-        add_preset_operator = row.operator(AddFilterPreset.bl_idname)
+        add_preset_operator = row.operator(NLA_MIDI_COPIER_OT_add_note_filter_preset.bl_idname)
         set_operator_lookup_properties(add_preset_operator, midi_data_type, is_instrument_property, action_index)
         selected_filter_preset = CollectionUtils.get_selected_object(
             note_action_property.selected_note_filter_preset,
@@ -161,9 +164,10 @@ def draw_filter_box(parent_layout, note_action_property, is_instrument_property,
             save_operator_text = i18n.get_key(i18n.SAVE)
             if not preset_equals_current_filter:
                 save_operator_text = "* " + save_operator_text
-            save_preset_operator = row.operator(SaveFilterPreset.bl_idname, text=save_operator_text)
+            save_preset_operator = row.operator(NLA_MIDI_COPIER_OT_save_note_filter_preset.bl_idname,
+                                                text=save_operator_text)
             set_operator_lookup_properties(save_preset_operator, midi_data_type, is_instrument_property, action_index)
-            delete_preset_operator = row.operator(DeleteFilterPreset.bl_idname)
+            delete_preset_operator = row.operator(NLA_MIDI_COPIER_OT_delete_note_filter_preset.bl_idname)
             set_operator_lookup_properties(delete_preset_operator, midi_data_type, is_instrument_property, action_index)
 
 
@@ -171,7 +175,7 @@ def draw_filter_group(parent_layout, filter_group_property, is_instrument_proper
                       filter_group_index, midi_data_type, draw_all_pitches_checkbox: bool):
     collapsible_box = draw_collapsible_box(
         parent_layout, i18n.concat(i18n.get_text(i18n.FILTER_GROUP), str(filter_group_index + 1)),
-        filter_group_property, "expanded", RemoveFilterGroup.bl_idname)
+        filter_group_property, "expanded", NLA_MIDI_COPIER_OT_remove_note_filter_group.bl_idname)
     box = collapsible_box[0]
     remove_operator = collapsible_box[1]
     set_operator_lookup_properties(remove_operator, midi_data_type, is_instrument_property, action_index,
@@ -200,7 +204,8 @@ def draw_filters_list(action_index, box, filter_group_index, filter_group_proper
         all_pitches_row.prop(filter_group_property,
                              "all_pitches_selected_read_only" if pitch_filter_exists else "all_pitches")
     final_row = box.row()
-    add_filter_operator = final_row.operator(AddNoteFilter.bl_idname, text=i18n.get_key(i18n.ADD_FILTER_OP))
+    add_filter_operator = final_row.operator(NLA_MIDI_COPIER_OT_add_note_filter.bl_idname,
+                                             text=i18n.get_key(i18n.ADD_FILTER_OP))
     set_operator_lookup_properties(add_filter_operator, midi_data_type, is_instrument_property, action_index,
                                    filter_group_index)
 
@@ -215,18 +220,21 @@ def draw_filter(parent_layout, filter_property, is_instrument_property, action_i
     filter_class.draw_ui(filter_row, filter_property)
 
     if filter_index > 0:
-        move_up_operator = filter_row.operator(ReorderFilter.bl_idname, text='', icon='SORT_DESC')
+        move_up_operator = filter_row.operator(NLA_MIDI_COPIER_OT_reorder_note_filter.bl_idname, text='',
+                                               icon='SORT_DESC')
         set_operator_lookup_properties(move_up_operator, midi_data_type, is_instrument_property, action_index,
                                        filter_group_index, filter_index)
         move_up_operator.reorder_factor = -1
 
     if filter_index + 1 < filter_count:
-        move_down_operator = filter_row.operator(ReorderFilter.bl_idname, text='', icon='SORT_ASC')
+        move_down_operator = filter_row.operator(NLA_MIDI_COPIER_OT_reorder_note_filter.bl_idname, text='',
+                                                 icon='SORT_ASC')
         set_operator_lookup_properties(move_down_operator, midi_data_type, is_instrument_property, action_index,
                                        filter_group_index, filter_index)
         move_down_operator.reorder_factor = 1
 
-    remove_filter_operator = filter_row.operator(RemoveNoteFilter.bl_idname, text='', icon='CANCEL')
+    remove_filter_operator = filter_row.operator(NLA_MIDI_COPIER_OT_remove_note_filter.bl_idname, text='',
+                                                 icon='CANCEL')
     set_operator_lookup_properties(remove_filter_operator, midi_data_type, is_instrument_property, action_index,
                                    filter_group_index, filter_index)
 
@@ -299,8 +307,9 @@ def draw_midi_file_selections(parent_layout, midi_data_property, midi_data_type:
         if copy_from_midi_file is not None and len(copy_from_midi_file) > 0:
             icon = COPY_MIDI_FILE_DICTIONARY[data_type_from][0]
             tooltip = i18n.get_text_tip(COPY_MIDI_FILE_DICTIONARY[data_type_from][1])
-            copy_to_operator = copy_to_parent_layout.operator(OperatorUtils.CopyMidiFileData.bl_idname, text="",
-                                                              icon=icon)
+            copy_to_operator = copy_to_parent_layout.operator(
+                OperatorUtils.NLA_MIDI_COPIER_OT_copy_midi_file_data.bl_idname, text="",
+                icon=icon)
             copy_to_operator.copy_from_data_type = data_type_from
             copy_to_operator.copy_to_data_type = data_type_to
             copy_to_operator.tooltip = tooltip
@@ -313,8 +322,8 @@ def draw_midi_file_selections(parent_layout, midi_data_property, midi_data_type:
     # draw options to copy midi file data from other views
     for data_type in midi_data.MidiDataType.values():
         if data_type != midi_data_property.data_type and not (
-                OperatorUtils.CopyMidiFileData.compare_midi_file_data(context, data_type,
-                                                                      midi_data_property.data_type)):
+                OperatorUtils.NLA_MIDI_COPIER_OT_copy_midi_file_data.compare_midi_file_data(context, data_type,
+                                                                                            midi_data_property.data_type)):
             draw_copy_to_operator(load_file_row, data_type, midi_data_property.data_type)
 
     if midi_data_property.midi_file:

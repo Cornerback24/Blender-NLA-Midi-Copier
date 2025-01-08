@@ -20,8 +20,8 @@ def is_transition(nla_strip):
     return nla_strip.type == 'TRANSITION' or re.fullmatch(r".*Transition(.[0-9]*)?", nla_strip.name)
 
 
-class GenerateTransitionsOperator(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
-    bl_idname = "ops.nla_midi_generate_transitions_operator"
+class NLA_MIDI_COPIER_OT_generate_transitions_operator(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
+    bl_idname = "nla_midi_copier.generate_transitions_operator"
     bl_label = i18n.get_key(i18n.GENERATE_TRANSITIONS)
     bl_description = i18n.get_key(i18n.GENERATE_TRANSITIONS_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
@@ -59,10 +59,13 @@ class GenerateTransitionsOperator(bpy.types.Operator, OperatorUtils.DynamicToolt
                     nla_strip_group.remove(nla_strip)
 
     def action_common(self, context):
-        active_nla_track_strips, selected_strip_groups = GenerateTransitionsOperator.selected_nla_strip_groups(context)
+        active_nla_track_strips, selected_strip_groups = (
+            NLA_MIDI_COPIER_OT_generate_transitions_operator.selected_nla_strip_groups(
+            context))
         other_tool_property = context.scene.midi_data_property.other_tool_property
         if other_tool_property.replace_transition_strips:
-            GenerateTransitionsOperator.delete_transition_strips(active_nla_track_strips, selected_strip_groups)
+            NLA_MIDI_COPIER_OT_generate_transitions_operator.delete_transition_strips(active_nla_track_strips,
+                                                                                      selected_strip_groups)
 
         # TODO handle META strips
         for nla_strip_group in selected_strip_groups:
@@ -83,8 +86,8 @@ class GenerateTransitionsOperator(bpy.types.Operator, OperatorUtils.DynamicToolt
                 previous_strip = nla_strip
 
 
-class DeleteTransitionsOperator(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
-    bl_idname = "ops.nla_midi_delete_transitions_operator"
+class NLA_MIDI_COPIER_OT_delete_transitions_operator(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
+    bl_idname = "nla_midi_copier.delete_transitions_operator"
     bl_label = i18n.get_key(i18n.DELETE_TRANSITIONS_OP)
     bl_description = i18n.get_key(i18n.DELETE_TRANSITIONS_DESCRIPTIONS)
     bl_options = {"REGISTER", "UNDO"}
@@ -98,5 +101,5 @@ class DeleteTransitionsOperator(bpy.types.Operator, OperatorUtils.DynamicTooltip
         return {'FINISHED'}
 
     def action_common(self, context):
-        GenerateTransitionsOperator.delete_transition_strips(
-            *GenerateTransitionsOperator.selected_nla_strip_groups(context))
+        NLA_MIDI_COPIER_OT_generate_transitions_operator.delete_transition_strips(
+            *NLA_MIDI_COPIER_OT_generate_transitions_operator.selected_nla_strip_groups(context))

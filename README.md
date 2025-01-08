@@ -6,8 +6,8 @@ for a selected action could be generated to line up with all the C4 notes played
 the right-side panel in the Nonlinear Action View and select the Midi tab.  
 This add-on also adds a panel in the Graph Editor to generate keyframes on existing F-Curves based on midi file data.
 
-This add-on is written for Blender 4.1 and is compatible back to Blender 2.80.
-Add-on Version 0.19.1. [Changelog here](CHANGELOG.md).
+This add-on is written for Blender 4.2 and is compatible back to Blender 2.80.
+Add-on Version 0.20.0. [Changelog here](CHANGELOG.md).
 
 
 <details>

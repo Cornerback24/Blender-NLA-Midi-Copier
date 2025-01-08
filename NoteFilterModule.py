@@ -18,8 +18,8 @@ else:
 import bpy
 
 
-class AddNoteFilter(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_add_note_filter"
+class NLA_MIDI_COPIER_OT_add_note_filter(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.add_note_filter"
     bl_label = i18n.get_key(i18n.ADD_FILTER_OP)
     bl_description = i18n.get_key(i18n.ADD_A_FILTER)
     bl_options = {"REGISTER", "UNDO"}
@@ -46,8 +46,8 @@ class AddNoteFilter(bpy.types.Operator):
         filter_group_property.note_filters.add()
 
 
-class RemoveNoteFilter(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_remove_note_filter"
+class NLA_MIDI_COPIER_OT_remove_note_filter(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.remove_note_filter"
     bl_label = i18n.get_key(i18n.REMOVE_FILTER_OP)
     bl_description = i18n.get_key(i18n.REMOVE_FILTER)
     bl_options = {"REGISTER", "UNDO"}
@@ -75,8 +75,8 @@ class RemoveNoteFilter(bpy.types.Operator):
         filter_group_property.note_filters.remove(self.filter_index)
 
 
-class ReorderFilter(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_reorder_note_filter"
+class NLA_MIDI_COPIER_OT_reorder_note_filter(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.reorder_note_filter"
     bl_label = i18n.get_key(i18n.REORDER_FILTER_OP)
     bl_description = i18n.get_key(i18n.CHANGE_FILTER_ORDER)
     bl_options = {"REGISTER", "UNDO"}
@@ -105,8 +105,8 @@ class ReorderFilter(bpy.types.Operator):
         filter_group_property.note_filters.move(self.filter_index, self.filter_index + self.reorder_factor)
 
 
-class AddNoteFilterGroup(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_add_note_filter_group"
+class NLA_MIDI_COPIER_OT_add_note_filter_group(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.add_note_filter_group"
     bl_label = i18n.get_key(i18n.ADD_FILTER_GROUP_OP)
     bl_description = i18n.get_key(i18n.ADD_FILTER_GROUP_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
@@ -132,8 +132,8 @@ class AddNoteFilterGroup(bpy.types.Operator):
         filter_groups.add()
 
 
-class RemoveFilterGroup(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_remove_note_filter_group"
+class NLA_MIDI_COPIER_OT_remove_note_filter_group(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.remove_note_filter_group"
     bl_label = i18n.get_key(i18n.REMOVE_FILTER_GROUP_OP)
     bl_description = i18n.get_key(i18n.DELETE_FILTER_GROUP)
     bl_options = {"REGISTER", "UNDO"}
@@ -159,8 +159,8 @@ class RemoveFilterGroup(bpy.types.Operator):
         note_action_property.note_filter_groups.remove(self.filter_group_index)
 
 
-class AddFilterPreset(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_add_note_filter_preset"
+class NLA_MIDI_COPIER_OT_add_note_filter_preset(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.add_note_filter_preset"
     bl_label = i18n.get_key(i18n.NEW)
     bl_description = i18n.get_key(i18n.NEW_FILTER_PRESET)
     bl_options = {"REGISTER", "UNDO"}
@@ -190,11 +190,12 @@ class AddFilterPreset(bpy.types.Operator):
         CollectionUtils.add_to_collection(
             context.scene.midi_copier_data_common.filter_presets, i18n.get_key(i18n.PRESET),
             note_action_property, "selected_note_filter_preset",
-            update_new_object=lambda new_filter: AddFilterPreset.__copy_to_new_filter(note_action_property, new_filter))
+            update_new_object=lambda new_filter: NLA_MIDI_COPIER_OT_add_note_filter_preset.__copy_to_new_filter(
+                note_action_property, new_filter))
 
 
-class SaveFilterPreset(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_save_note_filter_preset"
+class NLA_MIDI_COPIER_OT_save_note_filter_preset(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.save_note_filter_preset"
     bl_label = i18n.get_key(i18n.SAVE)
     bl_description = i18n.get_key(i18n.SAVE_FILTER_PRESET)
     bl_options = {"REGISTER", "UNDO"}
@@ -222,8 +223,8 @@ class SaveFilterPreset(bpy.types.Operator):
         PropertyUtils.copy_filters(note_action_property.note_filter_groups, filter_preset.note_filter_groups)
 
 
-class DeleteFilterPreset(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_delete_note_filter_preset"
+class NLA_MIDI_COPIER_OT_delete_note_filter_preset(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.delete_note_filter_preset"
     bl_label = i18n.get_key(i18n.DELETE_OP)
     bl_description = i18n.get_key(i18n.DELETE_FILTER_PRESET)
     bl_options = {"REGISTER", "UNDO"}

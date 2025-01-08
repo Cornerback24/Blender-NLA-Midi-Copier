@@ -22,22 +22,19 @@ else:
     from .i18n import i18n
 
 import bpy
-from . import addon_updater_ops
 from .midi_data import MidiDataType
-from .GraphEditorKeyframeGeneratorModule import GraphEditorMidiKeyframeGenerator, LoadMinMaxFromMidiTrack
+from .GraphEditorKeyframeGeneratorModule import NLA_MIDI_COPIER_OT_graph_editor_keyframe_generator, \
+    NLA_MIDI_COPIER_OT_load_min_max_from_midi_track
 
 
-class GraphEditorMidiPanel(bpy.types.Panel):
+class NLA_MIDI_COPIER_PT_graph_editor_midi_panel(bpy.types.Panel):
     bl_space_type = "GRAPH_EDITOR"
     bl_region_type = "UI"
     bl_category = i18n.get_key(i18n.MIDI)
     bl_label = i18n.get_key(i18n.GRAPH_EDITOR_MIDI)
-    bl_idname = "ANIMATION_PT_graph_editor_midi_panel"
+    bl_idname = "NLA_MIDI_COPIER_PT_graph_editor_midi_panel"
 
     def draw(self, context):
-        # Check for addon update in the background
-        addon_updater_ops.check_for_update_background()
-
         midi_data_property = context.scene.graph_editor_midi_data_property
         midi_file = midi_data_property.midi_file
         graph_editor_note_action_property = midi_data_property.note_action_property
@@ -91,7 +88,7 @@ class GraphEditorMidiPanel(bpy.types.Panel):
             right.prop(keyframe_generator, "note_property", text="")
         operator_row = right.row()
         operator_row.enabled = midi_file is not None and len(midi_file) > 0
-        operator_row.operator(LoadMinMaxFromMidiTrack.bl_idname, text="", icon='IMPORT')
+        operator_row.operator(NLA_MIDI_COPIER_OT_load_min_max_from_midi_track.bl_idname, text="", icon='IMPORT')
 
         if keyframe_generator.property_type == "note" and keyframe_generator.note_property == "Pitch":
             self.draw_pitch(col, keyframe_generator)
@@ -132,7 +129,7 @@ class GraphEditorMidiPanel(bpy.types.Panel):
         col.separator()
         col = self.layout.column(align=True)
 
-        tooltip_creator = PanelUtils.OperatorTooltipCreator(GraphEditorMidiKeyframeGenerator)
+        tooltip_creator = PanelUtils.OperatorTooltipCreator(NLA_MIDI_COPIER_OT_graph_editor_keyframe_generator)
 
         if midi_file is None or len(midi_file) == 0:
             tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.NO_MIDI_FILE_SELECTED))
@@ -140,9 +137,6 @@ class GraphEditorMidiPanel(bpy.types.Panel):
             tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.SELECT_AN_F_CURVE_IN_THE_GRAPH_EDITOR))
 
         tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
-
-        # notify update if available
-        addon_updater_ops.update_notice_box_ui(self, context)
 
     def draw_min_and_max(self, col, keyframe_generator):
         min_max_map_row = col.row()
@@ -166,12 +160,12 @@ class GraphEditorMidiPanel(bpy.types.Panel):
         box.prop(keyframe_generator, "only_notes_in_selected_track")
 
 
-class GraphEditorMidiSettingsPanel(bpy.types.Panel):
+class NLA_MIDI_COPIER_PT_graph_editor_midi_settings_panel(bpy.types.Panel):
     bl_space_type = "GRAPH_EDITOR"
     bl_region_type = "UI"
     bl_category = i18n.get_key(i18n.MIDI)
     bl_label = i18n.get_key(i18n.MIDI_SETTINGS)
-    bl_idname = "ANIMATION_PT_graph_editor_midi_settings_panel"
+    bl_idname = "NLA_MIDI_COPIER_PT_graph_editor_midi_settings_panel"
 
     def draw(self, context):
         PanelUtils.draw_common_midi_settings(self.layout, context, MidiDataType.GRAPH_EDITOR)

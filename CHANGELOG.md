@@ -1,3 +1,5 @@
+- 0.20.0 2025-1-7
+  * Update to Blender extension 
 - 0.19.1 2024-9-1
   * Fix tempo changes being applied at incorrect times
   * Fix loading midi files with relative paths

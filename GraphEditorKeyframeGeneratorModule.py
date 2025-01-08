@@ -106,9 +106,12 @@ def get_note_collection(loaded_midi_data, context, graph_editor_note_action_prop
     overlap_strategy = NoteCollectionOverlapStrategy(False, False, False)
     note_id = loaded_midi_data.get_note_id(context)
     note_collection_filter = NoteCollectionFilter(graph_editor_note_action_property.note_filter_groups,
-                                                  PitchUtils.note_pitch_from_id(note_id),
-                                                  keyframe_generator_property.property_type != "note" or
-                                                  keyframe_generator_property.note_property != "Pitch",
+                                                  # if note id is not defined, this is not used.
+                                                  # set to zero in that case to avoid invalid int literal
+                                                  0 if not note_id else PitchUtils.note_pitch_from_id(note_id),
+                                                  note_id and (
+                                                          keyframe_generator_property.property_type != "note" or
+                                                          keyframe_generator_property.note_property != "Pitch"),
                                                   graph_editor_note_action_property.add_filters, context)
     return NoteCollection(notes, note_collection_meta_data, overlap_strategy, note_collection_filter)
 
@@ -265,8 +268,8 @@ class FcurveKeyframeGenerator:
         return self.add_keyframes(frame_keyframe_value_pairs, on_keyframe_overlap_override)
 
 
-class GraphEditorMidiKeyframeGenerator(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
-    bl_idname = "ops.nla_midi_graph_editor_keyframe_generator"
+class NLA_MIDI_COPIER_OT_graph_editor_keyframe_generator(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
+    bl_idname = "nla_midi_copier.graph_editor_keyframe_generator"
     bl_label = i18n.get_key(i18n.GENERATE_KEYFRAMES_OP)
     bl_description = i18n.get_key(i18n.GENERATE_KEYFRAMES)
     bl_options = {"REGISTER", "UNDO"}
@@ -413,8 +416,9 @@ class GraphEditorMidiKeyframeGenerator(bpy.types.Operator, OperatorUtils.Dynamic
         pitch_max = PitchUtils.note_pitch_from_id(keyframe_generator_property.pitch_max)
         step = 1 if pitch_max >= pitch_min else -1
         return [pitch for pitch in range(pitch_min, pitch_max + step, step) if
-                GraphEditorMidiKeyframeGenerator.passes_pitch_filter(pitch, keyframe_generator_property,
-                                                                     notes_in_active_track)]
+                NLA_MIDI_COPIER_OT_graph_editor_keyframe_generator.passes_pitch_filter(pitch,
+                                                                                       keyframe_generator_property,
+                                                                                       notes_in_active_track)]
 
     @staticmethod
     def passes_pitch_filter(pitch: int, keyframe_generator_property, notes_in_active_track) -> bool:
@@ -437,8 +441,8 @@ class GraphEditorMidiKeyframeGenerator(bpy.types.Operator, OperatorUtils.Dynamic
         return passes_scale_filter and passes_track_filter
 
 
-class LoadMinMaxFromMidiTrack(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_load_min_max_from_midi_track"
+class NLA_MIDI_COPIER_OT_load_min_max_from_midi_track(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.load_min_max_from_midi_track"
     bl_label = i18n.get_key(i18n.LOAD_MIN_AND_MAX_VALUES_OP)
     bl_description = i18n.get_key(i18n.LOAD_MIN_MAX_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}

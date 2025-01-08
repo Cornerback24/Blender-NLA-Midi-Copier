@@ -27,8 +27,8 @@ from .NoteCollectionModule import NoteCollection, NoteCollectionMetaData, NoteCo
     NoteCollectionFilter
 
 
-class DopeSheetMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
-    bl_idname = "ops.nla_midi_dope_sheet_copier"
+class NLA_MIDI_COPIER_PT_dope_sheet_copier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
+    bl_idname = "nla_midi_copier.dope_sheet_copier"
     bl_label = i18n.get_key(i18n.COPY_KEYFRAMES_TO_NOTES_OP)
     bl_description = i18n.get_key(i18n.COPY_KEYFRAMES_TO_NOTES_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
@@ -42,7 +42,7 @@ class DopeSheetMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperat
         return {'FINISHED'}
 
     def action_common(self, context):
-        DopeSheetMidiCopier.copy_keyframes(context, context.scene.dope_sheet_midi_data_property)
+        NLA_MIDI_COPIER_PT_dope_sheet_copier.copy_keyframes(context, context.scene.dope_sheet_midi_data_property)
 
     @staticmethod
     def copy_keyframes(context, midi_data_property):
@@ -63,8 +63,9 @@ class DopeSheetMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperat
         for grease_pencil in grease_pencils:
             for layer in grease_pencil.layers:
                 if not layer.lock:  # don't edit locked layers
-                    DopeSheetMidiCopier.copy_gpencil_frames(layer, frame_offset, frames_per_second, copy_to_note_end,
-                                                            context)
+                    NLA_MIDI_COPIER_PT_dope_sheet_copier.copy_gpencil_frames(layer, frame_offset, frames_per_second,
+                                                                             copy_to_note_end,
+                                                                             context)
 
     @staticmethod
     def copy_gpencil_frames(g_pencil_layer, frame_offset: int, frames_per_second: float, copy_to_note_end: bool,
@@ -106,8 +107,9 @@ class DopeSheetMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperat
             for keyframe in source_keyframes:
                 copied_frame = g_pencil_frames.copy(keyframe)
                 copied_frame.frame_number = int((analyzed_note.action_length_frames * (
-                        keyframe.frame_number - first_keyframe_frame_number)) // analyzed_note.non_scaled_action_length \
-                                            + analyzed_note.action_start_frame)
+                        keyframe.frame_number - first_keyframe_frame_number)) //
+                                                analyzed_note.non_scaled_action_length \
+                                                + analyzed_note.action_start_frame)
 
         if context.scene.dope_sheet_midi_data_property.note_action_property.delete_source_keyframes:
             for keyframe in source_keyframes:

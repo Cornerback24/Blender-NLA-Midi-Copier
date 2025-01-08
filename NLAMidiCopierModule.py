@@ -332,8 +332,8 @@ class NoteActionCopier:
             strip.select = True
 
 
-class NLAMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
-    bl_idname = "ops.nla_midi_copier"
+class NLA_MIDI_COPIER_OT_copier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
+    bl_idname = "nla_midi_copier.copier"
     bl_label = i18n.get_key(i18n.COPY_ACTION_TO_NOTES_OP)
     bl_description = i18n.get_key(i18n.COPY_ACTION_TO_NOTES_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
@@ -372,8 +372,8 @@ class NLAMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
             x.select_set(True)
 
 
-class NLAMidiInstrumentCopier(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_instrument_copier"
+class NLA_MIDI_COPIER_OT_instrument_copier(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.instrument_copier"
     bl_label = i18n.get_key(i18n.ANIMATE_INSTRUMENT_OP)
     bl_description = i18n.get_key(i18n.ANIMATE_INSTRUMENT)
     bl_options = {"REGISTER", "UNDO"}
@@ -407,8 +407,8 @@ class NLAMidiInstrumentCopier(bpy.types.Operator):
                     .copy_notes_to_object(track_id, PitchUtils.note_id_from_pitch(pitch))
 
 
-class NLAMidiAllInstrumentCopier(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_all_instrument_copier"
+class NLA_MIDI_COPIER_OT_all_instrument_copier(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.all_instrument_copier"
     bl_label = i18n.get_key(i18n.ANIMATE_ALL_INSTRUMENTS_OP)
     bl_description = i18n.get_key(i18n.ANIMATE_ALL_INSTRUMENTS)
     bl_options = {"REGISTER", "UNDO"}
@@ -423,10 +423,10 @@ class NLAMidiAllInstrumentCopier(bpy.types.Operator):
 
     def action_common(self, context):
         for instrument in context.scene.midi_data_property.instruments:
-            NLAMidiInstrumentCopier.animate_instrument(context, instrument)
+            NLA_MIDI_COPIER_OT_instrument_copier.animate_instrument(context, instrument)
 
 
-class NLABulkMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
+class NLA_MIDI_COPIER_OT_bulk_midi_copier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator):
     """
     This operator handles both copying to an instrument and copying to notes from the bulk copy panel.
     """
@@ -446,19 +446,19 @@ class NLABulkMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator
     def action_common(self, context):
         quick_copy_tool = context.scene.midi_data_property.bulk_copy_property.quick_copy_tool
         if quick_copy_tool == "copy_along_path":
-            NLABulkMidiCopier.notes_along_path(context)
+            NLA_MIDI_COPIER_OT_bulk_midi_copier.notes_along_path(context)
         elif quick_copy_tool == "copy_by_object_name":
-            NLABulkMidiCopier.notes_by_object_name(context)
+            NLA_MIDI_COPIER_OT_bulk_midi_copier.notes_by_object_name(context)
         else:
-            NLABulkMidiCopier.single_note_to_instrument(context)
+            NLA_MIDI_COPIER_OT_bulk_midi_copier.single_note_to_instrument(context)
 
     @staticmethod
     def single_note_to_instrument(context):
         midi_panel_note_action_property = context.scene.midi_data_property.note_action_property
         note_pitch: int = int(context.scene.midi_data_property.copy_to_instrument_selected_note_id)
-        NLABulkMidiCopier.animate_or_copy_to_instrument(True,
-                                                        PitchUtils.note_id_from_pitch(note_pitch),
-                                                        midi_panel_note_action_property, context)
+        NLA_MIDI_COPIER_OT_bulk_midi_copier.animate_or_copy_to_instrument(True,
+                                                                          PitchUtils.note_id_from_pitch(note_pitch),
+                                                                          midi_panel_note_action_property, context)
 
     @staticmethod
     def notes_along_path(context):
@@ -474,18 +474,18 @@ class NLABulkMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator
 
         animated_objects = ObjectUtils.data_from_objects(objs, action_id_root)
 
-        notes_to_copy = NLABulkMidiCopier.notes_to_copy(midi_data_property.bulk_copy_property,
-                                                        midi_data.get_midi_data(MidiDataType.NLA))
+        notes_to_copy = NLA_MIDI_COPIER_OT_bulk_midi_copier.notes_to_copy(midi_data_property.bulk_copy_property,
+                                                                          midi_data.get_midi_data(MidiDataType.NLA))
 
-        NLABulkMidiCopier.animate_objects(notes_to_copy, animated_objects, note_action_property,
-                                          bulk_copy_property.copy_to_instrument,
-                                          context)
+        NLA_MIDI_COPIER_OT_bulk_midi_copier.animate_objects(notes_to_copy, animated_objects, note_action_property,
+                                                            bulk_copy_property.copy_to_instrument,
+                                                            context)
 
     @staticmethod
     def animate_objects(notes_to_copy: List[str], objects_to_animate, note_action_property, copy_to_instrument: bool,
                         context):
-        NLABulkMidiCopier.animate_note_object_paris(zip(notes_to_copy, objects_to_animate),
-                                                    note_action_property, copy_to_instrument, context)
+        NLA_MIDI_COPIER_OT_bulk_midi_copier.animate_note_object_paris(zip(notes_to_copy, objects_to_animate),
+                                                                      note_action_property, copy_to_instrument, context)
 
     @staticmethod
     def animate_note_object_paris(note_object_pairs, note_action_property, copy_to_instrument: bool, context):
@@ -496,8 +496,8 @@ class NLABulkMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator
 
         for note_to_copy, animated_object in note_object_pairs:
             setattr(note_action_property, note_action_object_field, animated_object)
-            NLABulkMidiCopier.animate_or_copy_to_instrument(copy_to_instrument, note_to_copy,
-                                                            note_action_property, context)
+            NLA_MIDI_COPIER_OT_bulk_midi_copier.animate_or_copy_to_instrument(copy_to_instrument, note_to_copy,
+                                                                              note_action_property, context)
 
         # set the note action property object back to what is was when the copy button was pressed
         setattr(note_action_property, note_action_object_field, original_object_value)
@@ -521,11 +521,12 @@ class NLABulkMidiCopier(bpy.types.Operator, OperatorUtils.DynamicTooltipOperator
         notes_enum_list = loaded_midi_data.notes_list
         for note_enum in notes_enum_list:
             for data_name_pair in data_name_pairs:
-                if NLABulkMidiCopier.note_matches_object_name(note_enum, data_name_pair[1], displayed_track_name):
+                if NLA_MIDI_COPIER_OT_bulk_midi_copier.note_matches_object_name(note_enum, data_name_pair[1],
+                                                                                displayed_track_name):
                     note_object_pairs.append((note_enum[0], data_name_pair[0]))
-        NLABulkMidiCopier.animate_note_object_paris(note_object_pairs, note_action_property,
-                                                    bulk_copy_property.copy_to_instrument,
-                                                    context)
+        NLA_MIDI_COPIER_OT_bulk_midi_copier.animate_note_object_paris(note_object_pairs, note_action_property,
+                                                                      bulk_copy_property.copy_to_instrument,
+                                                                      context)
 
     @staticmethod
     def note_matches_object_name(note_enum, object_name: str, displayed_track_name: str = None):

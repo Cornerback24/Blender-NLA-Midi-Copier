@@ -22,8 +22,8 @@ import bpy
 from .midi_data import MidiDataType
 
 
-class AddInstrument(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_add_instrument"
+class NLA_MIDI_COPIER_OT_add_instrument(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.add_instrument"
     bl_label = i18n.get_key(i18n.CREATE_NEW_INSTRUMENT_OP)
     bl_description = i18n.get_key(i18n.CREATE_NEW_INSTRUMENT_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
@@ -41,8 +41,8 @@ class AddInstrument(bpy.types.Operator):
                                           context.scene.midi_data_property, "selected_instrument_id")
 
 
-class DeleteInstrument(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_delete_instrument"
+class NLA_MIDI_COPIER_OT_delete_instrument(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.delete_instrument"
     bl_label = i18n.get_key(i18n.DELETE_INSTRUMENT_OP)
     bl_description = i18n.get_key(i18n.DELETE_INSTRUMENT_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
@@ -65,8 +65,8 @@ class DeleteInstrument(bpy.types.Operator):
             "selected_instrument_id")
 
 
-class AddActionToInstrument(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_add_action_to_instrument"
+class NLA_MIDI_COPIER_OT_add_action_to_instrument(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.add_action_to_instrument"
     bl_label = i18n.get_key(i18n.ADD_ACTION_OP)
     bl_description = i18n.get_key(i18n.ADD_ACTION_TO_INSTRUMENT_DESCRIPTION)
     bl_options = {"REGISTER", "UNDO"}
@@ -86,8 +86,8 @@ class AddActionToInstrument(bpy.types.Operator):
             PropertyUtils.get_note_action_property(instrument, int(instrument.selected_note_id))
 
 
-class RemoveActionFromInstrument(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_remove_action_from_instrument"
+class NLA_MIDI_COPIER_OT_remove_action_from_instrument(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.remove_action_from_instrument"
     bl_label = i18n.get_key(i18n.DELETE_ACTION_OP)
     bl_description = i18n.get_key(i18n.DELETE_ACTION)
     bl_options = {"REGISTER", "UNDO"}
@@ -119,8 +119,8 @@ class RemoveActionFromInstrument(bpy.types.Operator):
                     instrument.notes.remove(index)
 
 
-class TransposeInstrument(bpy.types.Operator):
-    bl_idname = "ops.nla_midi_transpose_instrument"
+class NLA_MIDI_COPIER_OT_transpose_instrument(bpy.types.Operator):
+    bl_idname = "nla_midi_copier.transpose_instrument"
     bl_label = i18n.get_key(i18n.TRANSPOSE_INSTRUMENT_OP)
     bl_description = i18n.get_key(i18n.TRANSPOSE_INSTRUMENT)
     bl_options = {"REGISTER", "UNDO"}

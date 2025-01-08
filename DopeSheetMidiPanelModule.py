@@ -23,19 +23,18 @@ else:
 
 import bpy
 import textwrap
-from . import addon_updater_ops
-from .DopeSheetMidiCopierModule import DopeSheetMidiCopier
+from .DopeSheetMidiCopierModule import NLA_MIDI_COPIER_PT_dope_sheet_copier
 from . import midi_data
 from bpy.props import EnumProperty
 from .midi_data import MidiDataType
 
 
-class DopeSheetMidiPanel(bpy.types.Panel):
+class NLA_MIDI_COPIER_PT_dope_sheet_midi_panel(bpy.types.Panel):
     bl_space_type = "DOPESHEET_EDITOR"
     bl_region_type = "UI"
     bl_category = i18n.get_key(i18n.MIDI)
     bl_label = i18n.get_key(i18n.GREASE_PENCIL_MIDI)
-    bl_idname = "ANIMATION_PT_dope_sheet_midi_panel"
+    bl_idname = "NLA_MIDI_COPIER_PT_dope_sheet_midi_panel"
 
     @classmethod
     def poll(cls, context):
@@ -45,9 +44,6 @@ class DopeSheetMidiPanel(bpy.types.Panel):
         return False
 
     def draw(self, context):
-        # Check for addon update in the background
-        addon_updater_ops.check_for_update_background()
-
         col = self.layout.column(align=True)
         midi_data_property = context.scene.dope_sheet_midi_data_property
 
@@ -77,22 +73,18 @@ class DopeSheetMidiPanel(bpy.types.Panel):
         self.layout.separator()
         col = self.layout.column(align=True)
 
-        tooltip_creator = PanelUtils.OperatorTooltipCreator(DopeSheetMidiCopier)
+        tooltip_creator = PanelUtils.OperatorTooltipCreator(NLA_MIDI_COPIER_PT_dope_sheet_copier)
         midi_file = midi_data_property.midi_file
         if midi_file is None or len(midi_file) == 0:
             tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.NO_MIDI_FILE_SELECTED))
         tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
 
-        # notify update if available
-        addon_updater_ops.update_notice_box_ui(self, context)
-
-
-class DopeSheetMidiSettingsPanel(bpy.types.Panel):
+class NLA_MIDI_COPIER_PT_dope_sheet_midi_settings_panel(bpy.types.Panel):
     bl_space_type = "DOPESHEET_EDITOR"
     bl_region_type = "UI"
     bl_category = i18n.get_key(i18n.MIDI)
     bl_label = i18n.get_key(i18n.MIDI_SETTINGS)
-    bl_idname = "ANIMATION_PT_dope_sheet_midi_settings_panel"
+    bl_idname = "NLA_MIDI_COPIER_PT_dope_sheet_midi_settings_panel"
 
     @classmethod
     def poll(cls, context):

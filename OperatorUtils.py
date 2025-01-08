@@ -29,13 +29,13 @@ def load_midi_file(operator, context, data_type: int, filepath: str):
         loaded_midi_data.update_midi_file(None, False, context)
 
 
-class CopyMidiFileData(bpy.types.Operator):
+class NLA_MIDI_COPIER_OT_copy_midi_file_data(bpy.types.Operator):
     """
     Operator to load midi file data form another view
     (load the midi file from the NLA editor into the graph editor, for example)
     """
 
-    bl_idname = "ops.midi_file_copy_data"
+    bl_idname = "ops.copy_midi_file_data"
     bl_label = i18n.get_key(i18n.COPY_MIDI_FILE_DATA_OP)
     bl_description = i18n.get_key(i18n.COPY_MIDI_FILE_DATA)
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}

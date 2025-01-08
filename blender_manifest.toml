@@ -1,0 +1,27 @@
+schema_version = "1.0.0"
+id = "nla_midi_copier"
+version = "0.20.0"
+name = "NLA Midi Copier"
+tagline = "NLA and Graph Editor tools for syncing animation to midi files"
+maintainer = "Cornerback24"
+type = "add-on"
+website = "https://github.com/Cornerback24/Blender-NLA-Midi-Copier?tab=readme-ov-file#blender-nla-midi-copier"
+tags = ["Animation"]
+blender_version_min = "4.2.0"
+license = [
+    "SPDX:GPL-3.0-or-later",
+]
+[permissions]
+files = "Read midi files form disk"
+[build]
+paths_exclude_pattern = [
+    "__pycache__/",
+    "/.git/",
+    "/*.zip",
+    "git_exclusions/",
+    "bpy/",
+    ".gitignore",
+    "images/",
+    ".idea",
+    "nla_midi_updater/"
+]

@@ -1,17 +1,3 @@
-bl_info = \
-    {
-        "name": "Blender NLA Midi Copier",
-        "author": "Cornerback24",
-        "version": (0, 19, 1),
-        "blender": (2, 80, 0),
-        "location": "NLA Editor and Graph Editor Sidebar",
-        "description": "Copy actions to action strips and generate graph editor keyframes based on midi file input",
-        "doc_url": "https://github.com/Cornerback24/Blender-NLA-Midi-Copier#blender-nla-midi-copier",
-        "tracker_url": "https://github.com/Cornerback24/Blender-NLA-Midi-Copier/issues",
-        "support": "COMMUNITY",
-        "category": "Animation"
-    }
-
 if "bpy" in locals():
     import importlib
 
@@ -86,22 +72,30 @@ else:
     from .i18n import es_strings
 
 import bpy
+# noinspection PyUnresolvedReferences
+import addon_utils
 import traceback
-from . import addon_updater_ops
 from bpy.props import PointerProperty
 from bpy.types import NlaStrip
-from .NLAMidiCopierModule import NLAMidiCopier, NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier
-from .DopeSheetMidiCopierModule import DopeSheetMidiCopier
-from .GraphEditorKeyframeGeneratorModule import GraphEditorMidiKeyframeGenerator, LoadMinMaxFromMidiTrack
-from .MidiInstrumentModule import AddInstrument, DeleteInstrument, AddActionToInstrument, RemoveActionFromInstrument, \
-    TransposeInstrument
-from .OperatorUtils import CopyMidiFileData
+from .NLAMidiCopierModule import NLA_MIDI_COPIER_OT_copier, NLA_MIDI_COPIER_OT_instrument_copier, \
+    NLA_MIDI_COPIER_OT_all_instrument_copier, NLA_MIDI_COPIER_OT_bulk_midi_copier
+from .DopeSheetMidiCopierModule import NLA_MIDI_COPIER_PT_dope_sheet_copier
+from .GraphEditorKeyframeGeneratorModule import NLA_MIDI_COPIER_OT_graph_editor_keyframe_generator, \
+    NLA_MIDI_COPIER_OT_load_min_max_from_midi_track
+from .MidiInstrumentModule import NLA_MIDI_COPIER_OT_add_instrument, NLA_MIDI_COPIER_OT_delete_instrument, \
+    NLA_MIDI_COPIER_OT_add_action_to_instrument, NLA_MIDI_COPIER_OT_remove_action_from_instrument, \
+    NLA_MIDI_COPIER_OT_transpose_instrument
+from .OperatorUtils import NLA_MIDI_COPIER_OT_copy_midi_file_data
 from .PanelUtils import MidiFileSelector
-from .OtherToolsModule import GenerateTransitionsOperator, DeleteTransitionsOperator
-from .MidiPanelModule import MidiPanel, MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel, \
-    OtherToolsPanel, MIDI_TRACK_PROPERTIES_UL_list
-from .GraphEditorMidiPanelModule import GraphEditorMidiPanel, GraphEditorMidiSettingsPanel
-from .DopeSheetMidiPanelModule import DopeSheetMidiPanel, DopeSheetMidiSettingsPanel
+from .OtherToolsModule import NLA_MIDI_COPIER_OT_generate_transitions_operator, \
+    NLA_MIDI_COPIER_OT_delete_transitions_operator
+from .MidiPanelModule import NLA_MIDI_COPIER_PT_midi_panel, NLA_MIDI_COPIER_PT_midi_instrument_panel, \
+    NLA_MIDI_COPIER_PT_quick_copy_panel, NLA_MIDI_COPIER_PT_midi_settings_panel, \
+    NLA_MIDI_COPIER_PT_other_tools_panel, MIDI_TRACK_PROPERTIES_UL_list
+from .GraphEditorMidiPanelModule import NLA_MIDI_COPIER_PT_graph_editor_midi_panel, \
+    NLA_MIDI_COPIER_PT_graph_editor_midi_settings_panel
+from .DopeSheetMidiPanelModule import NLA_MIDI_COPIER_PT_dope_sheet_midi_panel, \
+    NLA_MIDI_COPIER_PT_dope_sheet_midi_settings_panel
 from .MidiPropertiesModule import MidiTrackProperty, MidiPropertyGroup, NoteActionProperty, InstrumentNoteProperty, \
     InstrumentProperty, NoteFilterGroup, NoteFilterProperty, \
     GenericNoteFilterProperty, GenericNoteFilterGroup, NoteFilterPreset, \
@@ -112,8 +106,11 @@ from .DopeSheetMidiPropertiesModule import DopeSheetMidiPropertyGroup, DopeSheet
 from .GraphEditorMidiPropertiesModule import GraphEditorTempoPropertyGroup, GraphEditorNoteActionProperty, \
     GraphEditorNoteFilterProperty, GraphEditorNoteFilterGroup, GraphEditorMidiPropertyGroup, \
     GraphEditorKeyframeGenerationProperty
-from .NoteFilterModule import AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter, \
-    AddFilterPreset, SaveFilterPreset, DeleteFilterPreset
+from .NoteFilterModule import NLA_MIDI_COPIER_OT_add_note_filter, NLA_MIDI_COPIER_OT_remove_note_filter, \
+    NLA_MIDI_COPIER_OT_add_note_filter_group, NLA_MIDI_COPIER_OT_remove_note_filter_group, \
+    NLA_MIDI_COPIER_OT_reorder_note_filter, \
+    NLA_MIDI_COPIER_OT_add_note_filter_preset, NLA_MIDI_COPIER_OT_save_note_filter_preset, \
+    NLA_MIDI_COPIER_OT_delete_note_filter_preset
 from .midi_data import MidiDataType
 from .i18n.es_strings import i18n_es
 from .PreferenceModule import MidiCopierPreferences
@@ -121,26 +118,33 @@ from .PreferenceModule import MidiCopierPreferences
 classes = [
     NoteFilterProperty, NoteFilterGroup, GenericNoteFilterProperty, GenericNoteFilterGroup, NoteFilterPreset,
     BulkCopyPropertyGroup,
-    NoteActionProperty, InstrumentNoteProperty, InstrumentProperty, AddInstrument, DeleteInstrument, NLAMidiCopier,
-    NLAMidiInstrumentCopier, NLAMidiAllInstrumentCopier, NLABulkMidiCopier,
-    AddActionToInstrument, RemoveActionFromInstrument, TransposeInstrument,
-    AddNoteFilter, RemoveNoteFilter, AddNoteFilterGroup, RemoveFilterGroup, ReorderFilter,
-    AddFilterPreset, SaveFilterPreset, DeleteFilterPreset,
-    CopyMidiFileData,
+    NoteActionProperty, InstrumentNoteProperty, InstrumentProperty, NLA_MIDI_COPIER_OT_add_instrument,
+    NLA_MIDI_COPIER_OT_delete_instrument, NLA_MIDI_COPIER_OT_copier,
+    NLA_MIDI_COPIER_OT_instrument_copier, NLA_MIDI_COPIER_OT_all_instrument_copier, NLA_MIDI_COPIER_OT_bulk_midi_copier,
+    NLA_MIDI_COPIER_OT_add_action_to_instrument, NLA_MIDI_COPIER_OT_remove_action_from_instrument,
+    NLA_MIDI_COPIER_OT_transpose_instrument,
+    NLA_MIDI_COPIER_OT_add_note_filter, NLA_MIDI_COPIER_OT_remove_note_filter, NLA_MIDI_COPIER_OT_add_note_filter_group,
+    NLA_MIDI_COPIER_OT_remove_note_filter_group, NLA_MIDI_COPIER_OT_reorder_note_filter,
+    NLA_MIDI_COPIER_OT_add_note_filter_preset, NLA_MIDI_COPIER_OT_save_note_filter_preset,
+    NLA_MIDI_COPIER_OT_delete_note_filter_preset,
+    NLA_MIDI_COPIER_OT_copy_midi_file_data,
     TempoPropertyGroup, MidiCopierVersion, MidiTrackProperty,
     KeyframeProperties, OtherToolsPropertyGroup, MidiPropertyGroup, MidiDataCommon,
-    MIDI_TRACK_PROPERTIES_UL_list, MidiPanel, MidiFileSelector, GenerateTransitionsOperator, DeleteTransitionsOperator,
-    MidiInstrumentPanel, QuickCopyPanel, MidiSettingsPanel, OtherToolsPanel]
+    MIDI_TRACK_PROPERTIES_UL_list, NLA_MIDI_COPIER_PT_midi_panel, MidiFileSelector,
+    NLA_MIDI_COPIER_OT_generate_transitions_operator, NLA_MIDI_COPIER_OT_delete_transitions_operator,
+    NLA_MIDI_COPIER_PT_midi_instrument_panel, NLA_MIDI_COPIER_PT_quick_copy_panel,
+    NLA_MIDI_COPIER_PT_midi_settings_panel, NLA_MIDI_COPIER_PT_other_tools_panel]
 dope_sheet_classes = [DopeSheetNoteFilterProperty, DopeSheetNoteFilterGroup,
                       DopeSheetNoteActionProperty, DopeSheetTempoPropertyGroup,
-                      DopeSheetMidiCopier, DopeSheetMidiPropertyGroup, DopeSheetMidiPanel,
-                      DopeSheetMidiSettingsPanel]
+                      NLA_MIDI_COPIER_PT_dope_sheet_copier, DopeSheetMidiPropertyGroup,
+                      NLA_MIDI_COPIER_PT_dope_sheet_midi_panel,
+                      NLA_MIDI_COPIER_PT_dope_sheet_midi_settings_panel]
 graph_editor_classes = [GraphEditorNoteFilterProperty, GraphEditorNoteFilterGroup,
                         GraphEditorKeyframeGenerationProperty,
                         GraphEditorNoteActionProperty, GraphEditorTempoPropertyGroup,
-                        GraphEditorMidiKeyframeGenerator, GraphEditorMidiPropertyGroup,
-                        LoadMinMaxFromMidiTrack,
-                        GraphEditorMidiPanel, GraphEditorMidiSettingsPanel]
+                        NLA_MIDI_COPIER_OT_graph_editor_keyframe_generator, GraphEditorMidiPropertyGroup,
+                        NLA_MIDI_COPIER_OT_load_min_max_from_midi_track,
+                        NLA_MIDI_COPIER_PT_graph_editor_midi_panel, NLA_MIDI_COPIER_PT_graph_editor_midi_settings_panel]
 classes = classes + dope_sheet_classes + graph_editor_classes + [MidiCopierPreferences]
 
 
@@ -176,19 +180,29 @@ def on_load(scene):
     CompatibilityModule.compatibility_updates_complete = True
 
 
+def addon_version():
+    for module in addon_utils.modules():
+        if "name" in module.bl_info and \
+                (module.bl_info["name"] == "NLA Midi Copier"
+                 # support running compatibility updates from before rename to remove "Blender" from the name
+                 or module.bl_info["name"] == "Blender NLA Midi Copier"):
+            return module.bl_info["version"]
+    return None
+
+
 def updates_from_previous_version(context):
     version_property = context.scene.midi_copier_version
-    current_version = bl_info["version"]
-    CompatibilityModule.run_compatibility_updates(current_version)
-    version_property.major = current_version[0]
-    version_property.minor = current_version[1]
-    version_property.revision = current_version[2]
+    current_version = addon_version()
+    if current_version is not None:
+        CompatibilityModule.run_compatibility_updates(current_version)
+        version_property.major = current_version[0]
+        version_property.minor = current_version[1]
+        version_property.revision = current_version[2]
 
 
 # noinspection PyArgumentList
 def register():
     bpy.app.translations.register(__name__, translations)
-    addon_updater_ops.register(bl_info)
     for clazz in classes:
         bpy.utils.register_class(clazz)
     bpy.types.Scene.midi_data_property = PointerProperty(type=MidiPropertyGroup)
@@ -206,7 +220,6 @@ def unregister():
     del bpy.types.Scene.midi_data_property
     for clazz in reversed(classes):
         bpy.utils.unregister_class(clazz)
-    addon_updater_ops.unregister()
     bpy.app.translations.unregister(__name__)
 
 
