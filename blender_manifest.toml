@@ -5,7 +5,7 @@ name = "NLA Midi Copier"
 tagline = "NLA and Graph Editor tools for syncing animation to midi files"
 maintainer = "Cornerback24"
 type = "add-on"
-website = "https://github.com/Cornerback24/Blender-NLA-Midi-Copier?tab=readme-ov-file#blender-nla-midi-copier"
+website = "https://github.com/Cornerback24/Blender-NLA-Midi-Copier/tree/blender-extension?tab=readme-ov-file#blender-nla-midi-copier"
 tags = ["Animation"]
 blender_version_min = "4.2.0"
 license = [

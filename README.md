@@ -593,13 +593,3 @@ Deletes transitions between selected NLA strips on the active NLA track.
 
 
 </details>
-
-### Installation:
-
-* Installation is the normal installation process for multi-file add-ons.
-    * Option 1: [Download as a zip file](https://github.com/Cornerback24/Blender-NLA-Midi-Copier/archive/master.zip). In
-      Blender, go to Edit > Preferences > Add-ons, and click Install. Select the zip file and click Install Add-on from
-      File.
-    * Option 2: Clone into the \<version\>/scripts/addons directory in the Blender installation.
-* To enable the add-on, in Blender, go to Edit > Preferences > Add-ons, and select Animation in the drop-down. Select
-  Community at the top if it isn't already selected. Check the box next to the add-on to enable it.
