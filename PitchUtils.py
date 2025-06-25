@@ -1,12 +1,4 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-else:
-    from .i18n import i18n
-
-import bpy
+from .i18n import i18n
 
 
 def pitch_dictionary(lowest_octave: int):
@@ -63,7 +55,7 @@ def can_be_transposed(pitch: int, steps_to_transpose: int) -> bool:
 
 def pitch_filter_is_all_inclusive(pitch: int, comparison_operator: str) -> bool:
     return pitch == 0 and comparison_operator == "greater_than_or_equal_to" or \
-           pitch == 127 and comparison_operator == "less_than_or_equal_to"
+        pitch == 127 and comparison_operator == "less_than_or_equal_to"
 
 
 def note_in_scale(note_pitch, scale_tonic_pitch):

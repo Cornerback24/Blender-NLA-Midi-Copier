@@ -1,40 +1,14 @@
-from collections import defaultdict
-
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(midi_data)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PitchUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(ObjectUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PropertyUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NoteFilterImplementations)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NoteCollectionModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(OperatorUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(ActionUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-else:
-    from . import midi_data
-    from . import PitchUtils
-    from . import ObjectUtils
-    from . import PropertyUtils
-    from . import NoteFilterImplementations
-    from . import NoteCollectionModule
-    from . import OperatorUtils
-    from . import ActionUtils
-    from .i18n import i18n
+from . import midi_data
+from . import PitchUtils
+from . import ObjectUtils
+from . import PropertyUtils
+from . import OperatorUtils
+from . import ActionUtils
+from .i18n import i18n
 
 import bpy
 import re
-from typing import List, Tuple, Optional, Any
+from typing import List, Optional
 from .midi_analysis.Note import Note
 from .midi_data import MidiDataType
 from .NoteCollectionModule import NoteCollectionOverlapStrategy, NoteCollectionMetaData, NoteCollection, \
@@ -342,10 +316,6 @@ class NLA_MIDI_COPIER_OT_copier(bpy.types.Operator, OperatorUtils.DynamicTooltip
         self.action_common(context)
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        self.action_common(context)
-        return {'FINISHED'}
-
     def action_common(self, context):
         note_action_property = midi_data.get_midi_data(MidiDataType.NLA).selected_note_action_property(context)
 
@@ -382,10 +352,6 @@ class NLA_MIDI_COPIER_OT_instrument_copier(bpy.types.Operator):
         self.action_common(context)
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        self.action_common(context)
-        return {'FINISHED'}
-
     def action_common(self, context):
         instrument = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context)
         self.animate_instrument(context, instrument)
@@ -417,12 +383,8 @@ class NLA_MIDI_COPIER_OT_all_instrument_copier(bpy.types.Operator):
         self.action_common(context)
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        self.action_common(context)
-        return {'FINISHED'}
-
     def action_common(self, context):
-        for instrument in context.scene.midi_data_property.instruments:
+        for instrument in context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.instruments:
             NLA_MIDI_COPIER_OT_instrument_copier.animate_instrument(context, instrument)
 
 
@@ -439,12 +401,8 @@ class NLA_MIDI_COPIER_OT_bulk_midi_copier(bpy.types.Operator, OperatorUtils.Dyna
         self.action_common(context)
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        self.action_common(context)
-        return {'FINISHED'}
-
     def action_common(self, context):
-        quick_copy_tool = context.scene.midi_data_property.bulk_copy_property.quick_copy_tool
+        quick_copy_tool = context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.bulk_copy_property.quick_copy_tool
         if quick_copy_tool == "copy_along_path":
             NLA_MIDI_COPIER_OT_bulk_midi_copier.notes_along_path(context)
         elif quick_copy_tool == "copy_by_object_name":
@@ -454,8 +412,8 @@ class NLA_MIDI_COPIER_OT_bulk_midi_copier(bpy.types.Operator, OperatorUtils.Dyna
 
     @staticmethod
     def single_note_to_instrument(context):
-        midi_panel_note_action_property = context.scene.midi_data_property.note_action_property
-        note_pitch: int = int(context.scene.midi_data_property.copy_to_instrument_selected_note_id)
+        midi_panel_note_action_property = context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.note_action_property
+        note_pitch: int = int(context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.copy_to_instrument_selected_note_id)
         NLA_MIDI_COPIER_OT_bulk_midi_copier.animate_or_copy_to_instrument(True,
                                                                           PitchUtils.note_id_from_pitch(note_pitch),
                                                                           midi_panel_note_action_property, context)
@@ -465,7 +423,7 @@ class NLA_MIDI_COPIER_OT_bulk_midi_copier(bpy.types.Operator, OperatorUtils.Dyna
         """
         Copies the action to objects along the path, incrementing the note for each object.
         """
-        bulk_copy_property = context.scene.midi_data_property.bulk_copy_property
+        bulk_copy_property = context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.bulk_copy_property
         objs = ObjectUtils.objects_sorted_by_path(context.selected_objects,
                                                   bulk_copy_property.bulk_copy_curve)
         midi_data_property = midi_data.get_midi_data(MidiDataType.NLA).get_midi_data_property(context)
@@ -515,7 +473,7 @@ class NLA_MIDI_COPIER_OT_bulk_midi_copier(bpy.types.Operator, OperatorUtils.Dyna
         data_name_pairs = [(x[0], x[1].name) for x in animated_objects_dict.items()]
         note_object_pairs = []
         match_by_track_name = bulk_copy_property.copy_by_name_type == "copy_by_track_and_note"
-        track_name = midi_data_property.track_list if match_by_track_name else None
+        track_name = midi_data_property.selected_track if match_by_track_name else None
         displayed_track_name = loaded_midi_data.get_displayed_track_name(track_name) if track_name is not None else None
 
         notes_enum_list = loaded_midi_data.notes_list
@@ -583,7 +541,7 @@ class NLA_MIDI_COPIER_OT_bulk_midi_copier(bpy.types.Operator, OperatorUtils.Dyna
                 return
             copied_note_action_property = PropertyUtils.get_note_action_property(instrument,
                                                                                  PitchUtils.note_pitch_from_id(note_id))
-            midi_panel_note_action_property = context.scene.midi_data_property.note_action_property
+            midi_panel_note_action_property = context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.note_action_property
             PropertyUtils.copy_note_action_property(midi_panel_note_action_property, copied_note_action_property,
                                                     midi_data.ID_PROPERTIES_DICTIONARY)
         else:

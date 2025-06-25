@@ -1,23 +1,7 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(midi_data)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(MidiPropertiesModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NoteFilterImplementations)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-else:
-    from . import midi_data
-    from . import MidiPropertiesModule
-    from . import NoteFilterImplementations
-    from .i18n import i18n
+from .i18n import i18n
 
 import bpy
-from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
-    FloatProperty
+from bpy.props import BoolProperty, PointerProperty, CollectionProperty
 from bpy.types import PropertyGroup
 from .midi_data import MidiDataType
 from .MidiPropertiesModule import MidiPropertyBase, TempoPropertyBase, NoteActionPropertyBase, NoteFilterPropertyBase, \

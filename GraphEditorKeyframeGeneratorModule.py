@@ -1,28 +1,8 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(midi_data)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PitchUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(GraphEditorMidiPropertiesModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NoteCollectionModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(CCDataModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(OperatorUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-else:
-    from . import midi_data
-    from . import PitchUtils
-    from . import GraphEditorMidiPropertiesModule
-    from . import NoteCollectionModule
-    from . import CCDataModule
-    from . import OperatorUtils
-    from .i18n import i18n
+from . import midi_data
+from . import PitchUtils
+from . import GraphEditorMidiPropertiesModule
+from . import OperatorUtils
+from .i18n import i18n
 
 import bpy
 from collections import defaultdict
@@ -50,7 +30,7 @@ class KeyframeData:
     def add_keyframe(self, frame_number: int, keyframe_value: float):
         if frame_number in self.frames_to_keyframes:
             del self.frames_to_keyframes[frame_number]
-        added_keyframe = self.keyframe_points.insert(frame_number, keyframe_value, options={'REPLACE'})
+        added_keyframe = self.keyframe_points.insert(frame_number, keyframe_value, options={'NEEDED'})
         self.frames_to_keyframes[frame_number].append(added_keyframe)
 
 
@@ -97,7 +77,7 @@ def value_from_analyzed_note(note_property: str, analyzed_note):
 
 
 def get_note_collection(loaded_midi_data, context, graph_editor_note_action_property, keyframe_generator_property):
-    graph_editor_midi_data_property = context.scene.graph_editor_midi_data_property
+    graph_editor_midi_data_property = context.scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property
     notes = midi_data.MidiDataUtil.get_notes(loaded_midi_data.get_track_id(context), loaded_midi_data)
     note_collection_meta_data = NoteCollectionMetaData(loaded_midi_data, context.scene.render.fps,
                                                        graph_editor_midi_data_property.midi_frame_start +
@@ -119,7 +99,7 @@ def get_note_collection(loaded_midi_data, context, graph_editor_note_action_prop
 def get_cc_data(loaded_midi_data, context):
     return midi_data.MidiDataUtil.get_cc_data(
         loaded_midi_data.get_track_id(context), loaded_midi_data, context,
-        context.scene.graph_editor_midi_data_property.note_action_property.midi_frame_offset)
+        context.scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property.note_action_property.midi_frame_offset)
 
 
 class FcurveKeyframeGenerator:
@@ -275,10 +255,6 @@ class NLA_MIDI_COPIER_OT_graph_editor_keyframe_generator(bpy.types.Operator, Ope
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        self.action_common(context)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
         self.action_common(context)
         return {'FINISHED'}
 
@@ -448,10 +424,6 @@ class NLA_MIDI_COPIER_OT_load_min_max_from_midi_track(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        self.action_common(context)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
         self.action_common(context)
         return {'FINISHED'}
 

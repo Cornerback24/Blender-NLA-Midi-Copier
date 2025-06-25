@@ -1,4 +1,7 @@
-- 0.20.0 2025-1-7
+- 1.0.0
+  * Breaking changes to property names (NLA Midi Copier data from previous add-on versions will not load)
+  * Fixed copying keyframes in the graph editor in Blender 4.4
+- 0.20.1 2025-1-7
   * Update to Blender extension 
 - 0.19.1 2024-9-1
   * Fix tempo changes being applied at incorrect times

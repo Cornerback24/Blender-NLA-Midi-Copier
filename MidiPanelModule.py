@@ -1,37 +1,11 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(midi_data)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NLAMidiCopierModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(MidiInstrumentModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(OtherToolsModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PropertyUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PanelUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PitchUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(ActionUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-else:
-    from . import midi_data
-    from . import NLAMidiCopierModule
-    from . import MidiInstrumentModule
-    from . import OtherToolsModule
-    from . import PropertyUtils
-    from . import PanelUtils
-    from . import PitchUtils
-    from . import ActionUtils
-    from .i18n import i18n
+from . import PropertyUtils
+from . import PanelUtils
+from . import PitchUtils
+from . import ActionUtils
+from .i18n import i18n
 
 import bpy
-from typing import Callable, Tuple
+from typing import Callable
 from .NLAMidiCopierModule import NLA_MIDI_COPIER_OT_copier, NLA_MIDI_COPIER_OT_instrument_copier, \
     NLA_MIDI_COPIER_OT_all_instrument_copier, NLA_MIDI_COPIER_OT_bulk_midi_copier
 from .MidiInstrumentModule import NLA_MIDI_COPIER_OT_add_instrument, NLA_MIDI_COPIER_OT_delete_instrument, \
@@ -40,7 +14,6 @@ from .MidiInstrumentModule import NLA_MIDI_COPIER_OT_add_instrument, NLA_MIDI_CO
 from .OtherToolsModule import NLA_MIDI_COPIER_OT_generate_transitions_operator, \
     NLA_MIDI_COPIER_OT_delete_transitions_operator
 from . import midi_data
-from bpy.props import EnumProperty
 from .midi_data import MidiDataType
 
 
@@ -53,7 +26,7 @@ class NLA_MIDI_COPIER_PT_midi_panel(bpy.types.Panel):
 
     def draw(self, context):
         col = self.layout.column(align=True)
-        midi_data_property = context.scene.midi_data_property
+        midi_data_property = context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property
         midi_file = midi_data_property.midi_file
 
         PanelUtils.draw_midi_file_selections(col, midi_data_property, MidiDataType.NLA, context)
@@ -70,6 +43,8 @@ class NLA_MIDI_COPIER_PT_midi_panel(bpy.types.Panel):
             tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.NO_MIDI_FILE_SELECTED))
         if note_action_property.action is None:
             tooltip_creator.add_disable_description(i18n.get_key(i18n.NO_ACTION_SELECTED))
+        if not midi_data_property.selected_note:
+            tooltip_creator.add_disable_description(i18n.get_key(i18n.NO_NOTE_SELECTED))
         tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
 
     @staticmethod
@@ -139,7 +114,7 @@ class NLA_MIDI_COPIER_PT_midi_instrument_panel(bpy.types.Panel):
 
     def draw(self, context):
         col = self.layout.column(align=True)
-        col.prop(context.scene.midi_data_property, "selected_instrument_id")
+        col.prop(context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property, "selected_instrument_id")
 
         selected_instrument = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context)
         if selected_instrument is not None:
@@ -154,7 +129,7 @@ class NLA_MIDI_COPIER_PT_midi_instrument_panel(bpy.types.Panel):
         col.operator(NLA_MIDI_COPIER_OT_all_instrument_copier.bl_idname)
 
     def draw_animate_instrument(self, context, instrument):
-        if context.scene.midi_data_property.midi_file:
+        if context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.midi_file:
 
             animate_box = \
                 PanelUtils.draw_collapsible_box(self.layout, i18n.concat(i18n.get_text(i18n.ANIMATE), instrument.name),
@@ -279,7 +254,7 @@ class NLA_MIDI_COPIER_PT_quick_copy_panel(bpy.types.Panel):
 
     def draw(self, context):
         col = self.layout.column(align=True)
-        midi_data_property = context.scene.midi_data_property
+        midi_data_property = context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property
         bulk_copy_property = midi_data_property.bulk_copy_property
         quick_copy_tool = bulk_copy_property.quick_copy_tool
 
@@ -395,7 +370,7 @@ class NLA_MIDI_COPIER_PT_other_tools_panel(bpy.types.Panel):
         return context.preferences.addons[__package__].preferences.show_nla_midi_other_tools_panel
 
     def draw(self, context):
-        midi_data_property = context.scene.midi_data_property
+        midi_data_property = context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property
         col = self.layout.column(align=True)
         col.prop(midi_data_property.other_tool_property, "selected_tool")
         col.separator()

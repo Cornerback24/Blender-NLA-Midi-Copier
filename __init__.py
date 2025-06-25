@@ -2,9 +2,31 @@ if "bpy" in locals():
     import importlib
 
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(es_strings)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(i18n)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(NLAMidiCopierModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(MidiPanelModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PropertyUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(CollectionUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PitchUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(ObjectUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(NoteFilterImplementations)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(NoteCollectionModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(CCDataModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(OperatorUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(ActionUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(GraphEditorKeyframeGeneratorModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
@@ -31,8 +53,6 @@ if "bpy" in locals():
     importlib.reload(PanelUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(OtherToolsModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(es_strings)
 else:
     # noinspection PyUnresolvedReferences
     from . import NLAMidiCopierModule
@@ -76,7 +96,7 @@ import bpy
 import addon_utils
 import traceback
 from bpy.props import PointerProperty
-from bpy.types import NlaStrip
+from bpy.types import NlaStrip, PropertyGroup
 from .NLAMidiCopierModule import NLA_MIDI_COPIER_OT_copier, NLA_MIDI_COPIER_OT_instrument_copier, \
     NLA_MIDI_COPIER_OT_all_instrument_copier, NLA_MIDI_COPIER_OT_bulk_midi_copier
 from .DopeSheetMidiCopierModule import NLA_MIDI_COPIER_PT_dope_sheet_copier
@@ -115,6 +135,18 @@ from .midi_data import MidiDataType
 from .i18n.es_strings import i18n_es
 from .PreferenceModule import MidiCopierPreferences
 
+
+class NlaMidiBasePropertyGroup(PropertyGroup):
+    """
+    Main property on the scene that holds all the properties for the addon
+    """
+    nla_editor_midi_data_property: PointerProperty(type=MidiPropertyGroup)
+    dope_sheet_midi_data_property: PointerProperty(type=DopeSheetMidiPropertyGroup)
+    graph_editor_midi_data_property: PointerProperty(type=GraphEditorMidiPropertyGroup)
+    midi_copier_version: PointerProperty(type=MidiCopierVersion)
+    midi_copier_data_common: PointerProperty(type=MidiDataCommon)
+
+
 classes = [
     NoteFilterProperty, NoteFilterGroup, GenericNoteFilterProperty, GenericNoteFilterGroup, NoteFilterPreset,
     BulkCopyPropertyGroup,
@@ -145,7 +177,7 @@ graph_editor_classes = [GraphEditorNoteFilterProperty, GraphEditorNoteFilterGrou
                         NLA_MIDI_COPIER_OT_graph_editor_keyframe_generator, GraphEditorMidiPropertyGroup,
                         NLA_MIDI_COPIER_OT_load_min_max_from_midi_track,
                         NLA_MIDI_COPIER_PT_graph_editor_midi_panel, NLA_MIDI_COPIER_PT_graph_editor_midi_settings_panel]
-classes = classes + dope_sheet_classes + graph_editor_classes + [MidiCopierPreferences]
+classes = classes + dope_sheet_classes + graph_editor_classes + [MidiCopierPreferences] + [NlaMidiBasePropertyGroup]
 
 
 def create_i18n_dict(i18n_data):
@@ -169,13 +201,19 @@ def load_midi_file(midi_data_property, midi_data_type: int, context):
 def on_load(scene):
     CompatibilityModule.compatibility_updates_complete = False
     context = bpy.context
-    load_midi_file(context.scene.midi_data_property, MidiDataType.NLA, context)
-    load_midi_file(context.scene.dope_sheet_midi_data_property, MidiDataType.DOPESHEET, context)
-    load_midi_file(context.scene.graph_editor_midi_data_property, MidiDataType.GRAPH_EDITOR, context)
+    load_midi_file(context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property, MidiDataType.NLA,
+                   context)
+    load_midi_file(context.scene.nla_midi_copier_main_property_group.dope_sheet_midi_data_property,
+                   MidiDataType.DOPESHEET,
+                   context)
+    load_midi_file(context.scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property,
+                   MidiDataType.GRAPH_EDITOR, context)
 
     # For now only one GraphEditorKeyframeGenerationProperty in the collection. Add it here to ensure it exists
-    if len(context.scene.graph_editor_midi_data_property.note_action_property.keyframe_generators) == 0:
-        context.scene.graph_editor_midi_data_property.note_action_property.keyframe_generators.add()
+    if len(context.scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property.note_action_property
+                   .keyframe_generators) == 0:
+        (context.scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property.note_action_property
+         .keyframe_generators.add())
     updates_from_previous_version(context)
     CompatibilityModule.compatibility_updates_complete = True
 
@@ -191,7 +229,9 @@ def addon_version():
 
 
 def updates_from_previous_version(context):
-    version_property = context.scene.midi_copier_version
+    # check the current version of the addon, which will be compared against the previous stored version before 
+    # running any compatibility updates
+    version_property = context.scene.nla_midi_copier_main_property_group.midi_copier_version
     current_version = addon_version()
     if current_version is not None:
         CompatibilityModule.run_compatibility_updates(current_version)
@@ -205,22 +245,16 @@ def register():
     bpy.app.translations.register(__name__, translations)
     for clazz in classes:
         bpy.utils.register_class(clazz)
-    bpy.types.Scene.midi_data_property = PointerProperty(type=MidiPropertyGroup)
-    bpy.types.Scene.dope_sheet_midi_data_property = PointerProperty(type=DopeSheetMidiPropertyGroup)
-    bpy.types.Scene.graph_editor_midi_data_property = PointerProperty(type=GraphEditorMidiPropertyGroup)
-    bpy.types.Scene.midi_copier_version = PointerProperty(type=MidiCopierVersion)
-    bpy.types.Scene.midi_copier_data_common = PointerProperty(type=MidiDataCommon)
+    bpy.types.Scene.nla_midi_copier_main_property_group = PointerProperty(type=NlaMidiBasePropertyGroup)
     bpy.app.handlers.load_post.append(on_load)
 
 
 def unregister():
-    del bpy.types.Scene.midi_copier_version
-    del bpy.types.Scene.graph_editor_midi_data_property
-    del bpy.types.Scene.dope_sheet_midi_data_property
-    del bpy.types.Scene.midi_data_property
+    del bpy.types.Scene.nla_midi_copier_main_property_group
     for clazz in reversed(classes):
         bpy.utils.unregister_class(clazz)
     bpy.app.translations.unregister(__name__)
+    bpy.app.handlers.load_post.remove(on_load)
 
 
 if __name__ == "__main__":

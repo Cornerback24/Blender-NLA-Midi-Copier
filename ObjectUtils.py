@@ -1,7 +1,6 @@
 import math
 import bpy
-import uuid
-from typing import Tuple, List, Callable, Any, Optional
+from typing import Tuple
 
 
 def point_3d(v):

@@ -295,6 +295,7 @@ i18n_es = {
     i18n.NO_INSTRUMENT_SELECTED: None,
     i18n.NO_MIDI_FILE_SELECTED: None,
     i18n.NO_NLA_TRACK_SELECTED: None,
+    i18n.NO_NOTE_SELECTED: None,
     i18n.NO_PATH_SELECTED: None,
     i18n.NO_PRESET_SELECTED: None,
     i18n.OBJECT: None,

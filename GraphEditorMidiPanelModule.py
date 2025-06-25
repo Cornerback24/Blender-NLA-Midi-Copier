@@ -1,25 +1,8 @@
-if "bpy" in locals():
-    import importlib
 
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(midi_data)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PanelUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(MidiPanelModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(GraphEditorKeyframeGeneratorModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(GraphEditorMidiPropertiesModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-else:
-    from . import midi_data
-    from . import PanelUtils
-    from . import MidiPanelModule
-    from . import GraphEditorKeyframeGeneratorModule
-    from . import GraphEditorMidiPropertiesModule
-    from .i18n import i18n
+from . import PanelUtils
+from . import GraphEditorKeyframeGeneratorModule
+from . import GraphEditorMidiPropertiesModule
+from .i18n import i18n
 
 import bpy
 from .midi_data import MidiDataType
@@ -35,7 +18,7 @@ class NLA_MIDI_COPIER_PT_graph_editor_midi_panel(bpy.types.Panel):
     bl_idname = "NLA_MIDI_COPIER_PT_graph_editor_midi_panel"
 
     def draw(self, context):
-        midi_data_property = context.scene.graph_editor_midi_data_property
+        midi_data_property = context.scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property
         midi_file = midi_data_property.midi_file
         graph_editor_note_action_property = midi_data_property.note_action_property
         col = self.layout.column(align=True)

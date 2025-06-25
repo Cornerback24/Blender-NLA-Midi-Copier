@@ -1,19 +1,7 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(midi_data)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PropertyUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(CollectionUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-else:
-    from . import midi_data
-    from . import PropertyUtils
-    from . import CollectionUtils
-    from .i18n import i18n
+from . import midi_data
+from . import PropertyUtils
+from . import CollectionUtils
+from .i18n import i18n
 
 import bpy
 
@@ -30,10 +18,6 @@ class NLA_MIDI_COPIER_OT_add_note_filter(bpy.types.Operator):
     midi_data_type: bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
 
     def execute(self, context):
-        self.action_common(context)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
         self.action_common(context)
         return {'FINISHED'}
 
@@ -59,10 +43,6 @@ class NLA_MIDI_COPIER_OT_remove_note_filter(bpy.types.Operator):
     midi_data_type: bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
 
     def execute(self, context):
-        self.action_common(context)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
         self.action_common(context)
         return {'FINISHED'}
 
@@ -92,10 +72,6 @@ class NLA_MIDI_COPIER_OT_reorder_note_filter(bpy.types.Operator):
         self.action_common(context)
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        self.action_common(context)
-        return {'FINISHED'}
-
     def action_common(self, context):
         note_action_property = PropertyUtils.selected_note_property(midi_data.get_midi_data(self.midi_data_type),
                                                                     self.properties.is_part_of_instrument,
@@ -116,10 +92,6 @@ class NLA_MIDI_COPIER_OT_add_note_filter_group(bpy.types.Operator):
     midi_data_type: bpy.props.IntProperty(name="MidiDataType", options={'HIDDEN'})
 
     def execute(self, context):
-        self.action_common(context)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
         self.action_common(context)
         return {'FINISHED'}
 
@@ -147,10 +119,6 @@ class NLA_MIDI_COPIER_OT_remove_note_filter_group(bpy.types.Operator):
         self.action_common(context)
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        self.action_common(context)
-        return {'FINISHED'}
-
     def action_common(self, context):
         note_action_property = PropertyUtils.selected_note_property(midi_data.get_midi_data(self.midi_data_type),
                                                                     self.properties.is_part_of_instrument,
@@ -173,10 +141,6 @@ class NLA_MIDI_COPIER_OT_add_note_filter_preset(bpy.types.Operator):
         self.action_common(context)
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        self.action_common(context)
-        return {'FINISHED'}
-
     @staticmethod
     def __copy_to_new_filter(note_action_property, new_filter):
         PropertyUtils.copy_filters(note_action_property.note_filter_groups,
@@ -188,7 +152,7 @@ class NLA_MIDI_COPIER_OT_add_note_filter_preset(bpy.types.Operator):
                                                                     self.properties.action_index,
                                                                     context)
         CollectionUtils.add_to_collection(
-            context.scene.midi_copier_data_common.filter_presets, i18n.get_key(i18n.PRESET),
+            context.scene.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets, i18n.get_key(i18n.PRESET),
             note_action_property, "selected_note_filter_preset",
             update_new_object=lambda new_filter: NLA_MIDI_COPIER_OT_add_note_filter_preset.__copy_to_new_filter(
                 note_action_property, new_filter))
@@ -208,10 +172,6 @@ class NLA_MIDI_COPIER_OT_save_note_filter_preset(bpy.types.Operator):
         self.action_common(context)
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        self.action_common(context)
-        return {'FINISHED'}
-
     def action_common(self, context):
         note_action_property = PropertyUtils.selected_note_property(midi_data.get_midi_data(self.midi_data_type),
                                                                     self.properties.is_part_of_instrument,
@@ -219,7 +179,7 @@ class NLA_MIDI_COPIER_OT_save_note_filter_preset(bpy.types.Operator):
                                                                     context)
         filter_preset = CollectionUtils.get_selected_object(
             note_action_property.selected_note_filter_preset,
-            context.scene.midi_copier_data_common.filter_presets)
+            context.scene.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets)
         PropertyUtils.copy_filters(note_action_property.note_filter_groups, filter_preset.note_filter_groups)
 
 
@@ -237,14 +197,10 @@ class NLA_MIDI_COPIER_OT_delete_note_filter_preset(bpy.types.Operator):
         self.action_common(context)
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        self.action_common(context)
-        return {'FINISHED'}
-
     def action_common(self, context):
         note_action_property = PropertyUtils.selected_note_property(midi_data.get_midi_data(self.midi_data_type),
                                                                     self.properties.is_part_of_instrument,
                                                                     self.properties.action_index,
                                                                     context)
-        CollectionUtils.remove_from_collection(context.scene.midi_copier_data_common.filter_presets,
+        CollectionUtils.remove_from_collection(context.scene.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets,
                                                note_action_property, "selected_note_filter_preset")

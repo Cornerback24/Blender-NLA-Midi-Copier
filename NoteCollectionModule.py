@@ -1,15 +1,4 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(midi_data)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NoteFilterImplementations)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NoteCollectionUtils)
-else:
-    from . import NoteFilterImplementations
-    from . import NoteCollectionUtils
+from . import NoteFilterImplementations
 
 from typing import List, Optional, Any, Callable, Tuple
 from .midi_data import LoadedMidiData

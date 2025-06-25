@@ -1,14 +1,5 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(midi_data)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-else:
-    # noinspection PyUnresolvedReferences
-    from . import midi_data
-    from .i18n import i18n
+from . import midi_data
+from .i18n import i18n
 
 import bpy
 import traceback
@@ -49,10 +40,6 @@ class NLA_MIDI_COPIER_OT_copy_midi_file_data(bpy.types.Operator):
         return properties.tooltip if properties.tooltip else cls.bl_description
 
     def execute(self, context):
-        self.action_common(context)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
         self.action_common(context)
         return {'FINISHED'}
 

@@ -1,31 +1,9 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(midi_data)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(DopeSheetMidiCopierModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PanelUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(MidiPanelModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-else:
-    from . import midi_data
-    # noinspection PyUnresolvedReferences
-    from . import DopeSheetMidiCopierModule
-    # noinspection PyUnresolvedReferences
-    from . import PanelUtils
-    # noinspection PyUnresolvedReferences
-    from . import MidiPanelModule
-    from .i18n import i18n
+from . import PanelUtils
+from .i18n import i18n
 
 import bpy
 import textwrap
 from .DopeSheetMidiCopierModule import NLA_MIDI_COPIER_PT_dope_sheet_copier
-from . import midi_data
-from bpy.props import EnumProperty
 from .midi_data import MidiDataType
 
 
@@ -45,7 +23,7 @@ class NLA_MIDI_COPIER_PT_dope_sheet_midi_panel(bpy.types.Panel):
 
     def draw(self, context):
         col = self.layout.column(align=True)
-        midi_data_property = context.scene.dope_sheet_midi_data_property
+        midi_data_property = context.scene.nla_midi_copier_main_property_group.dope_sheet_midi_data_property
 
         PanelUtils.draw_midi_file_selections(col, midi_data_property, MidiDataType.DOPESHEET, context)
 

@@ -1,31 +1,11 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(midi_data)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NoteFilterImplementations)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PitchUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PropertyUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(CollectionUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(CompatibilityModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(ActionUtils)
-else:
-    from . import midi_data
-    from . import NoteFilterImplementations
-    from . import PitchUtils
-    from . import PropertyUtils
-    from . import CollectionUtils
-    from . import CompatibilityModule
-    from . import ActionUtils
-    from .i18n import i18n
+from . import midi_data
+from . import NoteFilterImplementations
+from . import PitchUtils
+from . import PropertyUtils
+from . import CollectionUtils
+from . import CompatibilityModule
+from . import ActionUtils
+from .i18n import i18n
 
 import bpy
 from bpy.app import version as blender_version
@@ -183,14 +163,14 @@ note_filter_preset_enums = []
 
 def get_note_filter_preset_enums(note_action_property, context):
     CollectionUtils.populate_collection_id_enum_properties(note_filter_preset_enums,
-                                                           context.scene.midi_copier_data_common.filter_presets,
+                                                           context.scene.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets,
                                                            i18n.get_key(i18n.NO_PRESET_SELECTED))
     return note_filter_preset_enums
 
 
 def on_note_filter_preset_updated(note_action_property, context):
     selected_preset = CollectionUtils.get_selected_object(note_action_property.selected_note_filter_preset,
-                                                          context.scene.midi_copier_data_common.filter_presets)
+                                                          context.scene.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets)
     if selected_preset is not None:
         PropertyUtils.copy_filters(selected_preset.note_filter_groups, note_action_property.note_filter_groups)
 
@@ -420,7 +400,7 @@ def on_track_updated(midi_property_group, context):
     loaded_midi_data = midi_data.get_midi_data(midi_property_group.data_type)
     notes_list = loaded_midi_data.get_notes_list(context)
     if len(notes_list) > 0:
-        midi_property_group.notes_list = loaded_midi_data.get_notes_list(context)[0][0]
+        midi_property_group.selected_note = loaded_midi_data.get_notes_list(context)[0][0]
 
 
 def on_middle_c_updated(midi_property_group, context):
@@ -435,8 +415,8 @@ def update_notes_list(midi_property_group, context):
     if get_notes_for_copy_panel(midi_property_group, context):
         # update the note for copying to an instrument in the quick copy tools panel to match
         midi_property_group.copy_to_instrument_selected_note_id = str(PitchUtils.note_pitch_from_id(
-            midi_property_group.notes_list))
-    PropertyUtils.note_updated_function("notes_list", "note_search_string", get_notes_list)(midi_property_group,
+            midi_property_group.selected_note))
+    PropertyUtils.note_updated_function("selected_note", "note_search_string", get_notes_list)(midi_property_group,
                                                                                             context)
 
 
@@ -545,12 +525,11 @@ class MidiPropertyBase:
     # defining get= (and not set=) disables editing in the UI
     midi_file: StringProperty(name=i18n.get_key(i18n.MIDI_FILE), description=i18n.get_key(i18n.SELECTED_MIDI_FILE),
                               get=get_midi_file_name)
-    # the selected note
-    notes_list: PropertyUtils.note_property(i18n.get_key(i18n.NOTE), i18n.get_key(i18n.NOTE), get_notes_list,
-                                            "notes_list", "note_search_string")
-    note_search_string: PropertyUtils.note_search_property("notes_list", "note_search_string",
+    selected_note: PropertyUtils.note_property(i18n.get_key(i18n.NOTE), i18n.get_key(i18n.NOTE), get_notes_list,
+                                            "selected_note", "note_search_string")
+    note_search_string: PropertyUtils.note_search_property("selected_note", "note_search_string",
                                                            get_notes_list)
-    track_list: EnumProperty(items=get_tracks_list,
+    selected_track: EnumProperty(items=get_tracks_list,
                              name=i18n.get_key(i18n.TRACK),
                              description=i18n.get_key(i18n.SELECTED_MIDI_TRACK),
                              update=on_track_updated)
@@ -650,7 +629,7 @@ class OtherToolsPropertyGroup(PropertyGroup):
 class MidiPropertyGroup(MidiPropertyBase, PropertyGroup):
     data_type = MidiDataType.NLA
     # overwrite property from parent class MidiPropertyBase in order to override update function
-    notes_list: EnumProperty(items=get_notes_list,
+    selected_note: EnumProperty(items=get_notes_list,
                              name=i18n.get_key(i18n.NOTE),
                              description=i18n.get_key(i18n.NOTE),
                              update=update_notes_list)
@@ -690,4 +669,7 @@ class MidiCopierVersion(PropertyGroup):
 
 
 class MidiDataCommon(PropertyGroup):
+    """
+    Property group that is used across multiple editors (NLA, Graph Editor, Grease Pencil) 
+    """
     filter_presets: CollectionProperty(type=NoteFilterPreset)

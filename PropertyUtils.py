@@ -1,12 +1,4 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-else:
-    from .i18n import i18n
-
-import bpy
+from .i18n import i18n
 from bpy.props import StringProperty, EnumProperty
 from bpy.app import version as blender_version
 from typing import Any

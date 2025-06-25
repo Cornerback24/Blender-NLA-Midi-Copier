@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "nla_midi_copier"
-version = "0.20.0"
+version = "1.0.0"
 name = "NLA Midi Copier"
 tagline = "NLA and Graph Editor tools for syncing animation to midi files"
 maintainer = "Cornerback24"
@@ -12,7 +12,7 @@ license = [
     "SPDX:GPL-3.0-or-later",
 ]
 [permissions]
-files = "Read midi files form disk"
+files = "Read midi files from disk"
 [build]
 paths_exclude_pattern = [
     "__pycache__/",

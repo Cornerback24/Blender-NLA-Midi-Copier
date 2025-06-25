@@ -1,6 +1,3 @@
-import bpy
-
-
 def interpolation_has_easing(interpolation: str):
     return interpolation not in ("CONSTANT", "LINEAR", "BEZIER")
 

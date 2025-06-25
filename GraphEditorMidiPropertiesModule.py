@@ -1,26 +1,11 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(midi_data)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    # importlib.reload(MidiPropertiesModule) TODO something about this is causing script reload to fail
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NoteFilterImplementations)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PropertyUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-else:
-    from . import midi_data
-    from . import MidiPropertiesModule
-    from . import NoteFilterImplementations
-    from . import PropertyUtils
-    from .i18n import i18n
+from . import midi_data
+from . import MidiPropertiesModule
+from . import PropertyUtils
+from .i18n import i18n
 
 import bpy
 from bpy.app import version as blender_version
-from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
+from bpy.props import BoolProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
     FloatProperty
 from bpy.types import PropertyGroup
 from .midi_data import MidiDataType

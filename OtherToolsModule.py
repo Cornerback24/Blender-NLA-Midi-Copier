@@ -1,16 +1,6 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(OperatorUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(ActionUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-else:
-    from . import OperatorUtils
-    from . import ActionUtils
-    from .i18n import i18n
+from . import OperatorUtils
+from . import ActionUtils
+from .i18n import i18n
 
 import bpy
 import re
@@ -27,10 +17,6 @@ class NLA_MIDI_COPIER_OT_generate_transitions_operator(bpy.types.Operator, Opera
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        self.action_common(context)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
         self.action_common(context)
         return {'FINISHED'}
 
@@ -62,7 +48,7 @@ class NLA_MIDI_COPIER_OT_generate_transitions_operator(bpy.types.Operator, Opera
         active_nla_track_strips, selected_strip_groups = (
             NLA_MIDI_COPIER_OT_generate_transitions_operator.selected_nla_strip_groups(
             context))
-        other_tool_property = context.scene.midi_data_property.other_tool_property
+        other_tool_property = context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.other_tool_property
         if other_tool_property.replace_transition_strips:
             NLA_MIDI_COPIER_OT_generate_transitions_operator.delete_transition_strips(active_nla_track_strips,
                                                                                       selected_strip_groups)
@@ -93,10 +79,6 @@ class NLA_MIDI_COPIER_OT_delete_transitions_operator(bpy.types.Operator, Operato
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        self.action_common(context)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
         self.action_common(context)
         return {'FINISHED'}
 

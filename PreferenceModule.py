@@ -1,10 +1,4 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-else:
-    from .i18n import i18n
+from .i18n import i18n
 
 import bpy
 

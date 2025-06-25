@@ -1,19 +1,6 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PropertyUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PitchUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NoteCollectionUtils)
-else:
-    from . import PropertyUtils
-    from . import PitchUtils
-    from . import NoteCollectionUtils
-    from .i18n import i18n
+from . import PropertyUtils
+from . import PitchUtils
+from .i18n import i18n
 
 import bpy
 from abc import abstractmethod, ABC

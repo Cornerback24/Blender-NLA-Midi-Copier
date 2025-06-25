@@ -1,6 +1,5 @@
 from typing import Optional, List, Tuple, Callable, Any
 
-import bpy
 from .midi_analysis.Note import Note
 
 

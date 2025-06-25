@@ -1,22 +1,8 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(midi_data)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PropertyUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PitchUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(CollectionUtils)
-else:
-    from . import midi_data
-    from . import PropertyUtils
-    from . import PitchUtils
-    from . import CollectionUtils
-    from .i18n import i18n
+from . import midi_data
+from . import PropertyUtils
+from . import PitchUtils
+from . import CollectionUtils
+from .i18n import i18n
 
 import bpy
 from .midi_data import MidiDataType
@@ -32,13 +18,9 @@ class NLA_MIDI_COPIER_OT_add_instrument(bpy.types.Operator):
         self.action_common(context)
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        self.action_common(context)
-        return {'FINISHED'}
-
     def action_common(self, context):
-        CollectionUtils.add_to_collection(context.scene.midi_data_property.instruments, i18n.get_text(i18n.INSTRUMENT),
-                                          context.scene.midi_data_property, "selected_instrument_id")
+        CollectionUtils.add_to_collection(context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.instruments, i18n.get_text(i18n.INSTRUMENT),
+                                          context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property, "selected_instrument_id")
 
 
 class NLA_MIDI_COPIER_OT_delete_instrument(bpy.types.Operator):
@@ -51,17 +33,13 @@ class NLA_MIDI_COPIER_OT_delete_instrument(bpy.types.Operator):
         self.action_common(context)
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        self.action_common(context)
-        return {'FINISHED'}
-
     @classmethod
     def poll(cls, context):
         return midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context) is not None
 
     def action_common(self, context):
         CollectionUtils.remove_from_collection(
-            context.scene.midi_data_property.instruments, midi_data.get_midi_data_property(MidiDataType.NLA, context),
+            context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.instruments, midi_data.get_midi_data_property(MidiDataType.NLA, context),
             "selected_instrument_id")
 
 
@@ -72,10 +50,6 @@ class NLA_MIDI_COPIER_OT_add_action_to_instrument(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        self.action_common(context)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
         self.action_common(context)
         return {'FINISHED'}
 
@@ -95,10 +69,6 @@ class NLA_MIDI_COPIER_OT_remove_action_from_instrument(bpy.types.Operator):
     action_index: bpy.props.IntProperty(name="Index", options={'HIDDEN'})
 
     def execute(self, context):
-        self.action_common(context)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
         self.action_common(context)
         return {'FINISHED'}
 
@@ -128,10 +98,6 @@ class NLA_MIDI_COPIER_OT_transpose_instrument(bpy.types.Operator):
     transpose_steps: bpy.props.IntProperty(name=i18n.get_key(i18n.TRANSPOSE_STEPS))
 
     def execute(self, context):
-        self.action_common(context)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
         self.action_common(context)
         return {'FINISHED'}
 

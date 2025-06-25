@@ -1,28 +1,9 @@
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NoteFilterImplementations)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NoteFilterModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(OperatorUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(CollectionUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PropertyUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(midi_data)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-else:
-    from . import NoteFilterImplementations
-    from . import NoteFilterModule
-    from . import OperatorUtils
-    from . import CollectionUtils
-    from . import PropertyUtils
-    from . import midi_data
-    from .i18n import i18n
+from . import NoteFilterImplementations
+from . import OperatorUtils
+from . import CollectionUtils
+from . import PropertyUtils
+from . import midi_data
+from .i18n import i18n
 
 import bpy
 from .NoteFilterModule import NLA_MIDI_COPIER_OT_reorder_note_filter, NLA_MIDI_COPIER_OT_remove_note_filter, \
@@ -51,6 +32,7 @@ class MidiFileSelector(bpy.types.Operator):
         return {'FINISHED'}
 
     # noinspection PyUnusedLocal
+    # needed to show file chooser dialog
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
@@ -154,7 +136,7 @@ def draw_filter_box(parent_layout, note_action_property, is_instrument_property,
         set_operator_lookup_properties(add_preset_operator, midi_data_type, is_instrument_property, action_index)
         selected_filter_preset = CollectionUtils.get_selected_object(
             note_action_property.selected_note_filter_preset,
-            context.scene.midi_copier_data_common.filter_presets)
+            context.scene.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets)
         if selected_filter_preset is not None:
             row = presets_box.row()
             row.prop(selected_filter_preset, "name")
@@ -328,8 +310,8 @@ def draw_midi_file_selections(parent_layout, midi_data_property, midi_data_type:
 
     if midi_data_property.midi_file:
         draw_property_on_split_row(parent_layout, midi_data_property, i18n.get_label(i18n.MIDI_FILE), "midi_file")
-        draw_property_on_split_row(parent_layout, midi_data_property, i18n.get_label(i18n.TRACK), "track_list")
-        draw_property_on_split_row(parent_layout, midi_data_property, note_property_text, "notes_list",
+        draw_property_on_split_row(parent_layout, midi_data_property, i18n.get_label(i18n.TRACK), "selected_track")
+        draw_property_on_split_row(parent_layout, midi_data_property, note_property_text, "selected_note",
                                    "note_search_string")
 
 

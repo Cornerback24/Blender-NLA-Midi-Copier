@@ -4,25 +4,10 @@ from .midi_analysis.MidiData import MidiData
 from .midi_analysis.MidiEvents import ControllerEvent
 from .midi_analysis.Util import Util
 
-if "bpy" in locals():
-    import importlib
-
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PitchUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PropertyUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(CollectionUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(i18n)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(CCDataModule)
-else:
-    from .i18n import i18n
-    from . import PitchUtils
-    from . import PropertyUtils
-    from . import CollectionUtils
-    from . import CCDataModule  # needed for reload scripts to work
+from .i18n import i18n
+from . import PitchUtils
+from . import PropertyUtils
+from . import CollectionUtils
 
 import bpy
 
@@ -235,9 +220,9 @@ class LoadedMidiData:
         self.__create_track_list(context, not called_on_script_reload)
         if not called_on_script_reload:
             # call update track list function to update selected note
-            if not (self.get_midi_data_property(context).track_list in [x[0] for x in self.track_list]):
+            if not (self.get_midi_data_property(context).selected_track in [x[0] for x in self.track_list]):
                 if len(self.track_list) > 0:
-                    self.get_midi_data_property(context).track_list = self.track_list[0][0]
+                    self.get_midi_data_property(context).selected_track = self.track_list[0][0]
         self.update_tempo(context)
 
     def update_tempo(self, context):
@@ -323,7 +308,7 @@ class LoadedMidiData:
         """
         :return: list of notes for the current selected track
         """
-        track_id = self.get_midi_data_property(context).track_list
+        track_id = self.get_midi_data_property(context).selected_track
         self.notes_list = self.notes_list_dict.get(track_id, [])
         return self.notes_list
 
@@ -331,7 +316,7 @@ class LoadedMidiData:
         """
         :return: list of defined cc data enum properties for the selected track
         """
-        track_id = self.get_midi_data_property(context).track_list
+        track_id = self.get_midi_data_property(context).selected_track
         self.cc_data_list = self.cc_data_list_dict.get(track_id, [])
         return self.cc_data_list
 
@@ -339,13 +324,13 @@ class LoadedMidiData:
         """
         :return: the name of the selected track
         """
-        return self.get_midi_data_property(context).track_list
+        return self.get_midi_data_property(context).selected_track
 
     def get_note_id(self, context) -> str:
         """
         :return: the name of the selected note (such as "C4")
         """
-        return self.get_midi_data_property(context).notes_list
+        return self.get_midi_data_property(context).selected_note
 
     def selected_note_action_property(self, context):
         return self.get_midi_data_property(context).note_action_property
@@ -510,11 +495,14 @@ class MidiDataType:
         return [MidiDataType.NLA, MidiDataType.DOPESHEET, MidiDataType.GRAPH_EDITOR]
 
 
-nla_midi_data = LoadedMidiData(lambda context: context.scene.midi_data_property, MidiDataType.NLA)
-dope_sheet_midi_data = LoadedMidiData(lambda context: context.scene.dope_sheet_midi_data_property,
-                                      MidiDataType.DOPESHEET)
-graph_editor_midi_data = LoadedMidiData(lambda context: context.scene.graph_editor_midi_data_property,
-                                        MidiDataType.GRAPH_EDITOR)
+nla_midi_data = LoadedMidiData(
+    lambda context: context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property, MidiDataType.NLA)
+dope_sheet_midi_data = LoadedMidiData(
+    lambda context: context.scene.nla_midi_copier_main_property_group.dope_sheet_midi_data_property,
+    MidiDataType.DOPESHEET)
+graph_editor_midi_data = LoadedMidiData(
+    lambda context: context.scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property,
+    MidiDataType.GRAPH_EDITOR)
 
 
 def get_midi_data(midi_data_type: int) -> LoadedMidiData:
