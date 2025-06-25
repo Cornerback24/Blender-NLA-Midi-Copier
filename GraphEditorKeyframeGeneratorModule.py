@@ -50,7 +50,7 @@ class KeyframeData:
     def add_keyframe(self, frame_number: int, keyframe_value: float):
         if frame_number in self.frames_to_keyframes:
             del self.frames_to_keyframes[frame_number]
-        added_keyframe = self.keyframe_points.insert(frame_number, keyframe_value, options={'REPLACE'})
+        added_keyframe = self.keyframe_points.insert(frame_number, keyframe_value, options={'NEEDED'})
         self.frames_to_keyframes[frame_number].append(added_keyframe)
 
 

@@ -2,7 +2,7 @@ bl_info = \
     {
         "name": "Blender NLA Midi Copier",
         "author": "Cornerback24",
-        "version": (0, 19, 1),
+        "version": (0, 19, 2),
         "blender": (2, 80, 0),
         "location": "NLA Editor and Graph Editor Sidebar",
         "description": "Copy actions to action strips and generate graph editor keyframes based on midi file input",
@@ -178,7 +178,20 @@ def on_load(scene):
 
 def updates_from_previous_version(context):
     version_property = context.scene.midi_copier_version
-    current_version = bl_info["version"]
+    bl_info_copy = \
+        {
+            "name": "Blender NLA Midi Copier",
+            "author": "Cornerback24",
+            "version": (0, 19, 2),
+            "blender": (2, 80, 0),
+            "location": "NLA Editor and Graph Editor Sidebar",
+            "description": "Copy actions to action strips and generate graph editor keyframes based on midi file input",
+            "doc_url": "https://github.com/Cornerback24/Blender-NLA-Midi-Copier#blender-nla-midi-copier",
+            "tracker_url": "https://github.com/Cornerback24/Blender-NLA-Midi-Copier/issues",
+            "support": "COMMUNITY",
+            "category": "Animation"
+        }
+    current_version = bl_info_copy["version"]
     CompatibilityModule.run_compatibility_updates(current_version)
     version_property.major = current_version[0]
     version_property.minor = current_version[1]
@@ -188,7 +201,21 @@ def updates_from_previous_version(context):
 # noinspection PyArgumentList
 def register():
     bpy.app.translations.register(__name__, translations)
-    addon_updater_ops.register(bl_info)
+    # For compatibility with Blender 4.2 - 4.4
+    bl_info_copy = \
+        {
+            "name": "Blender NLA Midi Copier",
+            "author": "Cornerback24",
+            "version": (0, 19, 2),
+            "blender": (2, 80, 0),
+            "location": "NLA Editor and Graph Editor Sidebar",
+            "description": "Copy actions to action strips and generate graph editor keyframes based on midi file input",
+            "doc_url": "https://github.com/Cornerback24/Blender-NLA-Midi-Copier#blender-nla-midi-copier",
+            "tracker_url": "https://github.com/Cornerback24/Blender-NLA-Midi-Copier/issues",
+            "support": "COMMUNITY",
+            "category": "Animation"
+        }
+    addon_updater_ops.register(bl_info_copy)
     for clazz in classes:
         bpy.utils.register_class(clazz)
     bpy.types.Scene.midi_data_property = PointerProperty(type=MidiPropertyGroup)
