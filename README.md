@@ -7,7 +7,7 @@ the right-side panel in the Nonlinear Action View and select the Midi tab.
 This add-on also adds a panel in the Graph Editor to generate keyframes on existing F-Curves based on midi file data.
 
 This add-on is written for Blender 4.4 and is compatible back to Blender 4.2.
-Add-on Version 1.0.0. [Changelog here](CHANGELOG.md).
+Add-on Version 1.0.1. [Changelog here](CHANGELOG.md).
 
 
 <details>

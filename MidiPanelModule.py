@@ -39,11 +39,12 @@ class NLA_MIDI_COPIER_PT_midi_panel(bpy.types.Panel):
 
         col = self.layout.column(align=True)
         tooltip_creator = PanelUtils.OperatorTooltipCreator(NLA_MIDI_COPIER_OT_copier)
-        if midi_file is None or len(midi_file) == 0:
+        no_midi_file_selected = midi_file is None or len(midi_file) == 0
+        if no_midi_file_selected:
             tooltip_creator.add_disable_description(i18n.get_text_tip(i18n.NO_MIDI_FILE_SELECTED))
         if note_action_property.action is None:
             tooltip_creator.add_disable_description(i18n.get_key(i18n.NO_ACTION_SELECTED))
-        if not midi_data_property.selected_note:
+        if not no_midi_file_selected and not midi_data_property.selected_note:
             tooltip_creator.add_disable_description(i18n.get_key(i18n.NO_NOTE_SELECTED))
         tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
 

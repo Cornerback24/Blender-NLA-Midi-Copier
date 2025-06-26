@@ -473,7 +473,7 @@ class NLA_MIDI_COPIER_OT_bulk_midi_copier(bpy.types.Operator, OperatorUtils.Dyna
         data_name_pairs = [(x[0], x[1].name) for x in animated_objects_dict.items()]
         note_object_pairs = []
         match_by_track_name = bulk_copy_property.copy_by_name_type == "copy_by_track_and_note"
-        track_name = midi_data_property.selected_track if match_by_track_name else None
+        track_name = midi_data_property.selected_midi_track if match_by_track_name else None
         displayed_track_name = loaded_midi_data.get_displayed_track_name(track_name) if track_name is not None else None
 
         notes_enum_list = loaded_midi_data.notes_list

@@ -310,7 +310,7 @@ def draw_midi_file_selections(parent_layout, midi_data_property, midi_data_type:
 
     if midi_data_property.midi_file:
         draw_property_on_split_row(parent_layout, midi_data_property, i18n.get_label(i18n.MIDI_FILE), "midi_file")
-        draw_property_on_split_row(parent_layout, midi_data_property, i18n.get_label(i18n.TRACK), "selected_track")
+        draw_property_on_split_row(parent_layout, midi_data_property, i18n.get_label(i18n.TRACK), "selected_midi_track")
         draw_property_on_split_row(parent_layout, midi_data_property, note_property_text, "selected_note",
                                    "note_search_string")
 

@@ -1,4 +1,6 @@
-- 1.0.0
+- 1.0.1 2025-6-25
+  * Fix error message caused by attempted track lookup when no midi file is selected
+- 1.0.0 2025-6-24
   * Breaking changes to property names (NLA Midi Copier data from previous add-on versions will not load)
   * Fixed copying keyframes in the graph editor in Blender 4.4
 - 0.20.1 2025-1-7

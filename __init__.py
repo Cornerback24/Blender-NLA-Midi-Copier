@@ -2,41 +2,25 @@ if "bpy" in locals():
     import importlib
 
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(es_strings)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(i18n)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(NLAMidiCopierModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(MidiPanelModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PropertyUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(CollectionUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PitchUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(ObjectUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(NoteFilterImplementations)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(NoteCollectionModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(CCDataModule)
+    importlib.reload(NLAMidiCopierModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(OperatorUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(ActionUtils)
+    importlib.reload(MidiPanelModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(GraphEditorKeyframeGeneratorModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(GraphEditorMidiPanelModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(MidiPropertiesModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(DopeSheetMidiCopierModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(DopeSheetMidiPanelModule)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(MidiPropertiesModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(DopeSheetMidiPropertiesModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
@@ -48,12 +32,34 @@ if "bpy" in locals():
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(midi_data)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(CCDataModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(CompatibilityModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PreferenceModule)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PitchUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(ObjectUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PanelUtils)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(OperatorUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(ActionUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(CollectionUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PropertyUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(OtherToolsModule)
 else:
+    # noinspection PyUnresolvedReferences
+    from . import i18n
+    # noinspection PyUnresolvedReferences
+    from . import NoteFilterImplementations
+    # noinspection PyUnresolvedReferences
+    from . import NoteCollectionModule
     # noinspection PyUnresolvedReferences
     from . import NLAMidiCopierModule
     # noinspection PyUnresolvedReferences
@@ -79,11 +85,25 @@ else:
     # noinspection PyUnresolvedReferences
     from . import midi_data
     # noinspection PyUnresolvedReferences
+    from . import CCDataModule
+    # noinspection PyUnresolvedReferences
     from . import CompatibilityModule
     # noinspection PyUnresolvedReferences
     from . import PreferenceModule
     # noinspection PyUnresolvedReferences
+    from . import PitchUtils
+    # noinspection PyUnresolvedReferences
+    from . import ObjectUtils
+    # noinspection PyUnresolvedReferences
     from . import PanelUtils
+    # noinspection PyUnresolvedReferences
+    from . import OperatorUtils
+    # noinspection PyUnresolvedReferences
+    from . import ActionUtils
+    # noinspection PyUnresolvedReferences
+    from . import CollectionUtils
+    # noinspection PyUnresolvedReferences
+    from . import PropertyUtils
     # noinspection PyUnresolvedReferences
     from . import OtherToolsModule
     # noinspection PyUnresolvedReferences

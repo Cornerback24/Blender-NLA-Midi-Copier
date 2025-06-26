@@ -220,9 +220,9 @@ class LoadedMidiData:
         self.__create_track_list(context, not called_on_script_reload)
         if not called_on_script_reload:
             # call update track list function to update selected note
-            if not (self.get_midi_data_property(context).selected_track in [x[0] for x in self.track_list]):
+            if not (self.get_midi_data_property(context).selected_midi_track in [x[0] for x in self.track_list]):
                 if len(self.track_list) > 0:
-                    self.get_midi_data_property(context).selected_track = self.track_list[0][0]
+                    self.get_midi_data_property(context).selected_midi_track = self.track_list[0][0]
         self.update_tempo(context)
 
     def update_tempo(self, context):
@@ -308,7 +308,7 @@ class LoadedMidiData:
         """
         :return: list of notes for the current selected track
         """
-        track_id = self.get_midi_data_property(context).selected_track
+        track_id = self.get_midi_data_property(context).selected_midi_track
         self.notes_list = self.notes_list_dict.get(track_id, [])
         return self.notes_list
 
@@ -316,7 +316,7 @@ class LoadedMidiData:
         """
         :return: list of defined cc data enum properties for the selected track
         """
-        track_id = self.get_midi_data_property(context).selected_track
+        track_id = self.get_midi_data_property(context).selected_midi_track
         self.cc_data_list = self.cc_data_list_dict.get(track_id, [])
         return self.cc_data_list
 
@@ -324,7 +324,7 @@ class LoadedMidiData:
         """
         :return: the name of the selected track
         """
-        return self.get_midi_data_property(context).selected_track
+        return self.get_midi_data_property(context).selected_midi_track
 
     def get_note_id(self, context) -> str:
         """

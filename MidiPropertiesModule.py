@@ -529,7 +529,7 @@ class MidiPropertyBase:
                                             "selected_note", "note_search_string")
     note_search_string: PropertyUtils.note_search_property("selected_note", "note_search_string",
                                                            get_notes_list)
-    selected_track: EnumProperty(items=get_tracks_list,
+    selected_midi_track: EnumProperty(items=get_tracks_list,
                              name=i18n.get_key(i18n.TRACK),
                              description=i18n.get_key(i18n.SELECTED_MIDI_TRACK),
                              update=on_track_updated)
