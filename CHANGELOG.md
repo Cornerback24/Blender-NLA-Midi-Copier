@@ -1,3 +1,5 @@
+- 1.0.2 2025-6-27
+  * Fix typo in NLA Midi Panel
 - 1.0.1 2025-6-25
   * Fix error message caused by attempted track lookup when no midi file is selected
 - 1.0.0 2025-6-24
