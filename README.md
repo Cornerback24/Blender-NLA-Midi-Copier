@@ -6,8 +6,9 @@ for a selected action could be generated to line up with all the C4 notes played
 the right-side panel in the Nonlinear Action View and select the Midi tab.  
 This add-on also adds a panel in the Graph Editor to generate keyframes on existing F-Curves based on midi file data.
 
-This add-on is written for Blender 4.4 and is compatible back to Blender 2.80.
-Add-on Version 0.19.2. [Changelog here](CHANGELOG.md).
+This add-on is written for Blender 4.4 and is compatible back to Blender 2.80. For Blender 4.2 and up it is recommended 
+to install the add-on from the Blender Extensions Platform.
+Add-on Version 0.19.3. [Changelog here](CHANGELOG.md).
 
 
 <details>
@@ -596,6 +597,10 @@ Deletes transitions between selected NLA strips on the active NLA track.
 
 ### Installation:
 
+For Blender 4.2 and up it is recommended to install addon from the Blender Extensions Platform. It can be installed 
+directly from Blender (Edit > Preferences > Get Extensions, and search for NLA Midi Copier).
+
+For Blender 2.80 to 4.1:
 * Installation is the normal installation process for multi-file add-ons.
     * Option 1: [Download as a zip file](https://github.com/Cornerback24/Blender-NLA-Midi-Copier/archive/master.zip). In
       Blender, go to Edit > Preferences > Add-ons, and click Install. Select the zip file and click Install Add-on from

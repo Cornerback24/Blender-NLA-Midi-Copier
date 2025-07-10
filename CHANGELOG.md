@@ -1,4 +1,7 @@
-- 0.19.2 2024-6-25
+- 0.19.3 2025-7-9
+  * Cap Blender Addon Updater max version. (Blender Addon Updater will be removed in version 1.x in favor of the 
+  Blender Extensions platform.)
+- 0.19.2 2025-6-25
   * Compatibility update for Blender 4.4 
 - 0.19.1 2024-9-1
   * Fix tempo changes being applied at incorrect times
