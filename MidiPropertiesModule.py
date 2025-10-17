@@ -163,14 +163,14 @@ note_filter_preset_enums = []
 
 def get_note_filter_preset_enums(note_action_property, context):
     CollectionUtils.populate_collection_id_enum_properties(note_filter_preset_enums,
-                                                           context.scene.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets,
+                                                           context.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets,
                                                            i18n.get_key(i18n.NO_PRESET_SELECTED))
     return note_filter_preset_enums
 
 
 def on_note_filter_preset_updated(note_action_property, context):
     selected_preset = CollectionUtils.get_selected_object(note_action_property.selected_note_filter_preset,
-                                                          context.scene.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets)
+                                                          context.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets)
     if selected_preset is not None:
         PropertyUtils.copy_filters(selected_preset.note_filter_groups, note_action_property.note_filter_groups)
 

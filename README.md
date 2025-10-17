@@ -1,13 +1,15 @@
 # Blender NLA Midi Copier
 
-Blender add-on for creating midi-driven animations from the Nonlinear Animation view. Adds a panel to the Nonlinear
+Blender extension for creating midi-driven animations from the Nonlinear Animation view. Adds a panel to the Nonlinear
 Animation view that allows for copying an action to each instance of a note in a midi file. For example, actions strips
 for a selected action could be generated to line up with all the C4 notes played by a piano. To access the panel, expand
 the right-side panel in the Nonlinear Action View and select the Midi tab.  
-This add-on also adds a panel in the Graph Editor to generate keyframes on existing F-Curves based on midi file data.
+This extension also adds a panel in the Graph Editor to generate keyframes on existing F-Curves based on midi file data.
 
-This add-on is written for Blender 4.4 and is compatible back to Blender 4.2.
-Add-on Version 1.0.2. [Changelog here](CHANGELOG.md).
+This extension is written for Blender 4.5 and is compatible back to Blender 4.2. An add-on version compatible with Blender 
+versions from 2.80 to 4.2 can be found
+[here](https://github.com/Cornerback24/Blender-NLA-Midi-Copier/tree/0_19_x_maintenance?tab=readme-ov-file#blender-nla-midi-copier).
+Extension Version 1.0.3. [Changelog here](CHANGELOG.md).
 
 
 <details>
@@ -528,7 +530,7 @@ Other Tools Panel
 
 ### Other Tools Panel
 
-This panel contains tools that are not necessarily related to Midi. It can be hidden in the add-ons preferences.
+This panel contains tools that are not necessarily related to Midi. It can be hidden in the add-ons's preferences.
 
 <details>
 <summary>
@@ -593,3 +595,10 @@ Deletes transitions between selected NLA strips on the active NLA track.
 
 
 </details>
+
+Installation:
+
+### Installation:
+
+This extension is available on the Blender Extensions Platform. It can be installed 
+directly from Blender (Edit > Preferences > Get Extensions, and search for NLA Midi Copier).

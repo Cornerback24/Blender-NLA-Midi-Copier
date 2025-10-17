@@ -1,3 +1,5 @@
+- 1.0.3 2025-10-16
+  * Fix note filter presets
 - 1.0.2 2025-6-27
   * Fix typo in NLA Midi Panel
 - 1.0.1 2025-6-25

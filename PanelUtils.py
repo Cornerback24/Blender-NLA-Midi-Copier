@@ -136,7 +136,7 @@ def draw_filter_box(parent_layout, note_action_property, is_instrument_property,
         set_operator_lookup_properties(add_preset_operator, midi_data_type, is_instrument_property, action_index)
         selected_filter_preset = CollectionUtils.get_selected_object(
             note_action_property.selected_note_filter_preset,
-            context.scene.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets)
+            context.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets)
         if selected_filter_preset is not None:
             row = presets_box.row()
             row.prop(selected_filter_preset, "name")

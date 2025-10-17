@@ -152,7 +152,7 @@ class NLA_MIDI_COPIER_OT_add_note_filter_preset(bpy.types.Operator):
                                                                     self.properties.action_index,
                                                                     context)
         CollectionUtils.add_to_collection(
-            context.scene.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets, i18n.get_key(i18n.PRESET),
+            context.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets, i18n.get_key(i18n.PRESET),
             note_action_property, "selected_note_filter_preset",
             update_new_object=lambda new_filter: NLA_MIDI_COPIER_OT_add_note_filter_preset.__copy_to_new_filter(
                 note_action_property, new_filter))
@@ -179,7 +179,7 @@ class NLA_MIDI_COPIER_OT_save_note_filter_preset(bpy.types.Operator):
                                                                     context)
         filter_preset = CollectionUtils.get_selected_object(
             note_action_property.selected_note_filter_preset,
-            context.scene.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets)
+            context.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets)
         PropertyUtils.copy_filters(note_action_property.note_filter_groups, filter_preset.note_filter_groups)
 
 
@@ -202,5 +202,5 @@ class NLA_MIDI_COPIER_OT_delete_note_filter_preset(bpy.types.Operator):
                                                                     self.properties.is_part_of_instrument,
                                                                     self.properties.action_index,
                                                                     context)
-        CollectionUtils.remove_from_collection(context.scene.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets,
+        CollectionUtils.remove_from_collection(context.scene.nla_midi_copier_main_property_group.midi_copier_data_common.filter_presets,
                                                note_action_property, "selected_note_filter_preset")
