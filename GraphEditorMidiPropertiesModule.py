@@ -4,7 +4,6 @@ from . import PropertyUtils
 from .i18n import i18n
 
 import bpy
-from bpy.app import version as blender_version
 from bpy.props import BoolProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
     FloatProperty
 from bpy.types import PropertyGroup
@@ -22,11 +21,11 @@ class GraphEditorNoteFilterGroup(PropertyGroup, NoteFilterGroupPropertyBase):
 
 
 def get_all_notes(keyframe_generation_property, context):
-    return midi_data.get_midi_data(MidiDataType.GRAPH_EDITOR).get_all_notes_list()
+    return midi_data.get_midi_data(MidiDataType.GRAPH_EDITOR, context).get_all_notes_list()
 
 
 def get_continuous_controllers(keyframe_generation_property, context):
-    return midi_data.get_midi_data(MidiDataType.GRAPH_EDITOR).get_cc_data_list(context)
+    return midi_data.get_midi_data(MidiDataType.GRAPH_EDITOR, context).get_cc_data_list(context)
 
 
 UNIT_TYPES = \
@@ -45,8 +44,6 @@ UNIT_TYPES = \
         "VELOCITY": ("Velocity", i18n.get_key(i18n.VELOCITY), 8, "min_value_velocity", "max_value_velocity"),
         "VOLUME": ("Volume", i18n.get_key(i18n.VOLUME), 9, "min_value_volume", "max_value_volume")
     }
-if blender_version < (2, 92, 0):  # previous versions do not have this option for float property
-    del UNIT_TYPES['TEMPERATURE']
 
 unit_type_enums = [(key, value[0], value[1], value[2]) for key, value in UNIT_TYPES.items()]
 
@@ -120,9 +117,8 @@ class GraphEditorKeyframeGenerationProperty(PropertyGroup):
     max_value_mass: max_float_property(unit='MASS')
     min_value_power: min_float_property(unit='POWER')
     max_value_power: max_float_property(unit='POWER')
-    if blender_version >= (2, 92, 0):  # previous versions do not have this option for float property
-        min_value_temperature: min_float_property(subtype='TEMPERATURE')
-        max_value_temperature: max_float_property(subtype='TEMPERATURE')
+    min_value_temperature: min_float_property(subtype='TEMPERATURE')
+    max_value_temperature: max_float_property(subtype='TEMPERATURE')
     min_value_velocity: min_float_property(unit='VELOCITY')
     max_value_velocity: max_float_property(unit='VELOCITY')
     min_value_volume: min_float_property(unit='VOLUME')

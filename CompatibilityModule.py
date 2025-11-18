@@ -32,16 +32,18 @@ def should_run_updates(scene):
 
 
 def run_compatibility_updates(current_version):
-    # find the scene with the highest version number, this is the previous addon version
-    previous_version = (0, 0, 0)
     for scene in bpy.data.scenes:
+        previous_version = (0, 0, 0)
         scene_version_property = scene.nla_midi_copier_main_property_group.midi_copier_version
         scene_previous_version = (scene_version_property.major,
                                   scene_version_property.minor, scene_version_property.revision)
         if scene_previous_version > previous_version:
             previous_version = scene_previous_version
-    for scene in bpy.data.scenes:
         if should_run_updates(scene):
             for update in COMPATIBILITY_UPDATES:
                 if previous_version <= update[0] and current_version >= update[1]:
                     update[2](scene)
+
+        scene_version_property.major = current_version[0]
+        scene_version_property.minor = current_version[1]
+        scene_version_property.revision = current_version[2]

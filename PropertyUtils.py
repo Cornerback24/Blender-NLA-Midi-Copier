@@ -1,8 +1,8 @@
 from .i18n import i18n
 from bpy.props import StringProperty, EnumProperty
-from bpy.app import version as blender_version
 from typing import Any
 import math
+from . import midi_data
 
 
 def instrument_selected_note_property(instrument):
@@ -31,7 +31,7 @@ def selected_note_property(loaded_midi_data, is_part_of_instrument, action_index
     return selected_note
 
 
-def get_note_action_property(instrument, note_id: int):
+def get_note_action_property(instrument, note_id: int, context):
     instrument_note_property = next((x for x in instrument.notes if x.note_id == note_id), None)
     if instrument_note_property is None:
         instrument_note_property = instrument.notes.add()
@@ -39,6 +39,8 @@ def get_note_action_property(instrument, note_id: int):
 
     note_action_property = instrument_note_property.actions.add()
     note_action_property.name = i18n.concat(i18n.get_text(i18n.ACTION), str(len(instrument_note_property.actions)))
+    note_action_property.unique_id_integer = midi_data.get_midi_data(
+        midi_data.MidiDataType.NLA, context).next_note_action_property_id()
     return note_action_property
 
 
@@ -204,11 +206,6 @@ def note_search_updated_function(note_attribute, note_search_attribute, get_note
     return lambda data, context: note_search_updated(data, context)
 
 
-def dynamic_enum_default(default: int):
-    # Blender versions before 2.90 don't support defaults on dynamic enums
-    return default if blender_version >= (2, 90, 0) else None
-
-
 def note_property(name: str, description: str, get_notes_list, note_attribute: str, note_search_attribute: str,
                   default_pitch=0):
     """
@@ -221,7 +218,7 @@ def note_property(name: str, description: str, get_notes_list, note_attribute: s
     :return:
     """
     return EnumProperty(items=get_notes_list, name=name, description=description,
-                        default=dynamic_enum_default(default_pitch),
+                        default=default_pitch,
                         update=note_updated_function(note_attribute, note_search_attribute, get_notes_list))
 
 

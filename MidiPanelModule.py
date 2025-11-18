@@ -1,7 +1,6 @@
 from . import PropertyUtils
 from . import PanelUtils
 from . import PitchUtils
-from . import ActionUtils
 from .i18n import i18n
 
 import bpy
@@ -13,8 +12,12 @@ from .MidiInstrumentModule import NLA_MIDI_COPIER_OT_add_instrument, NLA_MIDI_CO
     NLA_MIDI_COPIER_OT_transpose_instrument
 from .OtherToolsModule import NLA_MIDI_COPIER_OT_generate_transitions_operator, \
     NLA_MIDI_COPIER_OT_delete_transitions_operator
+from . import BlenderVersionUtil
 from . import midi_data
 from .midi_data import MidiDataType
+from . import ActionUtils
+
+action_util = ActionUtils.get_action_util_object()
 
 
 class NLA_MIDI_COPIER_PT_midi_panel(bpy.types.Panel):
@@ -64,6 +67,10 @@ class NLA_MIDI_COPIER_PT_midi_panel(bpy.types.Panel):
                                                         i18n.get_label(note_action_property.id_type), is_main_property)
             NLA_MIDI_COPIER_PT_midi_panel.draw_property(col, note_action_property, "action",
                                                         i18n.get_label(i18n.ACTION), is_main_property)
+            # only show action slot selection if there is more than one matching action slot for the id type
+            if BlenderVersionUtil.has_slotted_actions() and len(
+                    midi_data.get_midi_data(MidiDataType.NLA, context).matching_action_slots(note_action_property)) > 1:
+                PanelUtils.indented_row(col).prop(note_action_property, "action_slot_name")
 
         parent_layout.separator()
 
@@ -115,9 +122,10 @@ class NLA_MIDI_COPIER_PT_midi_instrument_panel(bpy.types.Panel):
 
     def draw(self, context):
         col = self.layout.column(align=True)
-        col.prop(context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property, "selected_instrument_id")
+        col.prop(context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property,
+                 "selected_instrument_id")
 
-        selected_instrument = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context)
+        selected_instrument = midi_data.get_midi_data(MidiDataType.NLA, context).selected_instrument(context)
         if selected_instrument is not None:
             self.draw_instrument_properties(selected_instrument)
             self.draw_instrument_notes(selected_instrument, context)
@@ -416,7 +424,7 @@ class NLA_MIDI_COPIER_PT_other_tools_panel(bpy.types.Panel):
         other_tool_property = midi_data_property.other_tool_property
         keframe_properties = other_tool_property.keyframe_properties
         col.prop(keframe_properties, "interpolation")
-        if ActionUtils.interpolation_has_easing(keframe_properties.interpolation):
+        if action_util.interpolation_has_easing(keframe_properties.interpolation):
             col.prop(keframe_properties, "easing")
         col.prop(other_tool_property, "limit_transition_length")
         if other_tool_property.limit_transition_length:

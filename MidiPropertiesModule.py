@@ -3,48 +3,51 @@ from . import NoteFilterImplementations
 from . import PitchUtils
 from . import PropertyUtils
 from . import CollectionUtils
-from . import CompatibilityModule
 from . import ActionUtils
 from .i18n import i18n
 
 import bpy
-from bpy.app import version as blender_version
 from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, PointerProperty, CollectionProperty, \
     FloatProperty
 from bpy.types import PropertyGroup
 from .midi_data import MidiDataType, LoadedMidiData
 
+action_util = ActionUtils.get_action_util_object()
+
 
 def get_all_notes_for_pitch_filter(note_filter_property, context):
-    return midi_data.get_midi_data(note_filter_property.data_type).get_all_notes_for_pitch_filter(context)
+    return midi_data.get_midi_data(note_filter_property.data_type, context).get_all_notes_for_pitch_filter(context)
 
 
 def get_tracks_list(midi_property_group, context):
-    return midi_data.get_midi_data(midi_property_group.data_type).get_tracks_list(midi_property_group, context)
+    return midi_data.get_midi_data(midi_property_group.data_type, context).get_tracks_list(midi_property_group, context)
 
 
 def get_notes_list(midi_property_group, context):
-    return midi_data.get_midi_data(midi_property_group.data_type).get_notes_list(context)
+    return midi_data.get_midi_data(midi_property_group.data_type, context).get_notes_list(context)
 
 
 def action_poll(note_action_property, action):
     id_root = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][1]
-    return action.id_root == id_root or (
-            action.id_root == "NODETREE" and id_root in midi_data.node_tree_types)
+    return action_util.action_valid_for_id_type(id_root, action)
+
+
+def get_action_slots(note_action_property, context):
+    return midi_data.get_midi_data(MidiDataType.NLA, context).get_slot_enums_for_action(note_action_property)
 
 
 def get_instruments(midi_data_property, context):
-    return midi_data.get_midi_data(MidiDataType.NLA).get_instruments(midi_data_property, context)
+    return midi_data.get_midi_data(MidiDataType.NLA, context).get_instruments(midi_data_property, context)
 
 
 def get_instrument_notes(instrument_property, context):
-    return midi_data.get_midi_data(MidiDataType.NLA).get_instrument_notes(instrument_property,
-                                                                          LoadedMidiData.store_notes_list_one)
+    return midi_data.get_midi_data(MidiDataType.NLA, context).get_instrument_notes(instrument_property,
+                                                                                   LoadedMidiData.store_notes_list_one)
 
 
 def get_bulk_copy_starting_note(bulk_copy_property, context):
     # enum property for the starting note for bulk copy
-    return midi_data.get_midi_data(MidiDataType.NLA).get_all_notes_list()
+    return midi_data.get_midi_data(MidiDataType.NLA, context).get_all_notes_list()
 
 
 def get_notes_for_copy_panel(midi_data_property, context):
@@ -52,12 +55,12 @@ def get_notes_for_copy_panel(midi_data_property, context):
     :return: the notes for the selected instrument in the Copy panel, or all notes if copy to instrument is not selected
     """
     if midi_data_property.bulk_copy_property.copy_to_instrument:
-        loaded_midi_data = midi_data.get_midi_data(MidiDataType.NLA)
+        loaded_midi_data = midi_data.get_midi_data(MidiDataType.NLA, context)
         return loaded_midi_data.get_instrument_notes(
             loaded_midi_data.selected_instrument_for_copy_to_id(context),
             LoadedMidiData.store_notes_list_two)
     else:
-        return midi_data.get_midi_data(MidiDataType.NLA).get_all_notes_list()
+        return midi_data.get_midi_data(MidiDataType.NLA, context).get_all_notes_list()
 
 
 def on_id_type_updated(note_action_property, context):
@@ -78,7 +81,7 @@ def on_action_updated(note_action_property, context):
     action = note_action_property.action
     # update the action length property to match the actual length of the action
     if action is not None:
-        note_action_property.action_length = int(ActionUtils.action_length(action))
+        note_action_property.action_length = int(action_util.action_length(action))
 
 
 COMPARISON_ENUM_PROPERTY_ITEMS = [("less_than", "<", i18n.get_key(i18n.LESS_THAN), 0),
@@ -212,11 +215,6 @@ def get_overlap_options(note_action_property, context):
         note_action_property.id_type) else OVERLAP_OPTIONS_WITHOUT_DUPLICATE
 
 
-def get_blend_modes(note_action_property, context):
-    return midi_data.BLEND_MODES if CompatibilityModule.compatibility_updates_complete \
-        else midi_data.BLEND_MODES_DEPRECATED
-
-
 SYNC_LENGTH_ACTION_TIMING_MODES = \
     [("scale_action_length", i18n.get_key(i18n.SCALE_ACTION_LENGTH), i18n.get_key(i18n.SCALE_ACTION_LENGTH), 0),
      ("repeat_action", i18n.get_key(i18n.REPEAT), i18n.get_key(i18n.REPEAT_ACTION_LENGTH_DESCRIPTION), 1)]
@@ -236,6 +234,9 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
                             description=i18n.get_key(i18n.ACTION_DESCRIPTION),
                             poll=action_poll, update=on_action_updated)
 
+    action_slot_name: EnumProperty(items=get_action_slots, name=i18n.get_key(i18n.SLOT),
+                                   description=i18n.get_key(i18n.ACTION_SLOT))
+
     nla_track_name: \
         StringProperty(name=i18n.get_key(i18n.NLA_TRACK),
                        description=i18n.get_key(i18n.NLA_TRACK_DESCRIPTION))
@@ -248,12 +249,12 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
 
     on_overlap: EnumProperty(items=get_overlap_options, name=i18n.get_key(i18n.OVERLAP),
                              description=i18n.get_key(i18n.HOW_TO_HANDLE_OVERLAPPING_ACTIONS),
-                             default=PropertyUtils.dynamic_enum_default(1))  # default to Blend
+                             default=1)  # default to Blend
 
     blend_mode: \
-        EnumProperty(items=get_blend_modes, name=i18n.get_key(i18n.BLENDING),
+        EnumProperty(items=midi_data.BLEND_MODES, name=i18n.get_key(i18n.BLENDING),
                      description=i18n.get_key(i18n.BLENDING_FOR_OVERLAPPING_STRIPS),
-                     default=PropertyUtils.dynamic_enum_default(1))  # default to Replace
+                     default=1)  # default to Replace
 
     sync_length_with_notes: \
         BoolProperty(name=i18n.get_key(i18n.SYNC_LENGTH_WITH_NOTES),
@@ -333,11 +334,14 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
                           description=i18n.get_key(i18n.TEXT_TO_ANIMATE))
     texture: PointerProperty(type=bpy.types.Texture, name=i18n.get_key(i18n.TEXTURE),
                              description=i18n.get_key(i18n.TEXTURE_TO_ANIMATE))
-    if blender_version >= (2, 83, 0):
-        volume: PointerProperty(type=bpy.types.Volume, name=i18n.get_key(i18n.VOLUME),
-                                description=i18n.get_key(i18n.VOLUME_TO_ANIMATE))
+    volume: PointerProperty(type=bpy.types.Volume, name=i18n.get_key(i18n.VOLUME),
+                            description=i18n.get_key(i18n.VOLUME_TO_ANIMATE))
     world: PointerProperty(type=bpy.types.World, name=i18n.get_key(i18n.WORLD),
                            description=i18n.get_key(i18n.WORLD_TO_ANIMATE))
+
+    # Property only for internal use. Used to help manage references to the lists for action slots, since the api says
+    # Python must keep a reference to the strings returned by the callback
+    unique_id_integer: IntProperty()
 
 
 class InstrumentNoteProperty(PropertyGroup):
@@ -397,18 +401,18 @@ middle_c_options = [("C3", "C3", "C3", 0), ("C4", "C4", "C4", 1), ("C5", "C5", "
 
 def on_track_updated(midi_property_group, context):
     # select the first note in the track
-    loaded_midi_data = midi_data.get_midi_data(midi_property_group.data_type)
+    loaded_midi_data = midi_data.get_midi_data(midi_property_group.data_type, context)
     notes_list = loaded_midi_data.get_notes_list(context)
     if len(notes_list) > 0:
         midi_property_group.selected_note = loaded_midi_data.get_notes_list(context)[0][0]
 
 
 def on_middle_c_updated(midi_property_group, context):
-    midi_data.get_midi_data(midi_property_group.data_type).middle_c_id = midi_property_group.middle_c_note
+    midi_data.get_midi_data(midi_property_group.data_type, context).middle_c_id = midi_property_group.middle_c_note
 
 
 def on_track_name_updated(track_property_group, context):
-    midi_data.get_midi_data(track_property_group.midi_data_type).update_track_names(context)
+    midi_data.get_midi_data(track_property_group.midi_data_type, context).update_track_names(context)
 
 
 def update_notes_list(midi_property_group, context):
@@ -417,7 +421,7 @@ def update_notes_list(midi_property_group, context):
         midi_property_group.copy_to_instrument_selected_note_id = str(PitchUtils.note_pitch_from_id(
             midi_property_group.selected_note))
     PropertyUtils.note_updated_function("selected_note", "note_search_string", get_notes_list)(midi_property_group,
-                                                                                            context)
+                                                                                               context)
 
 
 def object_is_curve(bulk_copy_property_group, bpy_object):
@@ -484,7 +488,7 @@ def get_midi_file_ticks_per_beat(tempo_property):
 
 
 def on_tempo_property_update(tempo_property, context):
-    midi_data.get_midi_data(tempo_property.data_type).update_tempo(context)
+    midi_data.get_midi_data(tempo_property.data_type, context).update_tempo(context=context)
 
 
 class TempoPropertyBase:
@@ -526,13 +530,13 @@ class MidiPropertyBase:
     midi_file: StringProperty(name=i18n.get_key(i18n.MIDI_FILE), description=i18n.get_key(i18n.SELECTED_MIDI_FILE),
                               get=get_midi_file_name)
     selected_note: PropertyUtils.note_property(i18n.get_key(i18n.NOTE), i18n.get_key(i18n.NOTE), get_notes_list,
-                                            "selected_note", "note_search_string")
+                                               "selected_note", "note_search_string")
     note_search_string: PropertyUtils.note_search_property("selected_note", "note_search_string",
                                                            get_notes_list)
     selected_midi_track: EnumProperty(items=get_tracks_list,
-                             name=i18n.get_key(i18n.TRACK),
-                             description=i18n.get_key(i18n.SELECTED_MIDI_TRACK),
-                             update=on_track_updated)
+                                      name=i18n.get_key(i18n.TRACK),
+                                      description=i18n.get_key(i18n.SELECTED_MIDI_TRACK),
+                                      update=on_track_updated)
     note_action_property: PointerProperty(type=NoteActionProperty)
     midi_frame_start: \
         IntProperty(name=i18n.get_key(i18n.FIRST_FRAME),
@@ -630,9 +634,9 @@ class MidiPropertyGroup(MidiPropertyBase, PropertyGroup):
     data_type = MidiDataType.NLA
     # overwrite property from parent class MidiPropertyBase in order to override update function
     selected_note: EnumProperty(items=get_notes_list,
-                             name=i18n.get_key(i18n.NOTE),
-                             description=i18n.get_key(i18n.NOTE),
-                             update=update_notes_list)
+                                name=i18n.get_key(i18n.NOTE),
+                                description=i18n.get_key(i18n.NOTE),
+                                update=update_notes_list)
     note_action_property: PointerProperty(type=NoteActionProperty)
 
     instruments: CollectionProperty(type=InstrumentProperty, name=i18n.get_key(i18n.INSTRUMENTS))

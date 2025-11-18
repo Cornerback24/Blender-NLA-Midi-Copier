@@ -1,3 +1,8 @@
+- 1.1.0 2025-11-17
+  * Add compatibility for Blender 5.0
+  * Add action slot selection for actions with multiple slots
+  * Fix scenes not having separate midi backing data
+  * Fix too many notes being skipped when Skip overlaps is selected 
 - 1.0.3 2025-10-16
   * Fix note filter presets
 - 1.0.2 2025-6-27

@@ -13,7 +13,7 @@ import bpy
 
 from .CCDataModule import CCData
 
-# key is display name, value is (NoteActionProperty field name, Action id_root, enum number)
+# key is display name, value is (NoteActionProperty field name, Action id_root, icon, enum number)
 ID_PROPERTIES_DICTIONARY = {"Armature": ("armature", "ARMATURE", "ARMATURE_DATA", 0),
                             "Brush": ("brush", "BRUSH", "BRUSH_DATA", 18),
                             # "Action": ("action", "ACTION),
@@ -89,19 +89,12 @@ def path_is_relative(path: str):
     return path.startswith("//")
 
 
-# node trees don't show up in the selector,
-# so applying an action is done by selecting the object the node tree belongs to
-node_tree_types = "MATERIAL, TEXTURE, WORLD, SCENE, LIGHT"
-
 # "None" is deprecated, replaced with Skip overlap option
-BLEND_MODES_DEPRECATED = [("None", "None (skip overlaps)", "No blending. Overlapping strips are not copied", 0),
-                          ("REPLACE", i18n.get_key(i18n.REPLACE), i18n.get_key(i18n.REPLACE), 1),
-                          ("COMBINE", i18n.get_key(i18n.COMBINE), i18n.get_key(i18n.COMBINE), 2),
-                          ("ADD", i18n.get_key(i18n.ADD), i18n.get_key(i18n.ADD), 3),
-                          ("SUBTRACT", i18n.get_key(i18n.SUBTRACT), i18n.get_key(i18n.SUBTRACT), 4),
-                          ("MULTIPLY", i18n.get_key(i18n.MULTIPLY), i18n.get_key(i18n.MULTIPLY), 5)]
-
-BLEND_MODES = [x for x in BLEND_MODES_DEPRECATED if x[0] != "None"]
+BLEND_MODES = [("REPLACE", i18n.get_key(i18n.REPLACE), i18n.get_key(i18n.REPLACE), 1),
+               ("COMBINE", i18n.get_key(i18n.COMBINE), i18n.get_key(i18n.COMBINE), 2),
+               ("ADD", i18n.get_key(i18n.ADD), i18n.get_key(i18n.ADD), 3),
+               ("SUBTRACT", i18n.get_key(i18n.SUBTRACT), i18n.get_key(i18n.SUBTRACT), 4),
+               ("MULTIPLY", i18n.get_key(i18n.MULTIPLY), i18n.get_key(i18n.MULTIPLY), 5)]
 
 
 class MidiDataUtil:
@@ -148,7 +141,7 @@ class MidiDataUtil:
 
 
 class LoadedMidiData:
-    def __init__(self, get_midi_data_property, midi_data_type: int):
+    def __init__(self, get_midi_data_property_from_scene, midi_data_type: int):
         """
         :param get_midi_data_property: function to get this property from the context
         """
@@ -167,6 +160,9 @@ class LoadedMidiData:
         self.instrument_notes_list2 = []  # list of notes for the selected instruments, used for copy to instrument
         # action
         self.instrument_note_actions_list = []  # list of actions for the selected note of the selected instrument
+        # id zero is for the main action in the midi panel (not on an instrument)
+        self.note_action_property_id_counter = 1  # used to create a unique id for each note action property
+        self.action_slots_dict = {}  # key is note action unique id integer, value is list of action slot names
         self.all_notes_list = []  # list of all notes (midi pitches 0 to 127)
         self.notes_list_dict = {}  # key is track id String, value is list of note properties (where enum property id
         # is note id)
@@ -178,17 +174,27 @@ class LoadedMidiData:
         # last
         self.middle_c_on_last_all_notes_update = None  # value of the middle_c_id property when the list of all notes
         # updated last
-        self.get_midi_data_property = get_midi_data_property
+        self.get_midi_data_property_from_scene = get_midi_data_property_from_scene
         self.ms_per_tick = None  # ms per tick, used if not using file tempo
         self.use_file_tempo = True  # whether to use the file tempo or the tempo property
 
-    def update_midi_file(self, midi_filename: Optional[str], force_update: bool, context,
+    def get_midi_data_property(self, context=None, scene=None):
+        """
+        :param context: context for the midi data property lookup
+        :param scene: scene for the midi data property lookup, only used if context is None
+        :return: midi data property
+        """
+        return self.get_midi_data_property_from_scene(
+            context.scene) if context is not None else self.get_midi_data_property_from_scene(scene)
+
+    def update_midi_file(self, midi_filename: Optional[str], force_update: bool, context=None, scene=None,
                          called_on_script_reload: bool = False):
         """
         Updates the current midi file
         :param force_update: if true will reload the midi file even if it has the same name
         :param midi_filename: path to the midi file
-        :param context: the contet
+        :param context: the context to get the scene from (used if no scene provided)
+        :param scene: the scene
         :param called_on_script_reload: If False, update properties such as the file's tempo information to be
         displayed in the midi settings panel. Updating properties is not allowed in the context if this is called
         because of a script reload.
@@ -201,32 +207,33 @@ class LoadedMidiData:
         self.current_midi_filename = midi_filename
         absolute_path = bpy.path.abspath(midi_filename) if path_is_relative(midi_filename) else midi_filename
         self.midi_data = MidiData(absolute_path)
+        midi_data_property = self.get_midi_data_property(context=context, scene=scene)
         if not called_on_script_reload:
             if self.midi_data.is_ticks_per_beat:
                 # need to access properties with dictionary style because they are read-only
-                self.get_midi_data_property(context).tempo_settings["file_beats_per_minute"] = \
+                midi_data_property.tempo_settings["file_beats_per_minute"] = \
                     60000 / self.midi_data.ms_per_beat
-                self.get_midi_data_property(context).tempo_settings[
+                midi_data_property.tempo_settings[
                     "file_ticks_per_beat"] = self.midi_data.ticks_per_beat
             else:
                 # midi file is in frames per second instead of beats per minute
                 # for simplicity, display values in ticks per second using one beat per second
                 # (most midi files will be in beats per minute, not frames per second)
-                self.get_midi_data_property(context).tempo_settings["file_beats_per_minute"] = 60
-                self.get_midi_data_property(context).tempo_settings[
+                midi_data_property.tempo_settings["file_beats_per_minute"] = 60
+                midi_data_property.tempo_settings[
                     "file_ticks_per_beat"] = self.midi_data.ticks_per_second
 
         # reloading track names involves updating properties which is not allowed in context if called on script reload
-        self.__create_track_list(context, not called_on_script_reload)
+        self.__create_track_list(context=context, scene=scene, reload_names_from_file=(not called_on_script_reload))
         if not called_on_script_reload:
             # call update track list function to update selected note
-            if not (self.get_midi_data_property(context).selected_midi_track in [x[0] for x in self.track_list]):
+            if not (midi_data_property.selected_midi_track in [x[0] for x in self.track_list]):
                 if len(self.track_list) > 0:
-                    self.get_midi_data_property(context).selected_midi_track = self.track_list[0][0]
-        self.update_tempo(context)
+                    midi_data_property.selected_midi_track = self.track_list[0][0]
+        self.update_tempo(context=context, scene=scene)
 
-    def update_tempo(self, context):
-        tempo_property = self.get_midi_data_property(context).tempo_settings
+    def update_tempo(self, context=None, scene=None):
+        tempo_property = self.get_midi_data_property(context=context, scene=scene).tempo_settings
         self.use_file_tempo = tempo_property.use_file_tempo
         ticks_per_beat = tempo_property.file_ticks_per_beat if tempo_property.use_file_ticks_per_beat \
             else tempo_property.ticks_per_beat
@@ -234,7 +241,7 @@ class LoadedMidiData:
         if ticks_per_beat > 0 and beats_per_minute > 0:
             self.ms_per_tick = 60000 / (ticks_per_beat * beats_per_minute)
 
-    def __create_track_list(self, context, reload_names_from_file: bool = False):
+    def __create_track_list(self, context=None, scene=None, reload_names_from_file: bool = False):
         def __displayed_track_name(track_name_overrides, name):
             track_name_override = track_name_overrides[name] if name in track_name_overrides else name
             return track_name_override if len(track_name_override.strip()) > 0 else name
@@ -242,7 +249,7 @@ class LoadedMidiData:
         self.notes_list_dict = {}
         tracks = []
         self.track_list = []
-        self.middle_c_on_last_tracks_update = self.get_middle_c_id(context)
+        self.middle_c_on_last_tracks_update = self.get_middle_c_id(context=context, scene=scene)
         for track in self.midi_data.tracks:
             if len(track.notes) > 0:
                 track_name = MidiDataUtil.get_unique_name(track.name, tracks)
@@ -262,7 +269,7 @@ class LoadedMidiData:
                 tracks.append(track_name)
                 self.tracks_dict[track_name] = track
         tracks.sort()
-        displayed_track_names = self.get_midi_data_property(context).midi_track_properties
+        displayed_track_names = self.get_midi_data_property(context=context, scene=scene).midi_track_properties
         existing_track_name_overrides = {x.midi_track_name: x.displayed_track_name for x in
                                          displayed_track_names}
 
@@ -294,15 +301,16 @@ class LoadedMidiData:
         if self.midi_data is None:
             # if midi_data is None here, it is probably because scripts were reloaded in blender
             # (on_load is not called in that case, so need to read in the midi file here)
-            self.update_midi_file(self.get_midi_data_property(context).midi_file, False, context, True)
-            self.__create_track_list(context)
+            self.update_midi_file(self.get_midi_data_property(context).midi_file, False, context=context,
+                                  called_on_script_reload=True)
+            self.__create_track_list(context=context)
         elif self.middle_c_on_last_tracks_update != self.get_middle_c_id(context):
             # middle c changed, update display
-            self.__create_track_list(context)
+            self.__create_track_list(context=context)
         return self.track_list
 
     def update_track_names(self, context):
-        self.__create_track_list(context)
+        self.__create_track_list(context=context)
 
     def get_notes_list(self, context):
         """
@@ -460,9 +468,14 @@ class LoadedMidiData:
                                                     i18n.get_key(i18n.SELECTED_NOTE_FILTER_ENUM_DESCRIPTION)))
         return self.all_notes_for_pitch_filter
 
-    def get_middle_c_id(self, context):
+    def get_middle_c_id(self, context=None, scene=None):
+        """
+        :param context: context to get the midi data property from
+        :param scene: scene to get the midi data property from, only used if context is None
+        :return: middle c note id
+        """
         if self.middle_c_id is None:
-            self.middle_c_id = self.get_midi_data_property(context).middle_c_note
+            self.middle_c_id = self.get_midi_data_property(context=context, scene=scene).middle_c_note
         return self.middle_c_id
 
     def selected_instrument(self, context):
@@ -482,6 +495,42 @@ class LoadedMidiData:
             self.get_midi_data_property(context).copy_to_instrument_selected_instrument,
             self.get_midi_data_property(context).instruments)
 
+    def remove_action_slots_list_for_note_action_property(self, note_action_property):
+        self.action_slots_dict.pop(note_action_property.unique_id_integer, None)
+
+    def set_note_action_property_ids(self, scene):
+        """
+        Gives each note action property a unique id so that it can be referenced
+        when storing the list of action slots for the dynamic action slot enum
+
+        :param scene: scene to update
+        """
+        midi_data_property = self.get_midi_data_property_from_scene(scene)
+        midi_data_property.note_action_property.unique_id_integer = 0
+        for instrument in midi_data_property.instruments:
+            for instrument_note in instrument.notes:
+                for note_action_property in instrument_note.actions:
+                    note_action_property.unique_id_integer = self.next_note_action_property_id()
+
+    def next_note_action_property_id(self):
+        self.note_action_property_id_counter += 1
+        return self.note_action_property_id_counter - 1
+
+    def matching_action_slots(self, note_action_property):
+        slot_id_type = ID_PROPERTIES_DICTIONARY[note_action_property.id_type][1]
+        action = note_action_property.action
+        if action is not None:
+            return [slot for slot in action.slots if slot.target_id_type == slot_id_type]
+        else:
+            return []
+
+    def get_slot_enums_for_action(self, note_action_property):
+        slot_enums = [(slot.name_display, slot.name_display, slot.name_display) for slot in
+                      self.matching_action_slots(note_action_property)]
+        # keep a reference to list dynamic enum to prevent crashing
+        self.action_slots_dict[note_action_property.unique_id_integer] = slot_enums
+        return slot_enums
+
 
 # Effectively an Enum. Doesn't extend Enum because if scripts are reloaded,
 # existing values would not match the reloaded class.
@@ -495,24 +544,33 @@ class MidiDataType:
         return [MidiDataType.NLA, MidiDataType.DOPESHEET, MidiDataType.GRAPH_EDITOR]
 
 
-nla_midi_data = LoadedMidiData(
-    lambda context: context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property, MidiDataType.NLA)
-dope_sheet_midi_data = LoadedMidiData(
-    lambda context: context.scene.nla_midi_copier_main_property_group.dope_sheet_midi_data_property,
-    MidiDataType.DOPESHEET)
-graph_editor_midi_data = LoadedMidiData(
-    lambda context: context.scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property,
-    MidiDataType.GRAPH_EDITOR)
+# map of maps: {scene id: {midi data type: midi data}}
+loaded_midi_data_by_scene_id = {}
 
 
-def get_midi_data(midi_data_type: int) -> LoadedMidiData:
+def create_loaded_midi_data(midi_data_type: int):
     if midi_data_type == MidiDataType.NLA:
-        return nla_midi_data
+        return LoadedMidiData(
+            lambda scene: scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property,
+            MidiDataType.NLA)
     elif midi_data_type == MidiDataType.DOPESHEET:
-        return dope_sheet_midi_data
+        return LoadedMidiData(
+            lambda scene: scene.nla_midi_copier_main_property_group.dope_sheet_midi_data_property,
+            MidiDataType.DOPESHEET)
     elif midi_data_type == MidiDataType.GRAPH_EDITOR:
-        return graph_editor_midi_data
+        return LoadedMidiData(
+            lambda scene: scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property,
+            MidiDataType.GRAPH_EDITOR)
+
+
+def get_midi_data_for_scene(midi_data_type: int, scene) -> LoadedMidiData:
+    return (loaded_midi_data_by_scene_id.setdefault(scene.session_uid, {})
+            .setdefault(midi_data_type, create_loaded_midi_data(midi_data_type)))
+
+
+def get_midi_data(midi_data_type: int, context) -> LoadedMidiData:
+    return get_midi_data_for_scene(midi_data_type, context.scene)
 
 
 def get_midi_data_property(midi_data_type: int, context):
-    return get_midi_data(midi_data_type).get_midi_data_property(context)
+    return get_midi_data(midi_data_type, context).get_midi_data_property(context)

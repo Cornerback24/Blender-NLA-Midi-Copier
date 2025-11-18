@@ -2,9 +2,9 @@ from . import midi_data
 from . import PitchUtils
 from . import OperatorUtils
 from .i18n import i18n
-from bpy.app import version as blender_version
 
 import bpy
+from . import BlenderVersionUtil
 from .midi_data import MidiDataType
 from .NoteCollectionModule import NoteCollection, NoteCollectionMetaData, NoteCollectionOverlapStrategy, \
     NoteCollectionFilter
@@ -38,7 +38,7 @@ class NLA_MIDI_COPIER_PT_dope_sheet_copier(bpy.types.Operator, OperatorUtils.Dyn
         frames_per_second = context.scene.render.fps
         copy_to_note_end = dope_sheet_note_action_property.copy_to_note_end
 
-        grease_pencil_type = "GREASEPENCIL" if blender_version >= (4, 3, 0) else "GPENCIL"
+        grease_pencil_type = BlenderVersionUtil.grease_pencil_object_type_string()
         grease_pencils = [x.data for x in context.selected_objects if x.type == grease_pencil_type]
 
         for grease_pencil in grease_pencils:
@@ -68,7 +68,7 @@ class NLA_MIDI_COPIER_PT_dope_sheet_copier(bpy.types.Operator, OperatorUtils.Dyn
         last_keyframe_frame_number = max([frame.frame_number for frame in source_keyframes])
         non_scaled_action_length = max(last_keyframe_frame_number - first_keyframe_frame_number, 1)
 
-        loaded_midi_data = midi_data.get_midi_data(MidiDataType.DOPESHEET)
+        loaded_midi_data = midi_data.get_midi_data(MidiDataType.DOPESHEET, context)
         dope_sheet_note_action_property = (
             context.scene.nla_midi_copier_main_property_group.dope_sheet_midi_data_property.note_action_property)
         notes = midi_data.MidiDataUtil.get_notes(loaded_midi_data.get_track_id(context),
@@ -89,7 +89,7 @@ class NLA_MIDI_COPIER_PT_dope_sheet_copier(bpy.types.Operator, OperatorUtils.Dyn
         source_keyframe_frame_numbers = [keyframe.frame_number for keyframe in source_keyframes]
         existing_frame_numbers = {keyframe.frame_number for keyframe in g_pencil_layer.frames}
         for analyzed_note in analyzed_notes:
-            if blender_version >= (4, 3, 0):
+            if BlenderVersionUtil.grease_pencil_copy_accepts_frame_number():
                 for source_frame_number in source_keyframe_frame_numbers:
                     copy_to_frame_number = int((analyzed_note.action_length_frames * (
                             source_frame_number - first_keyframe_frame_number)) //

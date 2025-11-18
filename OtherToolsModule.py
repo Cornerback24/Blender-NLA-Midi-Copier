@@ -5,6 +5,8 @@ from .i18n import i18n
 import bpy
 import re
 
+action_util = ActionUtils.get_action_util_object()
+
 
 def is_transition(nla_strip):
     return nla_strip.type == 'TRANSITION' or re.fullmatch(r".*Transition(.[0-9]*)?", nla_strip.name)
@@ -47,8 +49,9 @@ class NLA_MIDI_COPIER_OT_generate_transitions_operator(bpy.types.Operator, Opera
     def action_common(self, context):
         active_nla_track_strips, selected_strip_groups = (
             NLA_MIDI_COPIER_OT_generate_transitions_operator.selected_nla_strip_groups(
-            context))
-        other_tool_property = context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.other_tool_property
+                context))
+        other_tool_property = (context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property
+                               .other_tool_property)
         if other_tool_property.replace_transition_strips:
             NLA_MIDI_COPIER_OT_generate_transitions_operator.delete_transition_strips(active_nla_track_strips,
                                                                                       selected_strip_groups)
@@ -60,13 +63,13 @@ class NLA_MIDI_COPIER_OT_generate_transitions_operator(bpy.types.Operator, Opera
                 if nla_strip.action is not None and previous_strip is not None and previous_strip.action is not None:
                     keyframe_properties = other_tool_property.keyframe_properties
                     if other_tool_property.limit_transition_length:
-                        ActionUtils.generate_transition_strip(
+                        action_util.generate_transition_strip(
                             context, previous_strip, nla_strip, context.active_nla_track,
                             keyframe_properties.interpolation, keyframe_properties.easing,
                             other_tool_property.transition_offset_frames, other_tool_property.transition_limit_frames,
                             other_tool_property.transition_placement == "end")
                     else:
-                        ActionUtils.generate_transition_strip(
+                        action_util.generate_transition_strip(
                             context, previous_strip, nla_strip, context.active_nla_track,
                             keyframe_properties.interpolation, keyframe_properties.easing)
                 previous_strip = nla_strip

@@ -4,6 +4,22 @@ if "bpy" in locals():
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(i18n)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(BlenderVersionUtil)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PitchUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(ObjectUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PanelUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(OperatorUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(ActionUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(CollectionUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    importlib.reload(PropertyUtils)
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(NoteFilterImplementations)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(NoteCollectionModule)
@@ -38,24 +54,12 @@ if "bpy" in locals():
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(PreferenceModule)
     # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PitchUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(ObjectUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PanelUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(OperatorUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(ActionUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(CollectionUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    importlib.reload(PropertyUtils)
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
     importlib.reload(OtherToolsModule)
 else:
     # noinspection PyUnresolvedReferences
     from . import i18n
+    # noinspection PyUnresolvedReferences
+    from . import BlenderVersionUtil
     # noinspection PyUnresolvedReferences
     from . import NoteFilterImplementations
     # noinspection PyUnresolvedReferences
@@ -207,35 +211,39 @@ def create_i18n_dict(i18n_data):
 translations = {'es': create_i18n_dict(i18n_es)}
 
 
-def load_midi_file(midi_data_property, midi_data_type: int, context):
+def load_midi_file(midi_data_property, midi_data_type: int, scene):
     if midi_data_property.midi_file:
         try:
-            midi_data.get_midi_data(midi_data_type).update_midi_file(midi_data_property.midi_file, False, context)
+            midi_data.get_midi_data_for_scene(midi_data_type, scene).update_midi_file(midi_data_property.midi_file,
+                                                                                      False, scene=scene)
         except Exception as e:
             print("Could not load midi file: " + str(e))
             print(traceback.format_exc())
-            midi_data.get_midi_data(midi_data_type).update_midi_file(None, False, context)
+            midi_data.get_midi_data_for_scene(midi_data_type, scene).update_midi_file(None, False, scene=scene)
 
 
 @persistent
-def on_load(scene):
+def on_load(file):
     CompatibilityModule.compatibility_updates_complete = False
-    context = bpy.context
-    load_midi_file(context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property, MidiDataType.NLA,
-                   context)
-    load_midi_file(context.scene.nla_midi_copier_main_property_group.dope_sheet_midi_data_property,
-                   MidiDataType.DOPESHEET,
-                   context)
-    load_midi_file(context.scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property,
-                   MidiDataType.GRAPH_EDITOR, context)
+    for scene in bpy.data.scenes:
+        load_midi_file(scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property,
+                       MidiDataType.NLA,
+                       scene)
+        midi_data.get_midi_data_for_scene(MidiDataType.NLA, scene).set_note_action_property_ids(scene)
+        load_midi_file(scene.nla_midi_copier_main_property_group.dope_sheet_midi_data_property,
+                       MidiDataType.DOPESHEET,
+                       scene)
+        load_midi_file(scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property,
+                       MidiDataType.GRAPH_EDITOR, scene)
 
-    # For now only one GraphEditorKeyframeGenerationProperty in the collection. Add it here to ensure it exists
-    if len(context.scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property.note_action_property
-                   .keyframe_generators) == 0:
-        (context.scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property.note_action_property
-         .keyframe_generators.add())
-    updates_from_previous_version(context)
+        # For now only one GraphEditorKeyframeGenerationProperty in the collection. Add it here to ensure it exists
+        if len(scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property.note_action_property
+                       .keyframe_generators) == 0:
+            (scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property.note_action_property
+             .keyframe_generators.add())
+    updates_from_previous_version()
     CompatibilityModule.compatibility_updates_complete = True
+
 
 
 def addon_version():
@@ -248,16 +256,12 @@ def addon_version():
     return None
 
 
-def updates_from_previous_version(context):
+def updates_from_previous_version():
     # check the current version of the addon, which will be compared against the previous stored version before 
     # running any compatibility updates
-    version_property = context.scene.nla_midi_copier_main_property_group.midi_copier_version
     current_version = addon_version()
     if current_version is not None:
         CompatibilityModule.run_compatibility_updates(current_version)
-        version_property.major = current_version[0]
-        version_property.minor = current_version[1]
-        version_property.revision = current_version[2]
 
 
 # noinspection PyArgumentList

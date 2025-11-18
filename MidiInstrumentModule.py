@@ -19,8 +19,10 @@ class NLA_MIDI_COPIER_OT_add_instrument(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        CollectionUtils.add_to_collection(context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.instruments, i18n.get_text(i18n.INSTRUMENT),
-                                          context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property, "selected_instrument_id")
+        CollectionUtils.add_to_collection(
+            context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.instruments,
+            i18n.get_text(i18n.INSTRUMENT),
+            context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property, "selected_instrument_id")
 
 
 class NLA_MIDI_COPIER_OT_delete_instrument(bpy.types.Operator):
@@ -35,12 +37,21 @@ class NLA_MIDI_COPIER_OT_delete_instrument(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context) is not None
+        return midi_data.get_midi_data(MidiDataType.NLA, context).selected_instrument(context) is not None
 
     def action_common(self, context):
-        CollectionUtils.remove_from_collection(
-            context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.instruments, midi_data.get_midi_data_property(MidiDataType.NLA, context),
-            "selected_instrument_id")
+        midi_data_property = midi_data.get_midi_data_property(MidiDataType.NLA, context)
+        selected_id = midi_data_property.selected_instrument_id
+        instruments = context.scene.nla_midi_copier_main_property_group.nla_editor_midi_data_property.instruments
+        if selected_id is not None and not selected_id == PropertyUtils.NO_SELECTION:
+            object_index = int(selected_id)
+            instrument_to_remove = instruments[object_index]
+            loaded_midi_data = midi_data.get_midi_data(MidiDataType.NLA, context)
+            for note in instrument_to_remove.notes:
+                for note_action_property in note.actions:
+                    loaded_midi_data.remove_action_slots_list_for_note_action_property(
+                        note_action_property)
+        CollectionUtils.remove_from_collection(instruments, midi_data_property, "selected_instrument_id")
 
 
 class NLA_MIDI_COPIER_OT_add_action_to_instrument(bpy.types.Operator):
@@ -54,10 +65,10 @@ class NLA_MIDI_COPIER_OT_add_action_to_instrument(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        instrument = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context)
+        instrument = midi_data.get_midi_data(MidiDataType.NLA, context).selected_instrument(context)
         if instrument is not None:
             # create new action for instrument
-            PropertyUtils.get_note_action_property(instrument, int(instrument.selected_note_id))
+            PropertyUtils.get_note_action_property(instrument, int(instrument.selected_note_id), context)
 
 
 class NLA_MIDI_COPIER_OT_remove_action_from_instrument(bpy.types.Operator):
@@ -73,10 +84,13 @@ class NLA_MIDI_COPIER_OT_remove_action_from_instrument(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        instrument = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context)
+        loaded_midi_data = midi_data.get_midi_data(MidiDataType.NLA, context)
+        instrument = loaded_midi_data.selected_instrument(context)
         if instrument is not None:
 
             instrument_note_property = PropertyUtils.instrument_selected_note_property(instrument)
+            note_action_property = instrument_note_property.actions[self.properties.action_index]
+            loaded_midi_data.remove_action_slots_list_for_note_action_property(note_action_property)
             instrument_note_property.actions.remove(self.properties.action_index)
 
             # don't store an empty list of actions if there are no more actions for the note
@@ -102,7 +116,7 @@ class NLA_MIDI_COPIER_OT_transpose_instrument(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        instrument = midi_data.get_midi_data(MidiDataType.NLA).selected_instrument(context)
+        instrument = midi_data.get_midi_data(MidiDataType.NLA, context).selected_instrument(context)
         for note in instrument.notes:
             note.note_id += self.properties.transpose_steps
         if instrument.transpose_filters == "transpose_all":

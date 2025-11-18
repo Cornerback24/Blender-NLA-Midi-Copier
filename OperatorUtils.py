@@ -6,18 +6,18 @@ import traceback
 
 
 def load_midi_file(operator, context, data_type: int, filepath: str):
-    loaded_midi_data = midi_data.get_midi_data(data_type)
+    loaded_midi_data = midi_data.get_midi_data(data_type, context)
     midi_data_property = midi_data.get_midi_data_property(data_type, context)
     # need to set with array notation because the property is defined to be read-only
     midi_data_property["midi_file"] = filepath
     try:
-        loaded_midi_data.update_midi_file(filepath, True, context)
+        loaded_midi_data.update_midi_file(filepath, True, context=context)
     except Exception as e:
         # noinspection PyArgumentList,PyUnresolvedReferences
         operator.report({"WARNING"}, i18n.concat(i18n.get_text(i18n.COULD_NOT_LOAD_MIDI_FILE), str(e)))
         print(traceback.format_exc())
         midi_data_property["midi_file"] = ""
-        loaded_midi_data.update_midi_file(None, False, context)
+        loaded_midi_data.update_midi_file(None, False, context=context)
 
 
 class NLA_MIDI_COPIER_OT_copy_midi_file_data(bpy.types.Operator):

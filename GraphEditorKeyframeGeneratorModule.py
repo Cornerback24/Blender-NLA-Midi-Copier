@@ -259,7 +259,7 @@ class NLA_MIDI_COPIER_OT_graph_editor_keyframe_generator(bpy.types.Operator, Ope
         return {'FINISHED'}
 
     def action_common(self, context):
-        loaded_midi_data = midi_data.get_midi_data(MidiDataType.GRAPH_EDITOR)
+        loaded_midi_data = midi_data.get_midi_data(MidiDataType.GRAPH_EDITOR, context)
 
         graph_editor_note_action_property = loaded_midi_data.selected_note_action_property(context)
         keyframe_generator_property = graph_editor_note_action_property.keyframe_generators[0]
@@ -428,7 +428,7 @@ class NLA_MIDI_COPIER_OT_load_min_max_from_midi_track(bpy.types.Operator):
         return {'FINISHED'}
 
     def action_common(self, context):
-        loaded_midi_data = midi_data.get_midi_data(MidiDataType.GRAPH_EDITOR)
+        loaded_midi_data = midi_data.get_midi_data(MidiDataType.GRAPH_EDITOR, context)
 
         graph_editor_note_action_property = loaded_midi_data.selected_note_action_property(context)
         keyframe_generator_property = graph_editor_note_action_property.keyframe_generators[0]
