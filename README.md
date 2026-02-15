@@ -9,7 +9,7 @@ This extension also adds a panel in the Graph Editor to generate keyframes on ex
 This extension is written for Blender 5.0 and is compatible back to Blender 4.2. An add-on version compatible with Blender 
 versions from 2.80 to 4.2 can be found
 [here](https://github.com/Cornerback24/Blender-NLA-Midi-Copier/tree/0_19_x_maintenance?tab=readme-ov-file#blender-nla-midi-copier).
-Extension Version 1.1.0. [Changelog here](CHANGELOG.md).
+Extension Version 1.2.0. [Changelog here](CHANGELOG.md).
 
 
 <details>
@@ -415,31 +415,25 @@ high pitch, choose a min and max keyframe value, and generate keyframes with val
 * Load min and max keyframe values:
     * Sets the Min and Max notes or Map to min and Map to max values to the minimum and maximum values found in the
       selected midi track. (This is the button next to note property.)
-* Min note:
-    * The lowest note (inclusive) that will be used for keyframe generation. Only used if Note Property is set to Pitch.
-* Max note:
-    * The highest note (inclusive) that will be used for keyframe generation. If this is lower than the min note,
-      keyframes will be generated starting at the min note down to this note. Only used if Note Property is set to
-      Pitch.
-* Map to min:
-    * Note property or CC value to map to the Min value. For example if note Property is Length (frames) and Map to min is set
-      to 2, then keyframes for a note with a length of 2 frames will be generated with the Min value. Only used if Note
-      Property is not set to Pitch.
-* Map to max:
-    * Note property or CC value to map to the Max value. For example if note Property is Length (frames) and Map to max is set
-      to 10, then keyframes for a note with a length of 10 frames will be generated with the Max value. Only used if
-      Note Property is not set to Pitch.
+* Midi Input
+    * The minimum and maximum values to read in from the midi file
+* Keyframe Output
+    * The minimum and maximum keyframe values to generate
+    * The midi input and keyframe output values are mapped. For example "C1 -> 0m" and "C4 -> 1m" would map Pitch C1 to a keyframe value
+      of 0m and Pitch C4 to a value of 1m. Pitches in between would be mapped linearly. Pitches below C1 and above C4 would be excluded.
 * Filter by Scale:
     * If filtering by scale, keyframes will only be generated for notes in or not in the scale (depending on the
-      selected filter type). In addition, only filtered pitches will be used for keyframe calculation.
+      selected filter type). In addition, only filtered pitches will be used for keyframe calculation. (This is useful for
+      generating keyframes values evenly spaced by only the notes in the scale instead of spaced by the distance between midi pitches).
 * Scale:
     * The major scale to filter by.
 * Only notes in Selected Track:
-    * If selected, only notes in the selected track will be used for keyframe calculation.
+    * If selected, only notes in the selected track will be used for keyframe calculation. (This is useful for
+      generating keyframes values evenly spaced by only the notes in the track instead of spaced by the distance between midi pitches).
 * Min:
-    * The keyframe value that corresponds to the min note.
+    * The keyframe value that corresponds to the minimum Midi Input value.
 * Max:
-    * The keyframe value that corresponds to the max note. If this is less than min, then values will be calculated
+    * The keyframe value that corresponds to the maximum Midi Input value. If this is less than min, then values will be calculated
       starting at min down to this value.
 * Unit Type:
     * The unit type of the min and max values. Blender does not use scene units as keyframe values (for example rotation

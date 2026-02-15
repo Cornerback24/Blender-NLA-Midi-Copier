@@ -102,3 +102,16 @@ class DynamicTooltipOperator:
     @classmethod
     def description(cls, context, properties):
         return properties.tooltip if properties.tooltip else cls.bl_description
+
+class NLA_MIDI_COPIER_OT_no_op(bpy.types.Operator):
+    """
+    Only used to display a mapping arrow. Not used to invoke any action.
+    """
+    bl_idname = "ops.no_op"
+    bl_label = ""
+    bl_description = i18n.get_key(i18n.NO_OP_MAPPING_ARROW_DESCRIPTION)
+    bl_options = set()
+
+    def execute(self, context):
+        # no-op
+        return {'FINISHED'}

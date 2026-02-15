@@ -30,7 +30,7 @@ class KeyframeData:
     def add_keyframe(self, frame_number: int, keyframe_value: float):
         if frame_number in self.frames_to_keyframes:
             del self.frames_to_keyframes[frame_number]
-        added_keyframe = self.keyframe_points.insert(frame_number, keyframe_value, options={'NEEDED'})
+        added_keyframe = self.keyframe_points.insert(frame_number, keyframe_value, options={"FAST"})
         self.frames_to_keyframes[frame_number].append(added_keyframe)
 
 
@@ -46,13 +46,17 @@ def add_keyframe(keyframe_data: KeyframeData, frame: int, keyframe_value: float,
         if not keyframe_data.keyframe_existed_before_additions(frame):
             keyframe_data.add_keyframe(frame, keyframe_value)
             return frame
+        else:
+            return None
     elif overlap_mode == 'PREVIOUS_FRAME':
-        if not keyframe_data.keyframe_existed_before_additions(frame):
+        if not keyframe_data.keyframe_exists(frame):
             keyframe_data.add_keyframe(frame, keyframe_value)
             return frame
         elif not keyframe_data.keyframe_exists(frame - 1):
             keyframe_data.add_keyframe(frame - 1, keyframe_value)
             return frame - 1
+        else:
+            return None
     elif overlap_mode == 'NEXT_FRAME':
         if not keyframe_data.keyframe_existed_before_additions(frame):
             keyframe_data.add_keyframe(frame, keyframe_value)
@@ -60,20 +64,33 @@ def add_keyframe(keyframe_data: KeyframeData, frame: int, keyframe_value: float,
         elif not keyframe_data.keyframe_exists(frame + 1):
             keyframe_data.add_keyframe(frame + 1, keyframe_value)
             return frame + 1
+        else:
+            return None
     else:  # replace
         keyframe_data.add_keyframe(frame, keyframe_value)
         return frame
 
 
-note_property_definitions = {"Pitch": (lambda analyzed_note: analyzed_note.note.pitch, "pitch_min", "pitch_max"),
-                             "Length": (lambda analyzed_note: analyzed_note.note_length_frames, "non_negative_min",
-                                        "non_negative_max"),
-                             "Velocity": (lambda analyzed_note: analyzed_note.note.velocity, "int_0_to_127_min",
-                                          "int_0_to_127_max")}
+class GraphEditorNotePropertyDefinition:
+    def __init__(self, get_property_from_note, min_property_id, max_property_id, i18n_key):
+        self.get_property_from_note = get_property_from_note
+        self.min_property_id = min_property_id
+        self.max_property_id = max_property_id
+        self.i18n_key = i18n_key
+
+
+note_property_definitions = {
+    "Pitch": GraphEditorNotePropertyDefinition(lambda analyzed_note: analyzed_note.note.pitch, "pitch_min", "pitch_max",
+                                               i18n.PITCH),
+    "Length": GraphEditorNotePropertyDefinition(lambda analyzed_note: analyzed_note.note_length_frames,
+                                                "non_negative_min",
+                                                "non_negative_max", i18n.LENGTH_FRAMES),
+    "Velocity": GraphEditorNotePropertyDefinition(lambda analyzed_note: analyzed_note.note.velocity, "int_0_to_127_min",
+                                                  "int_0_to_127_max", i18n.VELOCITY)}
 
 
 def value_from_analyzed_note(note_property: str, analyzed_note):
-    return note_property_definitions[note_property][0](analyzed_note)
+    return note_property_definitions[note_property].get_property_from_note(analyzed_note)
 
 
 def get_note_collection(loaded_midi_data, context, graph_editor_note_action_property, keyframe_generator_property):
@@ -99,7 +116,8 @@ def get_note_collection(loaded_midi_data, context, graph_editor_note_action_prop
 def get_cc_data(loaded_midi_data, context):
     return midi_data.MidiDataUtil.get_cc_data(
         loaded_midi_data.get_track_id(context), loaded_midi_data, context,
-        context.scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property.note_action_property.midi_frame_offset)
+        context.scene.nla_midi_copier_main_property_group.graph_editor_midi_data_property.note_action_property
+        .midi_frame_offset)
 
 
 class FcurveKeyframeGenerator:
@@ -159,7 +177,7 @@ class FcurveKeyframeGenerator:
     def add_keyframes(self, frame_keyframe_value_pairs, on_keyframe_overlap_override: Optional[str] = None) \
             -> List[Tuple[int, float]]:
         """
-        :param frame_keyframe_value_pairs: list of (frame, keyframe value)
+        :param frame_keyframe_value_pairs: generator of (frame, keyframe value)
         :param on_keyframe_overlap_override: overrides the property if provided
         :return: list of (frame, keyframe value)
         """
@@ -232,7 +250,7 @@ class FcurveKeyframeGenerator:
         """
         :param value_range_low: value from note that corresponds to min_keyframe_value
         :param value_range_high: value from note that corresponds to max_keyframe_value
-        :param frame_value_pairs: list of (frame, value)
+        :param frame_value_pairs: list of (frame, input value)
         :param on_keyframe_overlap_override: overrides the property if provided
         :return: list of (frame, keyframe value)
         """
@@ -302,11 +320,11 @@ class NLA_MIDI_COPIER_OT_graph_editor_keyframe_generator(bpy.types.Operator, Ope
 
         def map_to_min():
             return getattr(keyframe_generator_property,
-                           note_property_definitions[keyframe_generator_property.note_property][1])
+                           note_property_definitions[keyframe_generator_property.note_property].min_property_id)
 
         def map_to_max():
             return getattr(keyframe_generator_property,
-                           note_property_definitions[keyframe_generator_property.note_property][2])
+                           note_property_definitions[keyframe_generator_property.note_property].max_property_id)
 
         note_end_keyframes = None
         note_start_keyframes = None
@@ -349,6 +367,10 @@ class NLA_MIDI_COPIER_OT_graph_editor_keyframe_generator(bpy.types.Operator, Ope
 
         def add_keyframes(frame_list, on_keyframe_overlap_override: Optional[str] = None):
             frame_value_list = [(frame, cc_controller_data.value_at_frame(frame)) for frame in frame_list]
+            # filter by min and max
+            min_cc_value = map_to_min()
+            max_cc_value = map_to_max()
+            frame_value_list = [x for x in frame_value_list if min_cc_value <= x[1] <= max_cc_value]
             return keyframe_generator.generate_keyframes_from_range(
                 map_to_min(), map_to_max(), frame_value_list, on_keyframe_overlap_override)
 
@@ -452,11 +474,13 @@ class NLA_MIDI_COPIER_OT_load_min_max_from_midi_track(bpy.types.Operator):
             if note_property == "Pitch":
                 min_note = PitchUtils.note_id_from_pitch(min_value)
                 max_note = PitchUtils.note_id_from_pitch(max_value)
-                setattr(keyframe_generator_property, note_property_definitions[note_property][1], min_note)
-                setattr(keyframe_generator_property, note_property_definitions[note_property][2], max_note)
+                setattr(keyframe_generator_property, note_property_definitions[note_property].min_property_id, min_note)
+                setattr(keyframe_generator_property, note_property_definitions[note_property].max_property_id, max_note)
             else:
-                setattr(keyframe_generator_property, note_property_definitions[note_property][1], min_value)
-                setattr(keyframe_generator_property, note_property_definitions[note_property][2], max_value)
+                setattr(keyframe_generator_property, note_property_definitions[note_property].min_property_id,
+                        min_value)
+                setattr(keyframe_generator_property, note_property_definitions[note_property].max_property_id,
+                        max_value)
 
     def load_min_max_cc_data(self, keyframe_generator_property, loaded_midi_data, context):
         if not keyframe_generator_property.cc_type:

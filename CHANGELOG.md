@@ -1,3 +1,8 @@
+- 1.2.0 2026-02-15
+  * Update layout of Graph Editor midi property selection
+  * Update Graph Editor CC to filter notes by min and max
+  * Fix keyframes being skipped when notes are close together in the Graph Editor
+  * Fix note search box not working when both an exact match and partial match are found
 - 1.1.0 2025-11-17
   * Add compatibility for Blender 5.0
   * Add action slot selection for actions with multiple slots

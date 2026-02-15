@@ -129,7 +129,7 @@ from .GraphEditorKeyframeGeneratorModule import NLA_MIDI_COPIER_OT_graph_editor_
 from .MidiInstrumentModule import NLA_MIDI_COPIER_OT_add_instrument, NLA_MIDI_COPIER_OT_delete_instrument, \
     NLA_MIDI_COPIER_OT_add_action_to_instrument, NLA_MIDI_COPIER_OT_remove_action_from_instrument, \
     NLA_MIDI_COPIER_OT_transpose_instrument
-from .OperatorUtils import NLA_MIDI_COPIER_OT_copy_midi_file_data
+from .OperatorUtils import NLA_MIDI_COPIER_OT_copy_midi_file_data, NLA_MIDI_COPIER_OT_no_op
 from .PanelUtils import MidiFileSelector
 from .OtherToolsModule import NLA_MIDI_COPIER_OT_generate_transitions_operator, \
     NLA_MIDI_COPIER_OT_delete_transitions_operator
@@ -183,7 +183,7 @@ classes = [
     NLA_MIDI_COPIER_OT_remove_note_filter_group, NLA_MIDI_COPIER_OT_reorder_note_filter,
     NLA_MIDI_COPIER_OT_add_note_filter_preset, NLA_MIDI_COPIER_OT_save_note_filter_preset,
     NLA_MIDI_COPIER_OT_delete_note_filter_preset,
-    NLA_MIDI_COPIER_OT_copy_midi_file_data,
+    NLA_MIDI_COPIER_OT_no_op, NLA_MIDI_COPIER_OT_copy_midi_file_data,
     TempoPropertyGroup, MidiCopierVersion, MidiTrackProperty,
     KeyframeProperties, OtherToolsPropertyGroup, MidiPropertyGroup, MidiDataCommon,
     MIDI_TRACK_PROPERTIES_UL_list, NLA_MIDI_COPIER_PT_midi_panel, MidiFileSelector,

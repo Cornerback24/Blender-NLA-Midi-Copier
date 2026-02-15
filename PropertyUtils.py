@@ -171,6 +171,11 @@ def note_updated_function(note_attribute, note_filter_attribute, get_notes_list)
 
 
 def find_matching_note(notes_list_enums, note_string):
+    """
+    :param notes_list_enums: [(enum id, note name, note description, note pitch), ...]
+    :param note_string: string to search for (such as "C3" or "15" for example)
+    :return: note enum matching the note string or None if no unique match can be found
+    """
     filter_string_is_digit = note_string.isdigit()
     # if digit, then check string equals note pitch, else check note display contains string
     if filter_string_is_digit:
@@ -178,9 +183,15 @@ def find_matching_note(notes_list_enums, note_string):
             if note_string == note[0]:
                 return note
     else:
-        matches = [note for note in notes_list_enums if note_string.lower() in note[1].lower()]
+        note_string_lower = note_string.lower()
+        matches = [note for note in notes_list_enums if note_string_lower in note[1].lower()]
         if len(matches) == 1:
             return matches[0]
+        if len(matches) > 1:
+            # multiple notes contain the search string, look for an exact match
+            for matching_note in matches:
+                if matching_note[1].lower() == note_string_lower:
+                    return matching_note
 
     return None
 
@@ -191,6 +202,7 @@ def updated_note_from_filter(notes_list, search_string: str, current_note: str):
     # update which triggers note update and so on)
     if matching_note is not None and not matching_note[0] == current_note:
         return matching_note[0]
+    return None
 
 
 def note_search_updated_function(note_attribute, note_search_attribute, get_notes_list):

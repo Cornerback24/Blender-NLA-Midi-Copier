@@ -1,4 +1,3 @@
-
 from . import PanelUtils
 from . import GraphEditorKeyframeGeneratorModule
 from . import GraphEditorMidiPropertiesModule
@@ -8,6 +7,7 @@ import bpy
 from .midi_data import MidiDataType
 from .GraphEditorKeyframeGeneratorModule import NLA_MIDI_COPIER_OT_graph_editor_keyframe_generator, \
     NLA_MIDI_COPIER_OT_load_min_max_from_midi_track
+from .OperatorUtils import NLA_MIDI_COPIER_OT_no_op
 
 
 class NLA_MIDI_COPIER_PT_graph_editor_midi_panel(bpy.types.Panel):
@@ -64,7 +64,7 @@ class NLA_MIDI_COPIER_PT_graph_editor_midi_panel(bpy.types.Panel):
 
         left, right, row = PanelUtils.split_row(col, .2)
         if keyframe_generator.property_type == "cc_data":
-            left.label(text=i18n.get_key(i18n.CC_TYPE))
+            left.label(text=i18n.get_label(i18n.CC_TYPE))
             right.prop(keyframe_generator, "cc_type", text="")
         else:
             left.label(text=i18n.get_label(i18n.NOTE_PROPERTY))
@@ -74,16 +74,9 @@ class NLA_MIDI_COPIER_PT_graph_editor_midi_panel(bpy.types.Panel):
         operator_row.operator(NLA_MIDI_COPIER_OT_load_min_max_from_midi_track.bl_idname, text="", icon='IMPORT')
 
         if keyframe_generator.property_type == "note" and keyframe_generator.note_property == "Pitch":
-            self.draw_pitch(col, keyframe_generator)
+            self.draw_pitch_mapping_box(col, keyframe_generator)
         else:
-            self.draw_min_and_max(col, keyframe_generator)
-
-        min_max_row = col.row()
-        min_max_row.prop(keyframe_generator,
-                         GraphEditorMidiPropertiesModule.UNIT_TYPES[keyframe_generator.unit_type][3])
-        min_max_row.prop(keyframe_generator,
-                         GraphEditorMidiPropertiesModule.UNIT_TYPES[keyframe_generator.unit_type][4])
-        PanelUtils.indented_row(col).prop(keyframe_generator, "unit_type")
+            self.draw_midi_property_mapping_box(col, keyframe_generator)
 
         col.separator()
         col = self.layout.column(align=True)
@@ -121,17 +114,80 @@ class NLA_MIDI_COPIER_PT_graph_editor_midi_panel(bpy.types.Panel):
 
         tooltip_creator.draw_operator_row(col, icon='FILE_SOUND')
 
-    def draw_min_and_max(self, col, keyframe_generator):
-        min_max_map_row = col.row()
+    def min_keyframe_mapping_property_id(self, keyframe_generator):
+        return GraphEditorMidiPropertiesModule.UNIT_TYPES[keyframe_generator.unit_type][3]
+
+    def max_keyframe_mapping_property_id(self, keyframe_generator):
+        return GraphEditorMidiPropertiesModule.UNIT_TYPES[keyframe_generator.unit_type][4]
+
+    def i18n_property_key(self, keyframe_generator):
         if keyframe_generator.property_type == "cc_data":
-            min_max_map_row.prop(keyframe_generator, "int_0_to_127_min")
-            min_max_map_row.prop(keyframe_generator, "int_0_to_127_max")
+            return i18n.CC
         else:
-            note_property = keyframe_generator.note_property
-            min_max_map_row.prop(keyframe_generator,
-                                 GraphEditorKeyframeGeneratorModule.note_property_definitions[note_property][1])
-            min_max_map_row.prop(keyframe_generator,
-                                 GraphEditorKeyframeGeneratorModule.note_property_definitions[note_property][2])
+            return GraphEditorKeyframeGeneratorModule.note_property_definitions[
+                keyframe_generator.note_property].i18n_key
+
+    def draw_pitch_mapping_box(self, col, keyframe_generator):
+        mapping_box = col.box()
+        mapping_parent_row_1, mapping_parent_row_2, row = PanelUtils.split_row(mapping_box, factor=0.6)
+        mapping_column_1 = mapping_parent_row_1.column(align=True)
+        mapping_column_2 = mapping_parent_row_2.column(align=True)
+        header_row_left = mapping_column_1.row()
+        header_row_left.column()  # create a little space to the left of the header
+        header_row_left.label(text=i18n.get_key(i18n.MIDI_INPUT))
+        header_row_right = mapping_column_2.row()
+        header_row_right.column()  # create a little space to the left of the header
+        header_row_right.label(text=i18n.get_key(i18n.KEYFRAME_OUTPUT))
+
+        mapping_row_1 = mapping_column_1.row(align=False)
+        note_row, note_search_row, row = PanelUtils.split_row(mapping_row_1, factor=0.7)
+        note_row.prop(keyframe_generator, "pitch_min", text="")
+        note_search_row.prop(keyframe_generator, "pitch_min_search_string", text="")
+        mapping_row_1.operator(NLA_MIDI_COPIER_OT_no_op.bl_idname, icon="FORWARD", emboss=False)
+        mapping_column_2.prop(keyframe_generator, self.min_keyframe_mapping_property_id(keyframe_generator))
+
+        mapping_row_2 = mapping_column_1.row(align=False)
+        note_row, note_search_row, row = PanelUtils.split_row(mapping_row_2, factor=0.7)
+        note_row.prop(keyframe_generator, "pitch_max", text="")
+        note_search_row.prop(keyframe_generator, "pitch_max_search_string", text="")
+        mapping_row_2.operator(NLA_MIDI_COPIER_OT_no_op.bl_idname, icon="FORWARD", emboss=False)
+        mapping_column_2.prop(keyframe_generator, self.max_keyframe_mapping_property_id(keyframe_generator))
+
+        PanelUtils.indented_row(mapping_box).prop(keyframe_generator, "unit_type")
+
+        filter_column = mapping_box.column(align=True)
+        PanelUtils.draw_scale_filter(filter_column, keyframe_generator, "scale_filter_type", "scale_filter_scale")
+        filter_column.prop(keyframe_generator, "only_notes_in_selected_track")
+
+    def draw_midi_property_mapping_box(self, col, keyframe_generator):
+        mapping_box = col.box()
+        mapping_column = mapping_box.column(align=True)
+        header_row = mapping_column.row(align=False)
+        min_mapping_row = mapping_column.row(align=True)
+        max_mapping_row = mapping_column.row(align=True)
+
+        header_row.column()  # create a little space to the left of the header
+        header_row.label(text=i18n.get_key(i18n.MIDI_INPUT))
+        header_row.operator(NLA_MIDI_COPIER_OT_no_op.bl_idname, icon="BLANK1", emboss=False)
+        header_row.label(text=i18n.get_key(i18n.KEYFRAME_OUTPUT))
+
+        if keyframe_generator.property_type == "cc_data":
+            min_property = "int_0_to_127_min"
+            max_property = "int_0_to_127_max"
+        else:
+            min_property = GraphEditorKeyframeGeneratorModule.note_property_definitions[
+                keyframe_generator.note_property].min_property_id
+            max_property = GraphEditorKeyframeGeneratorModule.note_property_definitions[
+                keyframe_generator.note_property].max_property_id
+        min_mapping_row.prop(keyframe_generator, min_property, text=self.i18n_property_key(keyframe_generator))
+        min_mapping_row.operator(NLA_MIDI_COPIER_OT_no_op.bl_idname, icon="FORWARD", emboss=False)
+        min_mapping_row.prop(keyframe_generator, self.min_keyframe_mapping_property_id(keyframe_generator))
+
+        max_mapping_row.prop(keyframe_generator, max_property, text=self.i18n_property_key(keyframe_generator))
+        max_mapping_row.operator(NLA_MIDI_COPIER_OT_no_op.bl_idname, icon="FORWARD", emboss=False)
+        max_mapping_row.prop(keyframe_generator, self.max_keyframe_mapping_property_id(keyframe_generator))
+
+        PanelUtils.indented_row(mapping_column).prop(keyframe_generator, "unit_type")
 
     def draw_pitch(self, col, keyframe_generator):
         PanelUtils.draw_note_with_search(col, keyframe_generator, "pitch_min", "pitch_min_search_string",
