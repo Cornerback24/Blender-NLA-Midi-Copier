@@ -1,3 +1,9 @@
+- 1.2.1 2026-10-26
+  * Fix deleting source keyframes in the Dope Sheet after copying keyframes
+  * Fix copying actions to Grease Pencil data type
+  * Fix duplicate object on overlap for non object types (such as meshes and curves)
+  * Fix copying actions onto scene compositor node tree in Blender 5.0 and later
+  * Add warning if copying actions to a node tree and the node tree is not found
 - 1.2.0 2026-02-15
   * Update layout of Graph Editor midi property selection
   * Update Graph Editor CC to filter notes by min and max

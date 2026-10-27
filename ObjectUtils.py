@@ -2,6 +2,8 @@ import math
 import bpy
 from typing import Tuple
 
+from . import midi_data
+
 
 def point_3d(v):
     return [v[0], v[1], v[2]]
@@ -114,43 +116,48 @@ def objects_sorted_by_path(objects, path):
     return sorted_objects
 
 
-def data_from_object(obj, action_id_root):
-    if action_id_root == "OBJECT":
+def data_from_object(obj, midi_data_id_type):
+    """
+    :param obj: blender object
+    :param midi_data_id_type: NoteActionProperty.id_type ("Mesh", "Object", "Material", "Key", "Grease Pencil")
+    """
+    if midi_data_id_type == "Object":
         return obj
-    elif action_id_root == "MATERIAL":
-        # (In case the action's id_root is probably NODETREE, but the note_action_property id_type is Material.
-        # The action will be copied to the material's nodetree animation data.)
+    elif midi_data_id_type == "Material":
+        # The note action id type is Material. The action id type is often NODETREE,
+        # and the action is copied to the material's node tree animation data.
         return obj.active_material if obj.active_material is not None else None
-    elif action_id_root == "KEY":
+    elif midi_data_id_type == "Key":
         return getattr(obj.data, 'shape_keys', None)
     else:
-        return obj.data if obj.type == action_id_root else None
+        object_type = midi_data.object_type_string(midi_data_id_type)
+        return obj.data if obj.type == object_type else None
 
 
-def data_from_objects(objects, action_id_root):
+def data_from_objects(objects, midi_data_id_type):
     """
     :param objects: collection of blender objects
-    :param action_id_root: type of action
+    :param midi_data_id_type: NoteActionProperty.id_type
     :return: list of data to animate (such as list of objects or list of meshes)
     """
-    if action_id_root == "OBJECT":
+    if midi_data_id_type == "Object":
         return objects
     else:
         # object data with duplicates removed
-        return [x for x in list(dict.fromkeys([data_from_object(obj, action_id_root) for obj in objects])) if
+        return [x for x in list(dict.fromkeys([data_from_object(obj, midi_data_id_type) for obj in objects])) if
                 x is not None]
 
 
-def data_dict_from_objects(objects, action_id_root):
+def data_dict_from_objects(objects, midi_data_id_type):
     """
     :param objects: collection of blender objects
-    :param action_id_root: type of action
+    :param midi_data_id_type: NoteActionProperty.id_type
     :return: {data: object}
     """
-    if action_id_root == "OBJECT":
+    if midi_data_id_type == "Object":
         return {obj: obj for obj in objects}
     else:
-        return {x[0]: x[1] for x in [(data_from_object(obj, action_id_root), obj) for obj in objects] if
+        return {x[0]: x[1] for x in [(data_from_object(obj, midi_data_id_type), obj) for obj in objects] if
                 x[0] is not None}
 
 

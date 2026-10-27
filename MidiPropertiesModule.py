@@ -1,4 +1,5 @@
 from . import midi_data
+from . import BlenderVersionUtil
 from . import NoteFilterImplementations
 from . import PitchUtils
 from . import PropertyUtils
@@ -28,7 +29,7 @@ def get_notes_list(midi_property_group, context):
 
 
 def action_poll(note_action_property, action):
-    id_root = midi_data.ID_PROPERTIES_DICTIONARY[note_action_property.id_type][1]
+    id_root = midi_data.action_id_type(note_action_property.id_type)
     return action_util.action_valid_for_id_type(id_root, action)
 
 
@@ -224,7 +225,7 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
     data_type = MidiDataType.NLA
     id_type: EnumProperty(
         items=sorted(
-            [(x, x, x, midi_data.ID_PROPERTIES_DICTIONARY[x][2], midi_data.ID_PROPERTIES_DICTIONARY[x][3]) for x in
+            [(x, x, x, midi_data.id_type_icon(x), midi_data.id_type_enum_number(x)) for x in
              midi_data.ID_PROPERTIES_DICTIONARY.keys()],
             key=lambda x: x[0]),
         name=i18n.get_key(i18n.TYPE), description=i18n.get_key(i18n.TYPE_DESCRIPTION), default="Object",
@@ -293,7 +294,8 @@ class NoteActionProperty(PropertyGroup, NoteActionPropertyBase):
                                 description=i18n.get_key(i18n.COLLECTION_TO_ANIMATE))
     curve: PointerProperty(type=bpy.types.Curve, name=i18n.get_key(i18n.CURVE),
                            description=i18n.get_key(i18n.CURVE_TO_ANIMATE))
-    greasepencil: PointerProperty(type=bpy.types.GreasePencil, name=i18n.get_key(i18n.GREASE_PENCIL),
+    greasepencil: PointerProperty(type=BlenderVersionUtil.grease_pencil_data_type(),
+                                  name=i18n.get_key(i18n.GREASE_PENCIL),
                                   description=i18n.get_key(i18n.GREASE_PENCIL_TO_ANIMATE))
     image: PointerProperty(type=bpy.types.Image, name=i18n.get_key(i18n.IMAGE),
                            description=i18n.get_key(i18n.IMAGE_TO_ANIMATE))
