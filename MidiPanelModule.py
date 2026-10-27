@@ -62,8 +62,8 @@ class NLA_MIDI_COPIER_PT_midi_panel(bpy.types.Panel):
             object_row = col.row()
             object_row.enabled = not note_action_property.copy_to_selected_objects
             NLA_MIDI_COPIER_PT_midi_panel.draw_property(object_row, note_action_property,
-                                                        midi_data.ID_PROPERTIES_DICTIONARY[
-                                                            note_action_property.id_type][0],
+                                                        midi_data.note_action_property_field_name(
+                                                            note_action_property.id_type),
                                                         i18n.get_label(note_action_property.id_type), is_main_property)
             NLA_MIDI_COPIER_PT_midi_panel.draw_property(col, note_action_property, "action",
                                                         i18n.get_label(i18n.ACTION), is_main_property)

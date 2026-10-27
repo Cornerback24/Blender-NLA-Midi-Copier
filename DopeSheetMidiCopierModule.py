@@ -49,21 +49,21 @@ class NLA_MIDI_COPIER_PT_dope_sheet_copier(bpy.types.Operator, OperatorUtils.Dyn
                                                                              context)
 
     @staticmethod
-    def copy_gpencil_frames(g_pencil_layer, frame_offset: int, frames_per_second: float, copy_to_note_end: bool,
+    def copy_gpencil_frames(grease_pencil_layer, frame_offset: int, frames_per_second: float, copy_to_note_end: bool,
                             context):
         """
-        Copies frames on the g_pencil_layer based on the project's DopeSheetMidiPropertyGroup property
-        :param g_pencil_layer: GPencilLayer object
+        Copies frames on the grease_pencil_layer based on the project's DopeSheetMidiPropertyGroup property
+        :param grease_pencil_layer: GreasePencilLayer object
         :param frame_offset: offset in frames from the start of the note to copy the first keyframe to
         :param frames_per_second: project frames per second
         :param copy_to_note_end: copy to the end of the note
         :param context: blender context object
         :return: None
         """
-        source_keyframes = [keyframe for keyframe in g_pencil_layer.frames if keyframe.select]
+        source_keyframes = [keyframe for keyframe in grease_pencil_layer.frames if keyframe.select]
         if len(source_keyframes) == 0:
             return  # no keyframes to copy on this layer
-        g_pencil_frames = g_pencil_layer.frames
+        g_pencil_frames = grease_pencil_layer.frames
         first_keyframe_frame_number = min([frame.frame_number for frame in source_keyframes])
         last_keyframe_frame_number = max([frame.frame_number for frame in source_keyframes])
         non_scaled_action_length = max(last_keyframe_frame_number - first_keyframe_frame_number, 1)
@@ -87,9 +87,9 @@ class NLA_MIDI_COPIER_PT_dope_sheet_copier(bpy.types.Operator, OperatorUtils.Dyn
             if dope_sheet_note_action_property.skip_overlaps else note_collection.filtered_notes
 
         source_keyframe_frame_numbers = [keyframe.frame_number for keyframe in source_keyframes]
-        existing_frame_numbers = {keyframe.frame_number for keyframe in g_pencil_layer.frames}
+        existing_frame_numbers = {keyframe.frame_number for keyframe in grease_pencil_layer.frames}
         for analyzed_note in analyzed_notes:
-            if BlenderVersionUtil.grease_pencil_copy_accepts_frame_number():
+            if BlenderVersionUtil.grease_pencil_frames_use_frame_numbers():
                 for source_frame_number in source_keyframe_frame_numbers:
                     copy_to_frame_number = int((analyzed_note.action_length_frames * (
                             source_frame_number - first_keyframe_frame_number)) //
@@ -108,5 +108,11 @@ class NLA_MIDI_COPIER_PT_dope_sheet_copier(bpy.types.Operator, OperatorUtils.Dyn
 
         if (context.scene.nla_midi_copier_main_property_group.dope_sheet_midi_data_property.note_action_property
                 .delete_source_keyframes):
-            for keyframe in source_keyframes:
-                g_pencil_frames.remove(keyframe)
+            # GPv3 GreasePencilFrames.remove() takes a frame number. Legacy
+            # GPencilFrames.remove() takes the frame object.
+            if BlenderVersionUtil.grease_pencil_frames_use_frame_numbers():
+                for frame_number in source_keyframe_frame_numbers:
+                    g_pencil_frames.remove(frame_number)
+            else:
+                for keyframe in source_keyframes:
+                    g_pencil_frames.remove(keyframe)

@@ -44,12 +44,10 @@ def get_note_action_property(instrument, note_id: int, context):
     return note_action_property
 
 
-def copy_note_action_property(copy_from, copy_to, id_properties_dictionary):
+def copy_note_action_property(copy_from, copy_to):
     """
     :param copy_from: Note action property to copy from
     :param copy_to: Note action property to copy to
-    :param id_properties_dictionary: key is NoteActionProperty.id_type,
-     value is (NoteActionProperty field name, Action id_root, enum number)
     """
     copy_to.id_type = copy_from.id_type
     copy_to.action = copy_from.action
@@ -68,7 +66,7 @@ def copy_note_action_property(copy_from, copy_to, id_properties_dictionary):
     copy_from_note_filter_groups = copy_from.note_filter_groups
     copy_to_note_filter_groups = copy_to.note_filter_groups
     copy_filters(copy_from_note_filter_groups, copy_to_note_filter_groups)
-    animated_object_property = id_properties_dictionary[copy_from.id_type][0]
+    animated_object_property = midi_data.note_action_property_field_name(copy_from.id_type)
     setattr(copy_to, animated_object_property, getattr(copy_from, animated_object_property))
 
 

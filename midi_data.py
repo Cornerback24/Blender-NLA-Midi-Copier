@@ -11,9 +11,24 @@ from . import CollectionUtils
 
 import bpy
 
+from . import BlenderVersionUtil
 from .CCDataModule import CCData
 
-# key is display name, value is (NoteActionProperty field name, Action id_root, icon, enum number)
+# Maps NoteActionProperty.id_type to the data for that ID type.
+#
+# Key: the enum identifier stored on note_action_property.id_type. The dropdown
+# value displayed in the UI is the same string, because id_type items are built as
+# (key, key, key, icon, number).
+#
+# Value:
+#   [0] attribute for the NoteActionProperty for this type.
+#       Used with getattr/setattr. 
+#       For example "light_probe" means the property is accessed at
+#       note_action_property.light_probe.
+#   [1] Stored type token.
+#       Used by helper methods to determine object type and action slot target id type.
+#   [2] icon to use
+#   [3] enum number stored in the blend file. Do not renumber existing entries.
 ID_PROPERTIES_DICTIONARY = {"Armature": ("armature", "ARMATURE", "ARMATURE_DATA", 0),
                             "Brush": ("brush", "BRUSH", "BRUSH_DATA", 18),
                             # "Action": ("action", "ACTION),
@@ -66,13 +81,52 @@ OBJECT_ID_TYPES = {
     "VOLUME"
 }
 
+def note_action_property_field_name(midi_data_id_type: str) -> str:
+    return ID_PROPERTIES_DICTIONARY[midi_data_id_type][0]
+
+def __stored_id_type_token(midi_data_id_type: str) -> str:
+    """The object type token used to loook up object type and action slot target id type.
+    Callers should not call this method directly. Use object_type_string()
+    or action_id_type() instead.
+    """
+    return ID_PROPERTIES_DICTIONARY[midi_data_id_type][1]
+
+def object_type_string(midi_data_id_type: str) -> str:
+    """Object.type for an object-data id type.
+
+    Matches stored_id_type_token() except Grease Pencil, whose object type is
+    GPENCIL before 4.3 and GREASEPENCIL after. Action checks use action_id_type()
+    (Action.id_root or ActionSlot.target_id_type), not this value.
+    """
+    if midi_data_id_type == "Grease Pencil":
+        return BlenderVersionUtil.grease_pencil_object_type_string()
+    return __stored_id_type_token(midi_data_id_type)
+
+def id_type_icon(midi_data_id_type: str) -> str:
+    return ID_PROPERTIES_DICTIONARY[midi_data_id_type][2]
+
+def id_type_enum_number(midi_data_id_type: str) -> int:
+    return ID_PROPERTIES_DICTIONARY[midi_data_id_type][3]
 
 def id_type_is_object(midi_data_id_type: str):
     """
     :param midi_data_id_type: the id_type (as defined in NoteActionProperty)
     :return: True if the type corresponds to a Blender Object or a Blender Object.data type
+
+    Matches the dictionary token in OBJECT_ID_TYPES, not Object.type.
     """
-    return ID_PROPERTIES_DICTIONARY[midi_data_id_type][1] in OBJECT_ID_TYPES
+    return __stored_id_type_token(midi_data_id_type) in OBJECT_ID_TYPES
+
+
+def action_id_type(midi_data_id_type: str) -> str:
+    """Identifier compared with Action.id_root and ActionSlot.target_id_type.
+
+    Grease Pencil actions use grease_pencil_action_id_type(). Grease Pencil
+    objects use grease_pencil_object_type_string().
+    """
+    if midi_data_id_type == "Grease Pencil":
+        return BlenderVersionUtil.grease_pencil_action_id_type()
+    return __stored_id_type_token(midi_data_id_type)
 
 
 def can_resolve_data_from_selected_objects(midi_data_id_type: str):
@@ -444,7 +498,7 @@ class LoadedMidiData:
         for action in actions:
             if action.action is None:
                 return True
-            animated_object_property = ID_PROPERTIES_DICTIONARY[action.id_type][0]
+            animated_object_property = note_action_property_field_name(action.id_type)
             animated_object = getattr(action, animated_object_property)
             if animated_object is None:
                 return True
@@ -517,7 +571,7 @@ class LoadedMidiData:
         return self.note_action_property_id_counter - 1
 
     def matching_action_slots(self, note_action_property):
-        slot_id_type = ID_PROPERTIES_DICTIONARY[note_action_property.id_type][1]
+        slot_id_type = action_id_type(note_action_property.id_type)
         action = note_action_property.action
         if action is not None:
             return [slot for slot in action.slots if slot.target_id_type == slot_id_type]
